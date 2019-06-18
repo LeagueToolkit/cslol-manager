@@ -33,11 +33,9 @@ struct Config {
     bool needsave;
 
     void print() const {
-        puts("==================================================");
         printf("Checksum: 0x%08X\n", checksum);
         printf("FileProvider(%u): 0x%08X\n", enable_fp,off_fp);
         printf("Wad(%u): 0x%08X\n",enable_wad, off_pmeth);
-        puts("==================================================");
     }
 
     void save() const {
@@ -131,7 +129,8 @@ static void InjectWad(Process const& process, Config& config) {
 
 int main(int argc, char** argv)
 {
-    DWORD pid = 0;
+    puts("Put your moded files into <LoL Folder>/Game/MOD");
+    puts("==================================================");
     Config config = {};
     if(!config.load()) {
         config.needsave = true;
@@ -157,35 +156,46 @@ int main(int argc, char** argv)
             config.needsave = true;
         }
     }
-    for(; !pid ; EnumWindows(FindWindow, reinterpret_cast<LPARAM>(&pid))) {
-        Sleep(50);
-    };
-    try {
-        auto const process = Process(pid, "League of Legends.exe");
-        config.need_scan(process);
-        if(config.enable_fp) {
-            if(config.off_fp) {
-                InjectFP(process, config);
-                printf("FileProvider Injected!\n");
-            } else {
-                printf("No file provider offset!");
+    for(;;) {
+        puts("==================================================");
+        DWORD pid = 0;
+        for(; !pid ; EnumWindows(FindWindow, reinterpret_cast<LPARAM>(&pid))) {
+            Sleep(50);
+        };
+        try {
+            auto const process = Process(pid, "League of Legends.exe");
+            config.need_scan(process);
+            if(config.enable_fp) {
+                if(config.off_fp) {
+                    InjectFP(process, config);
+                    printf("FileProvider Injected!\n");
+                } else {
+                    printf("No file provider offset!");
+                }
             }
-        }
-        if(config.enable_wad) {
-            if(config.off_pmeth) {
-                InjectWad(process, config);
-                printf("Wad Injected!\n");
-            } else {
-                printf("No pmeth offset!");
+            if(config.enable_wad) {
+                if(config.off_pmeth) {
+                    InjectWad(process, config);
+                    printf("Wad Injected!\n");
+                } else {
+                    printf("No pmeth offset!");
+                }
             }
+            if(config.needsave) {
+                puts("Offsets are updated!");
+                config.print();
+                config.save();
+            }
+            process.Wait();
+        } catch(const std::runtime_error& err) {
+            printf("Error: %s\n", err.what());
+            if(config.needsave) {
+                puts("Offsets are updated!");
+                config.print();
+                config.save();
+            }
+            getc(stdin);
+            return 0;
         }
-    } catch(const std::runtime_error& err) {
-        printf("Error: %s\n", err.what());
     }
-    config.print();
-    if(config.needsave) {
-        config.save();
-    }
-    getc(stdin);
-    return 0;
 }

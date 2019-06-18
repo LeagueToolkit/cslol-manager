@@ -30,7 +30,8 @@ struct Process {
                     PROCESS_VM_OPERATION
                     | PROCESS_VM_READ
                     | PROCESS_VM_WRITE
-                    | PROCESS_QUERY_INFORMATION,
+                    | PROCESS_QUERY_INFORMATION
+                    | SYNCHRONIZE,
                     false,
                     pid);
         if(!process || process == INVALID_HANDLE_VALUE) {
@@ -161,5 +162,9 @@ struct Process {
                             &old)) {
            throw std::runtime_error("Failed to mark memory executable");
        }
+    }
+
+    void Wait() const {
+        WaitForSingleObject(handle, INFINITE);
     }
 };
