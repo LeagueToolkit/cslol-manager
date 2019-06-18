@@ -30,6 +30,7 @@ struct Config {
     uintptr_t off_pmeth = 0;
     uint32_t enable_fp = 1;
     uint32_t enable_wad = 0;
+    bool needsave;
 
     void print() const {
         puts("==================================================");
@@ -64,6 +65,7 @@ struct Config {
             off_fp = 0;
             off_pmeth = 0;
             checksum = process.checksum;
+            needsave = true;
         }
         if((!off_fp && enable_fp) || (!off_pmeth && enable_wad)) {
             auto const dump = process.Dump();
@@ -132,7 +134,7 @@ int main(int argc, char** argv)
     DWORD pid = 0;
     Config config = {};
     if(!config.load()) {
-        config.save();
+        config.needsave = true;
     }
     config.print();
     // .wad's not officialy support
@@ -140,24 +142,27 @@ int main(int argc, char** argv)
     for(int a = 1; a < argc; a++) {
         if(strstr(argv[a], "-fp")) {
             config.enable_wad = true;
+            config.needsave = true;
         }
         if(strstr(argv[a], "+fp")) {
             config.enable_wad = false;
+            config.needsave = true;
         }
         if(strstr(argv[a], "-wad")) {
             config.enable_wad = true;
+            config.needsave = true;
         }
         if(strstr(argv[a], "+wad")) {
             config.enable_wad = false;
+            config.needsave = true;
         }
-        config.save();
     }
     for(; !pid ; EnumWindows(FindWindow, reinterpret_cast<LPARAM>(&pid))) {
         Sleep(50);
     };
     try {
         auto const process = Process(pid, "League of Legends.exe");
-        auto const needsave = config.need_scan(process);
+        config.need_scan(process);
         if(config.enable_fp) {
             if(config.off_fp) {
                 InjectFP(process, config);
@@ -174,12 +179,12 @@ int main(int argc, char** argv)
                 printf("No pmeth offset!");
             }
         }
-        if(needsave) {
-            config.print();
-            config.save();
-        }
     } catch(const std::runtime_error& err) {
         printf("Error: %s\n", err.what());
+    }
+    config.print();
+    if(config.needsave) {
+        config.save();
     }
     getc(stdin);
     return 0;
