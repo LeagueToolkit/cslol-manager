@@ -34,8 +34,8 @@ struct Config {
     void print() const {
         puts("==================================================");
         printf("Checksum: 0x%08X\n", checksum);
-        printf("FileProvider: 0x%08X\n", off_fp);
-        printf("Wad: 0x%08X\n", off_pmeth);
+        printf("FileProvider(%u): 0x%08X\n", enable_fp,off_fp);
+        printf("Wad(%u): 0x%08X\n",enable_wad, off_pmeth);
         puts("==================================================");
     }
 
@@ -176,6 +176,7 @@ int main(int argc, char** argv)
         }
         if(needsave) {
             config.print();
+            config.save();
         }
     } catch(const std::runtime_error& err) {
         printf("Error: %s\n", err.what());
