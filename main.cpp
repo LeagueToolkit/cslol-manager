@@ -5,6 +5,7 @@
 #include "process.hpp"
 #include "patscanner.hpp"
 #include "def.hpp"
+#include "config.hpp"
 
 using namespace std;
 
@@ -24,69 +25,13 @@ BOOL CALLBACK FindWindow(HWND hwnd, LPARAM lParam) {
     return TRUE;
 }
 
-struct Config {
-    uint32_t checksum = 0;
-    uintptr_t off_fp = 0;
-    uintptr_t off_pmeth = 0;
-    uint32_t enable_fp = 1;
-    uint32_t enable_wad = 0;
-    bool needsave;
-
-    void print() const {
-        printf("Checksum: 0x%08X\n", checksum);
-        printf("FileProvider(%u): 0x%08X\n", enable_fp,off_fp);
-        printf("Wad(%u): 0x%08X\n",enable_wad, off_pmeth);
-    }
-
-    void save() const {
-        if(FILE* file = nullptr;
-                !fopen_s(&file, "lolskinmod.txt", "w") && file) {
-            fprintf_s(file, "0x%08X 0x%08X 0x%08X %u %u\n",
-                      checksum, off_fp, off_pmeth, enable_fp, enable_wad);
-            fclose(file);
-        }
-    }
-
-    bool load() {
-        if(FILE* file = nullptr;
-                !fopen_s(&file, "lolskinmod.txt", "r") && file) {
-            fscanf_s(file, "0x%08X 0x%08X 0x%08X %u %u\n",
-                      &checksum, &off_fp, &off_pmeth, &enable_fp, &enable_wad);
-            fclose(file);
-            return true;
-        }
+static bool InjectFP(Process const& process, Config const& config) {
+    if(!config.enable_fp) {
         return false;
     }
-
-    bool need_scan(Process const& process) {
-        if(checksum != process.checksum) {
-            off_fp = 0;
-            off_pmeth = 0;
-            checksum = process.checksum;
-            needsave = true;
-        }
-        if((!off_fp && enable_fp) || (!off_pmeth && enable_wad)) {
-            auto const dump = process.Dump();
-            auto const base = process.base;
-            if(!off_fp && enable_fp) {
-                auto const r = fp_pat(dump);
-                if(auto const x = std::get<1>(r); x) {
-                    off_fp = *reinterpret_cast<uint32_t const*>(x) - base;
-                }
-            }
-            if(!off_pmeth && enable_wad) {
-                auto const r = pmeth_pat(dump);
-                if(auto const x = std::get<1>(r); x) {
-                    off_pmeth = *reinterpret_cast<uint32_t const*>(x) - base;
-                }
-            }
-            return true;
-        }
+    if(!config.off_fp) {
         return false;
     }
-};
-
-static void InjectFP(Process const& process, Config& config) {
     auto rList = process.OffBase<FileProvider::List>(config.off_fp);
     auto lList = process.Read(rList);
     auto rExe = process.Allocate<Shellcode>();
@@ -112,9 +57,16 @@ static void InjectFP(Process const& process, Config& config) {
     process.MarkExecutable(rExe);
     process.Write(lFP, rFP);
     process.Write(lList, rList);
+    return true;
 }
 
-static void InjectWad(Process const& process, Config& config) {
+static bool InjectWad(Process const& process, Config const& config) {
+    if(!config.enable_wad) {
+        return false;
+    }
+    if(!config.off_pmeth) {
+        return false;
+    }
     auto rMethods = process.OffBase<EVP_PKEY_METHOD*>(config.off_pmeth);
     auto rVtableOrg = process.Read(rMethods);
     auto lVtable = process.Read(rVtableOrg);
@@ -125,9 +77,34 @@ static void InjectWad(Process const& process, Config& config) {
     process.Write(verifycode, rVerify);
     process.MarkExecutable(rVerify);
     process.Write(rVtable, rMethods);
+    return true;
 }
 
-int main(int argc, char** argv)
+static bool Rescan(Config& config, Process const& process) {
+    if((!config.off_pmeth && config.enable_wad) ||
+       (!config.off_fp && config.enable_fp)) {
+        auto const dump = process.Dump();
+        auto const base = process.base;
+        if(config.enable_fp) {
+            auto const r = fp_pat(dump);
+            if(auto const x = std::get<1>(r); x) {
+                config.off_fp = *reinterpret_cast<uint32_t const*>(x) - base;
+            }
+        }
+        if(config.enable_wad) {
+            auto const r = pmeth_pat(dump);
+            if(auto const x = std::get<1>(r); x) {
+                config.off_pmeth = *reinterpret_cast<uint32_t const*>(x) - base;
+            }
+        }
+        config.needsave = true;
+        return true;
+    }
+    return false;
+}
+
+
+int main()
 {
     puts("Put your moded files into <LoL Folder>/Game/MOD");
     puts("==================================================");
@@ -136,56 +113,31 @@ int main(int argc, char** argv)
         config.needsave = true;
     }
     config.print();
-    // .wad's not officialy support
-    // but if you can figure how to pass args to cli its here to use
-    for(int a = 1; a < argc; a++) {
-        if(strstr(argv[a], "-fp")) {
-            config.enable_wad = true;
-            config.needsave = true;
-        }
-        if(strstr(argv[a], "+fp")) {
-            config.enable_wad = false;
-            config.needsave = true;
-        }
-        if(strstr(argv[a], "-wad")) {
-            config.enable_wad = true;
-            config.needsave = true;
-        }
-        if(strstr(argv[a], "+wad")) {
-            config.enable_wad = false;
-            config.needsave = true;
-        }
-    }
     for(;;) {
         puts("==================================================");
+        puts("Waiting for league to start...");
         DWORD pid = 0;
         for(; !pid ; EnumWindows(FindWindow, reinterpret_cast<LPARAM>(&pid))) {
             Sleep(50);
         };
         try {
             auto const process = Process(pid, "League of Legends.exe");
-            config.need_scan(process);
-            if(config.enable_fp) {
-                if(config.off_fp) {
-                    InjectFP(process, config);
-                    printf("FileProvider Injected!\n");
-                } else {
-                    printf("No file provider offset!");
-                }
+            if(config.checksum != process.checksum) {
+                config.off_fp = 0;
+                config.off_pmeth = 0;
+                config.checksum = process.checksum;
             }
-            if(config.enable_wad) {
-                if(config.off_pmeth) {
-                    InjectWad(process, config);
-                    printf("Wad Injected!\n");
-                } else {
-                    printf("No pmeth offset!");
-                }
-            }
+            Rescan(config, process);
+            auto const wad_res = InjectWad(process, config);
+            auto const fp_res = InjectFP(process, config);
+            printf("WadVerify added: %u\n", wad_res);
+            printf("FileProvider added: %u\n", fp_res);
             if(config.needsave) {
                 puts("Offsets are updated!");
                 config.print();
                 config.save();
             }
+            puts("Waiting for league to exit...");
             process.Wait();
         } catch(const std::runtime_error& err) {
             printf("Error: %s\n", err.what());
