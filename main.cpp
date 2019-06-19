@@ -91,12 +91,12 @@ int main()
 {
     puts("Source: https://github.com/moonshadow565/lolskinmod");
     puts("Put your moded files into <LoL Folder>/Game/MOD");
-    puts("==================================================");
+    puts("=============================================================");
     Config config = {};
     config.load();
     config.print();
     for(;;) {
-        puts("==================================================");
+        puts("=============================================================");
         puts("Waiting for league to start...");
         DWORD pid = 0;
         for(; !pid ; EnumWindows(FindLoL, reinterpret_cast<LPARAM>(&pid))) {
