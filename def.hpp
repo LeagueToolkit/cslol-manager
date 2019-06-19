@@ -3,50 +3,6 @@
 #include <cstddef>
 #include "patscanner.hpp"
 
-struct EVP_PKEY_METHOD {
-    uint32_t pkey_id;
-    uint32_t flags;
-    uint32_t init;
-    uint32_t copy;
-    uint32_t cleanup;
-    uint32_t paramgen_init;
-    uint32_t paramgen;
-    uint32_t keygen_init;
-    uint32_t keygen;
-    uint32_t sign_init;
-    uint32_t sign;
-    uint32_t verify_init;
-    uint8_t const* verify;
-    uint32_t verify_recover_init;
-    uint32_t verify_recover;
-    uint32_t signctx_init;
-    uint32_t signctx;
-    uint32_t verifyctx_init;
-    uint32_t verifyctx;
-    uint32_t encrypt_init;
-    uint32_t encrypt;
-    uint32_t decrypt_init;
-    uint32_t decrypt;
-    uint32_t derive_init;
-    uint32_t derive;
-    uint32_t ctrl;
-    uint32_t ctrl_str;
-    uint32_t digestsign;
-    uint32_t digestverify;
-    uint32_t check;
-    uint32_t public_check;
-    uint32_t param_check;
-    uint32_t digest_custom;
-};
-
-static struct EVP_Verify {
-    // return 1
-    uint8_t const Verify[0x10] = {
-        0xB8,0x01,0x00,0x00,0x00,0xC3,0x00,0x00,
-        0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-    };
-} const verifycode = {};
-
 static struct Shellcode {
     /*
     uint32_t __thiscall Open(FileProvider* this,
@@ -142,9 +98,46 @@ static struct Shellcode {
     };
     char const Info[0x10] = {
         'L' ,'o' ,'L' ,'S' ,'i' ,'n' ,'M' ,'o' ,
-        'd' ,' ' ,'e' ,'x' , 'e','c' ,'\0','\0',
+        'd' ,' ' ,'e' ,'x' , 'e','c' ,'!' ,'\0',
     };
 } const shellcode = {};
+
+
+struct EVP_PKEY_METHOD {
+    uint32_t pkey_id;
+    uint32_t flags;
+    uint32_t init;
+    uint32_t copy;
+    uint32_t cleanup;
+    uint32_t paramgen_init;
+    uint32_t paramgen;
+    uint32_t keygen_init;
+    uint32_t keygen;
+    uint32_t sign_init;
+    uint32_t sign;
+    uint32_t verify_init;
+    uint8_t const* verify;
+    uint32_t verify_recover_init;
+    uint32_t verify_recover;
+    uint32_t signctx_init;
+    uint32_t signctx;
+    uint32_t verifyctx_init;
+    uint32_t verifyctx;
+    uint32_t encrypt_init;
+    uint32_t encrypt;
+    uint32_t decrypt_init;
+    uint32_t decrypt;
+    uint32_t derive_init;
+    uint32_t derive;
+    uint32_t ctrl;
+    uint32_t ctrl_str;
+    uint32_t digestsign;
+    uint32_t digestverify;
+    uint32_t check;
+    uint32_t public_check;
+    uint32_t param_check;
+    uint32_t digest_custom;
+};
 
 struct FileProvider {
     struct Vtable {
@@ -158,11 +151,16 @@ struct FileProvider {
         FileProvider* arr[4];
         uint32_t size;
     } *list;
-    Vtable impl;
     char const Info[0x10] = {
         'L' ,'o' ,'L' ,'S' ,'i' ,'n' ,'M' ,'o' ,
-        'd' ,' ' ,'v' ,'t' , 'b','l' ,'e' ,'\0',
+        'd' ,' ' ,'d' ,'a' , 't','a' ,'!' ,'\0',
     };
+};
+
+struct Data {
+    FileProvider fp;
+    FileProvider::Vtable fpvtbl;
+    EVP_PKEY_METHOD pmeth;
 };
 
 static char const * const classnames[] = {

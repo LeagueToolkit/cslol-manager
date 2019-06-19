@@ -7,33 +7,28 @@ struct Config {
     uint32_t checksum = 0;
     uintptr_t off_fp = 0;
     uintptr_t off_pmeth = 0;
-    uint32_t enable_fp = 1;
-    uint32_t enable_wad = 1;
-    bool needsave;
 
     void print() const {
         printf("Checksum: 0x%08X\n", checksum);
-        printf("FileProvider(%u): 0x%08X\n", enable_fp,off_fp);
-        printf("Wad(%u): 0x%08X\n",enable_wad, off_pmeth);
+        printf("FileProvider: 0x%08X\n", off_fp);
+        printf("PMeth: 0x%08X\n", off_pmeth);
     }
 
     void save() const {
         if(FILE* file = nullptr;
                 !fopen_s(&file, "lolskinmod.txt", "w") && file) {
-            fprintf_s(file, "0x%08X 0x%08X 0x%08X %u %u\n",
-                      checksum, off_fp, off_pmeth, enable_fp, enable_wad);
+            fprintf_s(file, "0x%08X 0x%08X 0x%08X\n",
+                      checksum, off_fp, off_pmeth);
             fclose(file);
         }
     }
 
-    bool load() {
+    void load() {
         if(FILE* file = nullptr;
                 !fopen_s(&file, "lolskinmod.txt", "r") && file) {
-            fscanf_s(file, "0x%08X 0x%08X 0x%08X %u %u\n",
-                      &checksum, &off_fp, &off_pmeth, &enable_fp, &enable_wad);
+            fscanf_s(file, "0x%08X 0x%08X 0x%08X\n",
+                      &checksum, &off_fp, &off_pmeth);
             fclose(file);
-            return true;
         }
-        return false;
     }
 };
