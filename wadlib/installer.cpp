@@ -29,6 +29,11 @@ static inline uint64_t str2xxh64(fspath const& path) noexcept {
 WadFile::WadFile(const std::filesystem::path &path)
     : file(path, L"rb") {
     file.read(header);
+    for(uint32_t i = 0; i < header.filecount; i++) {
+        WadEntry entry{};
+        file.read(entry);
+        entries[entry.xxhash] = entry;
+    }
     data_start = file.tell();
     file.seek_end(0);
     data_size = file.tell() - data_start;
