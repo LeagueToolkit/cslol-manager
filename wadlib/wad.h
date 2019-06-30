@@ -26,6 +26,7 @@ struct WadEntry {
     std::array<uint8_t, 8> sha256;
     static inline constexpr size_t SIZE = 32;
 };
+static_assert(sizeof(WadEntry) == WadEntry::SIZE);
 
 extern void read(File const& file, WadEntry& wad);
 

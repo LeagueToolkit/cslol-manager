@@ -41,7 +41,7 @@ int wadapi_wad_make(
                 return -3;
             }
             if(err_out_size) {
-                *err_out_size = ::strlen(what);
+                *err_out_size = static_cast<uint32_t>(::strlen(what));
             }
         }
         return -1;
@@ -83,7 +83,7 @@ int wadapi_wad_modscan_one(wad_mods* wad_mods,
                 return -3;
             }
             if(err_out_size) {
-                *err_out_size = ::strlen(what);
+                *err_out_size = static_cast<uint32_t>(::strlen(what));
             }
         }
         return -1;
@@ -112,7 +112,7 @@ int wadapi_wad_modscan_recursive(
                 return -3;
             }
             if(err_out_size) {
-                *err_out_size = ::strlen(what);
+                *err_out_size = static_cast<uint32_t>(::strlen(what));
             }
         }
         return -1;
@@ -146,7 +146,7 @@ int wadapi_wad_mods_install(const wad_mods *wad_mods,
                 return -3;
             }
             if(err_out_size) {
-                *err_out_size = ::strlen(what);
+                *err_out_size = static_cast<uint32_t>(::strlen(what));
             }
         }
         return -1;
