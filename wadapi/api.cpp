@@ -64,7 +64,11 @@ void wadapi_wad_mods_clear(wad_mods *wad_mods) {
 
 int wadapi_wad_modscan_one(wad_mods* wad_mods,
         const char *src_path, uint32_t src_path_size,
+        void* reserved1, void* reserverd2,
         char* err_out, uint32_t err_out_max, uint32_t* err_out_size) {
+    if(reserved1 || reserverd2) {
+        return -2;
+    }
     if(!wad_mods || !src_path || !src_path_size) {
         return -2;
     }
@@ -89,7 +93,11 @@ int wadapi_wad_modscan_one(wad_mods* wad_mods,
 int wadapi_wad_modscan_recursive(
         wad_mods* wad_mods,
         const char *src_path, uint32_t src_path_size,
+        void* reserved1, void* reserverd2,
         char* err_out, uint32_t err_out_max, uint32_t* err_out_size) {
+    if(reserved1 || reserverd2) {
+        return -2;
+    }
     if(!wad_mods || !src_path || !src_path_size) {
         return -2;
     }
@@ -153,27 +161,4 @@ int wadapi_wad_mods_install(const wad_mods *wad_mods,
         char const* new_wad_path, uint32_t new_wad_path_size,
         void* fn_data);
 
-WADAPI_EXPORTS wad_paths* wadapi_wad_paths_create(uint32_t reserve);
-
-WADAPI_EXPORTS void wadapi_wad_paths_free(wad_paths* wad_paths);
-
-WADAPI_EXPORTS void wadapi_wad_paths_add(wad_paths* wad_paths);
-
-wad_paths *wadapi_wad_paths_create(uint32_t reserve)
-{
-    if(reserve > 1024) {
-        reserve = 1024;
-    }
-    return new wad_paths(reserve);
-}
-
-void wadapi_wad_paths_free(wad_paths *wad_paths)
-{
-    delete wad_paths;
-}
-
-void wadapi_wad_paths_add(wad_paths *wad_paths)
-{
-
-}
 */

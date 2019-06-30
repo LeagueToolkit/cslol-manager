@@ -3,17 +3,40 @@
 #include <filesystem>
 #include <string>
 #include <unordered_map>
+#include <map>
 #include <vector>
+#include <optional>
+#include "file.hpp"
+#include "wad.h"
 
 using fspath = std::filesystem::path;
-using wad_paths = std::vector<std::string>;
-using wad_mods = std::unordered_map<std::string, wad_paths>;
+
+struct WadFile {
+    File file;
+    WadHeader header;
+    std::map<uint64_t, WadEntry> entries;
+    int32_t data_start;
+    int32_t data_size;
+
+    WadFile(std::filesystem::path const& path);
+};
+
+struct RawFile {
+    File file;
+    uint64_t xxhash;
+    int32_t data_size;
+    RawFile(std::filesystem::path const& path, uint64_t xxh);
+};
+
+using wad_files = std::map<std::string, WadFile>;
+using wad_mods = std::unordered_map<std::string, wad_files>;
 using updatefn = std::function<void(std::string const& name, int64_t bdone, int64_t btotal)>;
+using conflictfn = std::function<int(uint64_t xx, std::string const& lm, std::string const& rm)>;
 
 extern void wad_merge(
         fspath const& dstpath,
-        fspath const& base,
-        wad_paths const& wadps,
+        std::optional<WadFile> const& base,
+        wad_files const& wadps,
         updatefn update,
         int32_t const buffercap = 1024 * 1024);
 
@@ -25,11 +48,13 @@ extern void wad_make(
 
 extern void wad_mods_scan_one(
         wad_mods& mods,
-        fspath const& mod_path);
+        fspath const& mod_path,
+        conflictfn = nullptr);
 
 extern void wad_mods_scan_recursive(
-            wad_mods& mods,
-            fspath const& modspath);
+        wad_mods& mods,
+        fspath const& modspath,
+        conflictfn = nullptr);
 
 extern void wad_mods_install(
         wad_mods const& mods,
@@ -37,3 +62,4 @@ extern void wad_mods_install(
         fspath const& modsdir,
         updatefn update,
         int32_t const buffercap = 1024 * 1024);
+

@@ -10,11 +10,10 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
-using wad_paths = std::vector<std::string>;
-using wad_mods = std::unordered_map<std::string, wad_paths>;
+#include "installer.h"
 #else
 struct wad_mods;
-struct wad_paths;
+struct wad_files;
 #endif
 #endif
 
@@ -93,6 +92,7 @@ extern "C" {
      * Arguments:
      * wad_mods: a wad_mods structure to be updated
      * src_path, src_path_size: IN string buffer containing single mod root folder path
+     * reserved1, reserved2: reserved fields, must be set to null
      * err_out, err_out_max: OUT string buffer to copy error message in
      * err_out_size: OPTIONAL OUT size of error message string
      *
@@ -106,6 +106,7 @@ extern "C" {
     WADAPI_EXPORTS int wadapi_wad_modscan_one(
             wad_mods* wad_mods,
             char const* src_path, uint32_t src_path_size,
+            void* reserved1, void* reserved2,
             char* err_out, uint32_t err_out_max, uint32_t* err_out_size);
 
     /*
@@ -115,6 +116,7 @@ extern "C" {
      * Arguments:
      * wad_mods: a wad_mods structure to be updated
      * src_path, src_path_size: IN string buffer containing mods collection folder path
+     * reserved1, reserved2: reserved fields, must be set to null
      * err_out, err_out_max: OUT string buffer to copy error message in
      * err_out_size: OPTIONAL OUT size of error message string
      *
@@ -128,6 +130,7 @@ extern "C" {
     WADAPI_EXPORTS int wadapi_wad_modscan_recursive(
             wad_mods* wad_mods,
             char const* src_path, uint32_t src_path_size,
+            void* reserved1, void* reserved2,
             char* err_out, uint32_t err_out_max, uint32_t* err_out_size);
 
     /*
