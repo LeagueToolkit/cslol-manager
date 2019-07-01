@@ -8,19 +8,21 @@ namespace fs = std::filesystem;
 
 int main(int argc, char**argv) {
     fspath srcfile;
-    std::string path;
     if(argc > 1) {
-        path = argv[1];
-    } else {
+        srcfile = argv[1];
+    }
+
+    if(srcfile.empty()) {
         puts("Converts folder to .wad.client!");
         puts("Drop your folder here and press enter:");
+        std::string path;
         std::getline(std::cin, path);
-    }
-    if(path.size() >= 3) {
-        if(path[0] == '"') {
-            path = path.substr(1, path.size() - 2);
+        if(path.size() >= 3) {
+            if(path[0] == '"') {
+                path = path.substr(1, path.size() - 2);
+            }
+            srcfile = path;
         }
-        srcfile = path;
     }
 
     auto const parent = srcfile.parent_path();

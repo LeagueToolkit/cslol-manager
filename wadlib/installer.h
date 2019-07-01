@@ -21,13 +21,6 @@ struct WadFile {
     WadFile(std::filesystem::path const& path);
 };
 
-struct RawFile {
-    File file;
-    uint64_t xxhash;
-    int32_t data_size;
-    RawFile(std::filesystem::path const& path, uint64_t xxh);
-};
-
 using wad_files = std::map<std::string, WadFile>;
 using wad_mods = std::unordered_map<std::string, wad_files>;
 using updatefn = std::function<void(std::string const& name, int64_t bdone, int64_t btotal)>;
