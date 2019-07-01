@@ -54,6 +54,12 @@ void wad_merge(
         wad_files const& wad_files,
         updatefn update,
         int32_t const buffercap) {
+    std::error_code errorc;
+    fs::create_directories(dstpath.parent_path(), errorc);
+    if(errorc) {
+        throw File::Error(errorc.message().c_str());
+    }
+
     WadHeader header{};
     std::map<uint64_t, WadEntry> entries{};
 
@@ -103,7 +109,6 @@ void wad_merge(
     }
     header.checksum = currentChecksum;
 
-    fs::create_directories(dstpath.parent_path());
     File dstfile(dstpath, L"wb");
     // Pre-allocate new wad entries and calculate new start offset
     for(auto const& wad_file: wad_files_ptr) {
@@ -169,7 +174,11 @@ void wad_make(
 
     std::string const dststr = dstpath.generic_string();
 
-    fs::create_directories(dstpath.parent_path());
+    std::error_code errorc;
+    fs::create_directories(dstpath.parent_path(), errorc);
+    if(errorc) {
+        throw File::Error(errorc.message().c_str());
+    }
     File dstfile(dstpath, L"wb");
 
     int64_t bdone = 0;
@@ -359,37 +368,45 @@ bool load_hashdb(HashMap &hashes, fspath const& name) {
 }
 
 bool save_hashdb(const HashMap &hashmap, fspath const &name) {
-    File file(name, L"wb");
-    uint32_t count = static_cast<uint32_t>(hashmap.size());
-    file.write(count);
-    std::array<char, 4> sig = {'x','x','6','4'};
-    file.write(sig);
-    file.seek_cur(256 - 8);
-    for(auto const& [xx, entry]: hashmap) {
-        file.write(xx);
-        file.write(entry.name);
+    try{
+        File file(name, L"wb");
+        uint32_t count = static_cast<uint32_t>(hashmap.size());
+        file.write(count);
+        std::array<char, 4> sig = {'x','x','6','4'};
+        file.write(sig);
+        file.seek_cur(256 - 8);
+        for(auto const& [xx, entry]: hashmap) {
+            file.write(xx);
+            file.write(entry.name);
+        }
+        return true;
+    } catch(File::Error const&) {
+        return false;
     }
-    return true;
 }
 
 bool import_hashes(HashMap& hashmap, fspath const& name) {
-    File file(name, L"rb");
-    std::string line;
-    fspath path;
-    for(; !file.is_eof() ;) {
-        HashEntry entry{};
-        line = file.readline();
-        if(line.empty()) {
-            continue;
+    try {
+        File file(name, L"rb");
+        std::string line;
+        fspath path;
+        for(; !file.is_eof() ;) {
+            HashEntry entry{};
+            line = file.readline();
+            if(line.empty()) {
+                continue;
+            }
+            uint64_t const h = xx64(line);
+            if(line.size() >= sizeof(entry.name)) {
+                continue;
+            }
+            std::copy(line.begin(), line.end(), entry.name);
+            hashmap[h] = entry;
         }
-        uint64_t const h = xx64(line);
-        if(line.size() >= sizeof(entry.name)) {
-            continue;
-        }
-        std::copy(line.begin(), line.end(), entry.name);
-        hashmap[h] = entry;
+        return true;
+    } catch(File::Error const&) {
+        return false;
     }
-    return true;
 }
 
 static inline bool unhash(HashMap const& hashmap, uint64_t hash, std::string& result) {
@@ -456,12 +473,10 @@ static inline std::string scan_ext(std::vector<uint8_t> const& buffer) {
 void wad_extract(fspath const& src, fspath const& dst, HashMap const& hashmap,
                  updatefn update, int32_t) {
 
-    if(fs::exists(dst)) {
-        std::error_code errorc;
-        fs::remove_all(dst, errorc);
-        if(errorc) {
-            throw File::Error(errorc.message().c_str());
-        }
+    std::error_code errorc;
+    fs::create_directories(dst, errorc);
+    if(errorc) {
+        throw File::Error(errorc.message().c_str());
     }
     WadFile file(src);
     std::vector<uint8_t> compressedBuffer;
@@ -539,11 +554,6 @@ void wad_extract(fspath const& src, fspath const& dst, HashMap const& hashmap,
         }
     }
 
-    std::error_code errorc;
-    fs::create_directories(dst, errorc);
-    if(errorc) {
-        throw File::Error(errorc.message().c_str());
-    }
     File dstfile(dst / "redirections.txt", L"wb");
     for(auto const& [xx, entry]: file.entries) {
         if(entry.type != 2) {

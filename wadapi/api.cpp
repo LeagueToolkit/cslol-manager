@@ -48,6 +48,104 @@ int wadapi_wad_make(
     }
 }
 
+HashMap* wadapi_HashMap_create()
+{
+    return new HashMap;
+}
+
+void wadapi_HashMap_free(HashMap *hashmap)
+{
+    if(hashmap) {
+        delete hashmap;
+    }
+}
+
+void wadapi_HashMap_clear(HashMap *hashmap)
+{
+    if(hashmap) {
+        hashmap->clear();
+    }
+}
+
+int wadapi_HashMap_loaddb(HashMap *hashmap, const char *src_path, uint32_t src_path_size)
+{
+    if(!hashmap || !src_path || !src_path_size) {
+        return -2;
+    }
+    if(!load_hashdb(*hashmap, std::string_view{src_path, src_path_size})) {
+        return -1;
+    }
+    return 0;
+}
+
+int wadapi_HashMap_savedb(HashMap const *hashmap, const char *src_path, uint32_t src_path_size)
+{
+    if(!hashmap || !src_path || !src_path_size) {
+        return -2;
+    }
+    if(!save_hashdb(*hashmap, std::string_view{src_path, src_path_size})) {
+        return -1;
+    }
+    return 0;
+}
+
+int wadapi_HashMap_import(HashMap *hashmap, const char *src_path, uint32_t src_path_size)
+{
+    if(!hashmap || !src_path || !src_path_size) {
+        return -2;
+    }
+    if(!import_hashes(*hashmap, std::string_view{src_path, src_path_size})) {
+        return -1;
+    }
+    return 0;
+}
+
+int wadapi_wad_extract(
+        const char *src_path, uint32_t src_path_size,
+        const char *dst_path, uint32_t dst_path_size,
+        HashMap* hashmap,
+        update_fn c_update, void *c_update_data,
+        int32_t bufferMax, char *err_out, uint32_t err_out_max, uint32_t *err_out_size)
+{
+    if(!dst_path || !src_path || !dst_path_size || !src_path_size) {
+        return -2;
+    }
+    if(bufferMax < 4096) {
+        bufferMax = 1024 * 1024;
+    }
+    try {
+        fspath const src(std::string_view(src_path, src_path_size));
+        fspath const dst(std::string_view(dst_path, dst_path_size));
+        if(!fs::exists(src) || fs::is_directory(src)) {
+            return -2;
+        }
+        if(fs::exists(dst) && !fs::is_directory(dst)) {
+            return -2;
+        }
+        updatefn update = nullptr;
+        if(c_update) {
+            update = [c_update, c_update_data](auto const& n, auto d, auto t) {
+                c_update(n.c_str(), static_cast<uint32_t>(n.size()), d, t, c_update_data);
+            };
+        }
+        HashMap local{};
+        wad_extract(src, dst, hashmap ? *hashmap : local, update, bufferMax);
+        return 0;
+    } catch(std::exception const& err) {
+        if(err_out && err_out_max) {
+            auto what = err.what();
+            if(strcpy_s(err_out, err_out_max, what)) {
+                return -3;
+            }
+            if(err_out_size) {
+                *err_out_size = static_cast<uint32_t>(::strlen(what));
+            }
+        }
+        return -1;
+    }
+}
+
+
 wad_mods *wadapi_wad_mods_create() {
     return new wad_mods;
 }
@@ -62,7 +160,7 @@ void wadapi_wad_mods_clear(wad_mods *wad_mods) {
     }
 }
 
-int wadapi_wad_modscan_one(wad_mods* wad_mods,
+int wadapi_wad_mods_scan_one(wad_mods* wad_mods,
         const char *src_path, uint32_t src_path_size,
         void* reserved1, void* reserverd2,
         char* err_out, uint32_t err_out_max, uint32_t* err_out_size) {
@@ -90,7 +188,7 @@ int wadapi_wad_modscan_one(wad_mods* wad_mods,
     }
 }
 
-int wadapi_wad_modscan_recursive(
+int wadapi_wad_mods_scan_recursive(
         wad_mods* wad_mods,
         const char *src_path, uint32_t src_path_size,
         void* reserved1, void* reserverd2,

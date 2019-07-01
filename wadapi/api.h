@@ -14,6 +14,7 @@
 #else
 struct wad_mods;
 struct wad_files;
+struct HashMap;
 #endif
 #endif
 
@@ -29,8 +30,8 @@ extern "C" {
      * Makes a .wad from folder
      *
      * Arguments:
-     * dst_path, dst_path_size: IN string buffer containing the path to destination wad
-     * dst_path, dst_path_size: IN string buffer containing the path to source folder
+     * dst_path, dst_path_size: IN string buffer containing the path to destination .wad
+     * src_path, src_path_size: IN string buffer containing the path to source folder
      * c_update, c_update_data: OPTIONAL, update function to be called on each buffer copy
      * bufferMax: OPTIONAL, copy buffer in bytes
      * err_out, err_out_max: OUT string buffer to copy error message in
@@ -48,6 +49,116 @@ extern "C" {
             update_fn c_update, void* c_update_data,
             int32_t bufferMax,
             char* err_out, uint32_t err_out_max, uint32_t* err_out_size);
+
+    /*
+     * Description:
+     * Creates HashMap structure.
+     *
+     * Arguments:
+     *
+     * Returns (HashMap*):
+     *
+    */
+    WADAPI_EXPORTS HashMap* wadapi_HashMap_create();
+
+    /*
+     * Description:
+     * Free HashMap structure
+     *
+     * Arguments:
+     * hashmap: a HashMap structure to be freed
+     *
+     * Returns (void):
+     *
+    */
+    WADAPI_EXPORTS void wadapi_HashMap_free(HashMap* hashmap);
+
+    /*
+     * Description:
+     * Clears HashMap structure
+     *
+     * Arguments:
+     * hashmap: a HashMap structure to be cleared
+     *
+     * Returns (void):
+     *
+    */
+    WADAPI_EXPORTS void wadapi_HashMap_clear(HashMap* hashmap);
+
+
+    /*
+     * Description:
+     * Free HashMap structure
+     *
+     * Arguments:
+     * hashmap: a HashMap structure to be loaded from db
+     * src_path, src_path_size:IN string buffer containing the path to source hashmap database
+     *
+     * Returns (void):
+     *
+    */
+    WADAPI_EXPORTS int wadapi_HashMap_loaddb(
+            HashMap* hashmap,
+            char const* src_path, uint32_t src_path_size);
+
+
+    /*
+     * Description:
+     * Free HashMap structure
+     *
+     * Arguments:
+     * hashmap: a HashMap structure to be loaded from db
+     * src_path, src_path_size:IN string buffer containing the path to destination hashmap database
+     *
+     * Returns (void):
+     *
+    */
+    WADAPI_EXPORTS int wadapi_HashMap_savedb(
+            HashMap const* hashmap,
+            char const* src_path, uint32_t src_path_size);
+
+    /*
+     * Description:
+     * Free HashMap structure
+     *
+     * Arguments:
+     * hashmap: a HashMap structure to be loaded from db
+     * src_path, src_path_size:IN string buffer containing the path to source .hashtable
+     *
+     * Returns (void):
+     *
+    */
+    WADAPI_EXPORTS int wadapi_HashMap_import(
+            HashMap* hashmap,
+            char const* src_path, uint32_t src_path_size);
+
+    /*
+     * Descriptions:
+     * Extracts .wad to folder
+     *
+     * Arguments:
+     * src_path, src_path_size: IN string buffer containing the path to source wad
+     * dst_path, dst_path_size: IN string buffer containing the path to destination folder
+     * hashmap: OPTIONAL pointer to hashmap structure
+     * c_update, c_update_data: OPTIONAL, update function to be called on each buffer copy
+     * bufferMax: OPTIONAL, copy buffer in bytes
+     * err_out, err_out_max: OUT string buffer to copy error message in
+     * err_out_size: OPTIONAL OUT size of error message string
+     *
+     * Returns (int):
+     *  (0) OK
+     *  (-1) Something went wrong
+     *  (-2) Bad arguments
+     *  (-3) Error message buffer to small
+    */
+    WADAPI_EXPORTS int wadapi_wad_extract(
+            char const* src_path, uint32_t src_path_size,
+            char const* dst_path, uint32_t dst_path_size,
+            HashMap* hashmap,
+            update_fn c_update, void* c_update_data,
+            int32_t bufferMax,
+            char* err_out, uint32_t err_out_max, uint32_t* err_out_size);
+
 
     /*
      * Description:
@@ -103,7 +214,7 @@ extern "C" {
      *  (-3) Error message buffer to small
      *
     */
-    WADAPI_EXPORTS int wadapi_wad_modscan_one(
+    WADAPI_EXPORTS int wadapi_wad_mods_scan_one(
             wad_mods* wad_mods,
             char const* src_path, uint32_t src_path_size,
             void* reserved1, void* reserved2,
@@ -127,7 +238,7 @@ extern "C" {
      *  (-3) Error message buffer to small
      *
     */
-    WADAPI_EXPORTS int wadapi_wad_modscan_recursive(
+    WADAPI_EXPORTS int wadapi_wad_mods_scan_recursive(
             wad_mods* wad_mods,
             char const* src_path, uint32_t src_path_size,
             void* reserved1, void* reserved2,
