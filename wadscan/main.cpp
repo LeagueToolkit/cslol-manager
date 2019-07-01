@@ -8,53 +8,31 @@ using namespace std;
 namespace fs = std::filesystem;
 
 int main(int argc, char**argv) {
-    fspath srcfile;
-    std::string path;
-    HashMap hashmap = {};
-
-    load_hashdb(hashmap, "xxh64.db");
-
-    if(argc > 1) {
-        path = argv[1];
-    } else {
-        puts("Converts folder to .wad.client!");
-        puts("Drop your folder here and press enter:");
-        std::getline(std::cin, path);
-        srcfile = path;
+    if(argc < 1) {
+        puts("wadscan.exe <path>");
+        puts("Scans the folder recursively for .wad files and dumps TOC.");
+        return 1;
     }
-    if(path.size() >= 3) {
-        if(path[0] == '"') {
-            path = path.substr(1, path.size() - 2);
+    fspath dir = argv[1];
+    if(!fs::is_directory(dir) || !fs::exists(dir)) {
+        puts("Path must be a directory!");
+        return 1;
+    }
+    for(auto const& ent: fs::recursive_directory_iterator(dir)) {
+        if(ent.is_directory() || !ent.is_regular_file()) {
+            continue;
         }
-        srcfile = path;
-    }
-
-    auto const parent = srcfile.parent_path();
-    if(fs::exists(srcfile) && !fs::is_directory(srcfile)) {
+        auto path = ent.path();
+        if(path.extension() != ".client" && path.extension() != ".wad") {
+            continue;
+        }
         try {
-            if(srcfile.extension() == ".hashtable") {
-                import_hashes(hashmap, srcfile);
-                save_hashdb(hashmap, "xxh64.db");
-                puts("Done!");
-            } else if(srcfile.extension() == ".wad" || srcfile.extension() == ".client") {
-                auto dst = srcfile;
-                dst.replace_extension();
-                if(dst.extension() == ".wad") {
-                    dst.replace_extension();
-                }
-                wad_extract(srcfile, dst, hashmap, [](auto const&, auto done, auto total) {
-                    printf("\r%4.2fMB/%4.2fMB", done / 1024.0 / 1024.0, total / 1024.0 / 1024.0);
-                    if(done == total) {
-                        printf("\n");
-                    }
-                });
-                puts("Done!");
+            auto const rel = fs::relative(path, dir).lexically_normal().generic_string();
+            WadFile file(path);
+            for(auto const& [xx, entry]: file.entries) {
+                printf("%llx:%s:%u\n", xx, rel.c_str(), entry.type);
             }
-        } catch(std::exception const& err){
-            puts("Error: ");
-            puts(err.what());
-        }
+        } catch(std::exception const&) {}
     }
-    getc(stdin);
     return 0;
 }

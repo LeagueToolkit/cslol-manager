@@ -38,6 +38,6 @@ target_link_libraries(wadmake PUBLIC wadlib)
 add_executable(wadextract wadextract/main.cpp)
 target_link_libraries(wadextract PUBLIC wadlib)
 
-add_executable(wadscan wadextract/main.cpp)
+add_executable(wadscan wadscan/main.cpp)
 target_link_libraries(wadscan PUBLIC wadlib)
 
