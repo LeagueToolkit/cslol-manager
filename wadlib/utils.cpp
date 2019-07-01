@@ -64,7 +64,7 @@ std::string find_league(std::string path) noexcept {
 
 std::string read_line(const std::string &from) noexcept {
     try {
-        File config(from, L"r");
+        File config(from, L"rb");
         return config.readline();
     } catch(File::Error const&) {
         return "";
@@ -74,7 +74,7 @@ std::string read_line(const std::string &from) noexcept {
 bool write_line(const std::string &to, const std::string &line) noexcept {
     try {
         fs::create_directories(fspath(to).parent_path());
-        File config(to, L"w");
+        File config(to, L"wb");
         config.write(line);
         config.write('\n');
         return true;

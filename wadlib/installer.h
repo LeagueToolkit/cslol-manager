@@ -63,3 +63,18 @@ extern void wad_mods_install(
         updatefn update,
         int32_t const buffercap = 1024 * 1024);
 
+struct HashEntry {
+    char name[256-8] = {0};
+};
+using HashMap = std::unordered_map<uint64_t, HashEntry>;
+
+extern bool load_hashdb(HashMap &hashmap, fspath const& name);
+
+extern bool save_hashdb(HashMap const& hashmap, fspath const& name);
+
+extern bool import_hashes(HashMap& hashmap, fspath const& name);
+
+extern void wad_extract(fspath const& src, fspath const& dst,
+                        HashMap const& hashmap,
+                        updatefn update = nullptr,
+                        int32_t bufferSize = 1024 * 1024);

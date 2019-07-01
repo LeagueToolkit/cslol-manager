@@ -1,5 +1,6 @@
 #include <string>
 #include <filesystem>
+#include <iostream>
 #include "installer.h"
 
 using namespace std;
@@ -13,7 +14,7 @@ int main(int argc, char**argv) {
     } else {
         puts("Converts folder to .wad.client!");
         puts("Drop your folder here and press enter:");
-        // std::getline(std::cin, path);
+        std::getline(std::cin, path);
     }
     if(path.size() >= 3) {
         if(path[0] == '"') {
@@ -35,6 +36,7 @@ int main(int argc, char**argv) {
                     printf("\n");
                 }
             });
+            puts("Done!");
         } catch(std::exception const& err) {
             puts("Error:");
             puts(err.what());

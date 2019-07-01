@@ -7,7 +7,9 @@ project(wad)
 
 add_subdirectory(dep/xxhash)
 add_subdirectory(dep/picosha2)
-#add_subdirectory(dep/zlib)
+add_subdirectory(dep/zlib)
+add_subdirectory(dep/zstd)
+
 
 add_library(wadlib STATIC
     wadlib/file.cpp
@@ -21,7 +23,7 @@ add_library(wadlib STATIC
     wadlib/installer.cpp
     wadlib/installer.h
 )
-target_link_libraries(wadlib PRIVATE xxhash picosha2)
+target_link_libraries(wadlib PRIVATE xxhash picosha2 zlib zstd)
 target_include_directories(wadlib PUBLIC wadlib)
 
 add_library(wadapi SHARED wadapi/api.cpp wadapi/api.h)
@@ -32,3 +34,10 @@ target_link_libraries(wadinstall PUBLIC wadlib)
 
 add_executable(wadmake wadmake/main.cpp)
 target_link_libraries(wadmake PUBLIC wadlib)
+
+add_executable(wadextract wadextract/main.cpp)
+target_link_libraries(wadextract PUBLIC wadlib)
+
+add_executable(wadscan wadextract/main.cpp)
+target_link_libraries(wadscan PUBLIC wadlib)
+
