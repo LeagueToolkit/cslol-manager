@@ -97,8 +97,8 @@ static struct Shellcode {
         0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
     };
     char const Info[0x10] = {
-        'L' ,'o' ,'L' ,'S' ,'i' ,'n' ,'M' ,'o' ,
-        'd' ,' ' ,'e' ,'x' , 'e','c' ,'!' ,'\0',
+        'C' ,'u' ,'s' ,'t' ,'o' ,'m' ,' ' ,'L' ,
+        'o' ,'l' ,' ' ,'s' , 'k','i' ,'n' ,'\0',
     };
 } const shellcode = {};
 
@@ -152,8 +152,8 @@ struct FileProvider {
         uint32_t size;
     } *list;
     char const Info[0x10] = {
-        'L' ,'o' ,'L' ,'S' ,'i' ,'n' ,'M' ,'o' ,
-        'd' ,' ' ,'d' ,'a' , 't','a' ,'!' ,'\0',
+        'C' ,'u' ,'s' ,'t' ,'o' ,'m' ,' ' ,'L' ,
+        'o' ,'l' ,' ' ,'s' , 'k','i' ,'n' ,'\0',
     };
 };
 
