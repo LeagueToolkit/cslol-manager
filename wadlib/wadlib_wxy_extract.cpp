@@ -30,6 +30,9 @@ void wxy_extract(fspath const& dst, fspath const& src, updatefn update, int32_t 
         update(nameStr, done, total);
     }
 
+    uncompressedBuffer.reserve(maxUncompressed+6);
+    compressedBuffer.reserve(maxCompressed+6);
+
     for(auto const& entry: wxy.filesList) {
         auto dstfile_path = dst / entry.fileGamePath;
         std::error_code errorc;
@@ -44,7 +47,17 @@ void wxy_extract(fspath const& dst, fspath const& src, updatefn update, int32_t 
         if(entry.compressionMethod == WxySkin::methodNone) {
             file.read(uncompressedBuffer);
         } else if(entry.compressionMethod == WxySkin::methodZlib) {
-            file.read(compressedBuffer);
+            if(wxy.wooxyFileVersion < 6) {
+                uint16_t extra = wxy.wooxyFileVersion <= 4 ? 1 : 2;
+                file.seek_cur(-extra);
+                file.read(compressedBuffer);
+                compressedBuffer[0] = 120;
+                if(extra > 1) {
+                    compressedBuffer[1] = 156;
+                }
+            } else {
+                file.read(compressedBuffer);
+            }
             z_stream strm = {};
             if (inflateInit2_(
                         &strm,
