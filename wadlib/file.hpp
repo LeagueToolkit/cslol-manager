@@ -60,7 +60,9 @@ public:
 
     void seek_end(int32_t pos) const;
 
-    std::string read_zstring() const;
+    void read_zstring(std::string& str) const;
+
+    void read_sized_string(std::string& str) const;
 
     template<typename T>
     inline void rread(T* data, size_t count = 1) const {

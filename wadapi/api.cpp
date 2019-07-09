@@ -1,4 +1,4 @@
-#include "installer.h"
+#include "wadlib.h"
 #include <filesystem>
 #define WADAPI_IMPL 1
 #include "api.h"

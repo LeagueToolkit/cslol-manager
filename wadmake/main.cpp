@@ -1,7 +1,7 @@
 #include <string>
 #include <filesystem>
 #include <iostream>
-#include "installer.h"
+#include "wadlib.h"
 
 using namespace std;
 namespace fs = std::filesystem;

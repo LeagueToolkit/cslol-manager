@@ -3,11 +3,13 @@
 #include <filesystem>
 #include <string>
 #include <unordered_map>
+#include <algorithm>
 #include <map>
 #include <vector>
 #include <optional>
 #include "file.hpp"
 #include "wad.h"
+#include "wxy.h"
 
 using fspath = std::filesystem::path;
 
@@ -18,7 +20,18 @@ struct WadFile {
     int32_t data_start;
     int32_t data_size;
 
-    WadFile(std::filesystem::path const& path);
+    WadFile(std::filesystem::path const& path) : file(path, L"rb") {
+        file.read(header);
+        for(uint32_t i = 0; i < header.filecount; i++) {
+            WadEntry entry{};
+            file.read(entry);
+            entries[entry.xxhash] = entry;
+        }
+        data_start = file.tell();
+        file.seek_end(0);
+        data_size = file.tell() - data_start;
+        file.seek_beg(data_start);
+    }
 };
 
 using wad_files = std::map<std::string, WadFile>;
@@ -71,3 +84,19 @@ extern void wad_extract(fspath const& src, fspath const& dst,
                         HashMap const& hashmap,
                         updatefn update = nullptr,
                         int32_t bufferSize = 1024 * 1024);
+
+extern uint32_t xx32_lower(std::string str) noexcept;
+
+extern uint64_t xx64_lower(std::string str) noexcept;
+
+extern std::string read_link(std::string const& path) noexcept;
+
+extern std::string find_league(std::string from) noexcept;
+
+extern std::string read_line(std::string const& from) noexcept;
+
+extern bool write_line(std::string const& to, std::string const& line) noexcept;
+
+extern void wxy_extract(fspath const& dst, fspath const& src, updatefn update,
+                        int32_t const buffercap = 1024 * 1024);
+

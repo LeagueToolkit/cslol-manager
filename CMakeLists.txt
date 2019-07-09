@@ -18,10 +18,16 @@ add_library(wadlib STATIC
     wadlib/wad.h
     wadlib/link.cpp
     wadlib/link.h
-    wadlib/utils.cpp
-    wadlib/utils.h
-    wadlib/installer.cpp
-    wadlib/installer.h
+    wadlib/wxy.h
+    wadlib/wxy.cpp
+    wadlib/wadlib_utils.cpp
+    wadlib/wadlib_wad_extract.cpp
+    wadlib/wadlib_wad_hashes.cpp
+    wadlib/wadlib_wad_make.cpp
+    wadlib/wadlib_wad_merge.cpp
+    wadlib/wadlib_wad_mods.cpp
+    wadlib/wadlib_wxy_extract.cpp
+    wadlib/wadlib.h
 )
 target_link_libraries(wadlib PRIVATE xxhash picosha2 zlib zstd)
 target_include_directories(wadlib PUBLIC wadlib)
@@ -37,6 +43,9 @@ target_link_libraries(wadmake PUBLIC wadlib)
 
 add_executable(wadextract wadextract/main.cpp)
 target_link_libraries(wadextract PUBLIC wadlib)
+
+add_executable(wxyextract wxyextract/main.cpp)
+target_link_libraries(wxyextract PUBLIC wadlib)
 
 add_executable(wadscan wadscan/main.cpp)
 target_link_libraries(wadscan PUBLIC wadlib)

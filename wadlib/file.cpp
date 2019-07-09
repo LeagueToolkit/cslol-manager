@@ -106,7 +106,26 @@ void File::seek_end(int32_t pos) const
     }
 }
 
-std::string File::read_zstring() const
+void File::read_sized_string(std::string &str) const
+{
+    int32_t length;
+    read(length);
+    if(length < 1) {
+        str.clear();
+        return;
+    }
+    auto const start = tell();
+    seek_end(0);
+    auto const end = tell();
+    seek_beg(start);
+    if(length > (end - start)) {
+        throw File::Error("Sized string to big!");
+    }
+    str.resize(static_cast<size_t>(length));
+    rread(&str[0], static_cast<size_t>(length));
+}
+
+void File::read_zstring(std::string& str) const
 {
     size_t size = 0;
     auto start = tell();
@@ -121,7 +140,6 @@ std::string File::read_zstring() const
         size++;
     }
     seek_beg(start);
-    std::string result(size, '\0');
-    rread(&result[0], size + 1);
-    return result;
+    str.resize(size);
+    rread(&str[0], size + 1);
 }

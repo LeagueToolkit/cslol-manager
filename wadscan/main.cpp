@@ -1,7 +1,7 @@
 #include <string>
 #include <filesystem>
 #include <iostream>
-#include "installer.h"
+#include "wadlib.h"
 #include "file.hpp"
 
 using namespace std;

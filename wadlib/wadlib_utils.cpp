@@ -1,5 +1,4 @@
-#include "utils.h"
-#include <filesystem>
+#include "wadlib.h"
 #include "xxhash.h"
 #include "file.hpp"
 #include "link.h"
@@ -7,13 +6,13 @@
 namespace fs = std::filesystem;
 using fspath = fs::path;
 
-uint32_t xx32(std::string str) noexcept
+uint32_t xx32_lower(std::string str) noexcept
 {
     for(auto& c: str) { c = static_cast<char>(::tolower(c)); }
     return XXH32(str.c_str(), str.size(), 0);
 }
 
-uint64_t xx64(std::string str) noexcept
+uint64_t xx64_lower(std::string str) noexcept
 {
     for(auto& c: str) { c = static_cast<char>(::tolower(c)); }
     return XXH64(str.c_str(), str.size(), 0);

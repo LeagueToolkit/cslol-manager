@@ -48,10 +48,12 @@ void read(const File &file, Link &link)
         }
 
         file.seek_beg(startInfo + locOffLocalPath);
-        auto localPath = file.read_zstring();
+        std::string localPath{};
+        file.read_zstring(localPath);
 
         file.seek_beg(startInfo + locOffCommonPath);
-        auto commonPath = file.read_zstring();
+        std::string commonPath{};
+        file.read_zstring(commonPath);
         link.path = commonPath + localPath;
     }
 }

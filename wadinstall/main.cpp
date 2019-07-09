@@ -1,8 +1,7 @@
 #include <iostream>
 #include <string>
 #include <filesystem>
-#include "installer.h"
-#include "utils.h"
+#include "wadlib.h"
 
 using namespace std;
 
