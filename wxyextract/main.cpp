@@ -13,7 +13,6 @@ int main(int argc, char**argv) {
     if(argc > 1) {
         srcfile = argv[1];
     }
-    srcfile = "OldHealthbar.wxy";
 
     if(srcfile.empty()) {
         puts("Extract .wad to a folder!");
