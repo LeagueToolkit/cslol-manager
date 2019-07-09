@@ -80,5 +80,9 @@ void wxy_extract(fspath const& dst, fspath const& src, updatefn update, int32_t 
         }
         File dstfile(dstfile_path, L"wb");
         dstfile.write(uncompressedBuffer);
+        if(update) {
+            done += entry.uncompresedSize;
+            update(nameStr, done, total);
+        }
     }
 }

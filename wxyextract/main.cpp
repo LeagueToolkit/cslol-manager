@@ -35,7 +35,7 @@ int main(int argc, char**argv) {
                 if(dst.extension() == ".wxy") {
                     dst.replace_extension();
                 }
-                wxy_extract(srcfile, dst, [](auto const&, auto done, auto total) {
+                wxy_extract(dst, srcfile, [](auto const&, auto done, auto total) {
                     printf("\r%4.2fMB/%4.2fMB", done / 1024.0 / 1024.0, total / 1024.0 / 1024.0);
                     if(done == total) {
                         printf("\n");
