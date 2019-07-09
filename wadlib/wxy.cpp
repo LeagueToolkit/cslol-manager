@@ -114,11 +114,14 @@ static uint64_t decryptStr(std::string& str, bool isProject = false) {
     XXH64_state_s xxstate{};
     XXH64_reset(&xxstate, 0);
     if(isProject) {
-        XXH64_update(&xxstate, prefixProjects, sizeof(prefixProjects));
+        XXH64_update(&xxstate, prefixProjects, sizeof(prefixProjects) - 1);
     } else {
-        XXH64_update(&xxstate, prefixDeploy, sizeof(prefixDeploy));
+        XXH64_update(&xxstate, prefixDeploy, sizeof(prefixDeploy) - 1);
     }
-    XXH64_update(&xxstate, str.c_str(), str.size());
+    std::string lowstr;
+    lowstr.resize(str.size());
+    std::transform(str.begin(), str.end(), lowstr.begin(), ::tolower);
+    XXH64_update(&xxstate, lowstr.c_str(), lowstr.size());
 
     return XXH64_digest(&xxstate);
 }
@@ -181,7 +184,7 @@ void read_oink(const File &file, WxySkin &wxy)
         }
 
         std::sort(fileNames.begin(), fileNames.end(), [](auto const& l, auto const& r){
-            return l.first > r.first;
+            return l.first < r.first;
         });
 
         for(int32_t f = 0; f < fileCount; f++) {
