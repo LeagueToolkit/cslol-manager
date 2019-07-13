@@ -1,6 +1,5 @@
 #include "wadlib.h"
 #include "xxhash.h"
-#include "file.hpp"
 #include "link.h"
 
 namespace fs = std::filesystem;
@@ -18,17 +17,44 @@ uint64_t xx64_lower(std::string str) noexcept
     return XXH64(str.c_str(), str.size(), 0);
 }
 
-std::string read_link(const std::string &path) noexcept {
-    try {
-        Link lnk = {};
-        File file(path, L"rb");
-        file.read(lnk);
-        return fspath(lnk.path).lexically_normal().generic_string();
-    } catch(File::Error const&) {}
-    return "";
+void UpdatePrinter::operator()(const std::string &name, int64_t done, int64_t total) noexcept
+{
+    if(old != name) {
+        old = name;
+        printf("%s\n", name.c_str());
+    }
+    if(done == 0 && total == 0) {
+        printf("Skiping!\n");
+    } else {
+        printf("\r%4.2fMB/%4.2fMB", done / 1024.0 / 1024.0, total / 1024.0 / 1024.0);
+        if(done == total) {
+            printf("\n");
+        }
+    }
 }
 
-std::string find_league(std::string path) noexcept {
+static std::string file_read_line(fspath const& from) noexcept {
+    try {
+        File config(from, L"rb");
+        return config.readline();
+    } catch(File::Error const&) {
+        return "";
+    }
+}
+
+static bool file_write_line(fspath const &to, const std::string &line) noexcept {
+    try {
+        fs::create_directories(fspath(to).parent_path());
+        File config(to, L"wb");
+        config.write(line);
+        config.write('\n');
+        return true;
+    } catch(File::Error const&) {
+        return false;
+    }
+}
+
+static std::string find_league(std::string path) noexcept {
     fspath lol;
     if(path.size() < 3) {
         return "";
@@ -61,23 +87,31 @@ std::string find_league(std::string path) noexcept {
     return "";
 }
 
-std::string read_line(const std::string &from) noexcept {
-    try {
-        File config(from, L"rb");
-        return config.readline();
-    } catch(File::Error const&) {
-        return "";
+fspath get_league_path(fspath cmdpath, fspath configfile) {
+    if(!cmdpath.empty()) {
+        cmdpath = find_league(cmdpath.generic_string());
+        if(fs::exists(cmdpath / "League of Legends.exe")) {
+            if(!configfile.empty()) {
+                file_write_line(configfile, cmdpath.generic_string());
+            }
+            return cmdpath;
+        }
     }
-}
 
-bool write_line(const std::string &to, const std::string &line) noexcept {
-    try {
-        fs::create_directories(fspath(to).parent_path());
-        File config(to, L"wb");
-        config.write(line);
-        config.write('\n');
-        return true;
-    } catch(File::Error const&) {
-        return false;
+    cmdpath = file_read_line(configfile);
+    if(fs::exists(cmdpath / "League of Legends.exe")) {
+        return cmdpath;
     }
+
+    cmdpath = open_file_browse(browse_filter_lol_exe, "lol.exe", "Find League of Legends!");
+    if(!cmdpath.empty()) {
+        cmdpath = find_league(cmdpath.generic_string());
+        if(fs::exists(cmdpath / "League of Legends.exe")) {
+            if(!configfile.empty()) {
+                file_write_line(configfile, cmdpath.generic_string());
+            }
+            return cmdpath;
+        }
+    }
+    return {};
 }

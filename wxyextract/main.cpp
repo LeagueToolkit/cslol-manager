@@ -8,46 +8,35 @@ using namespace std;
 namespace fs = std::filesystem;
 
 int main(int argc, char**argv) {
-    fspath srcfile;
+    auto progpath = fs::directory_entry(fspath(argv[0]).parent_path()).path();
+    fs::current_path(progpath);
 
-    if(argc > 1) {
-        srcfile = argv[1];
-    }
+    fspath srcfile = argc > 1 ? argv[1] : "";
 
     if(srcfile.empty()) {
-        puts("Extract .wad to a folder!");
-        puts("To extract drop your .wxy here and press enter:");
-        std::string path;
-        std::getline(std::cin, path);
-        if(path.size() >= 3) {
-            if(path[0] == '"') {
-                path = path.substr(1, path.size() - 2);
-            }
-            srcfile = path;
-        }
+        srcfile = open_file_browse(browse_filter_wxy, "File.wxy", "Source .wxy file to extract!");
     }
 
-    auto const parent = srcfile.parent_path();
-    if(fs::exists(srcfile) && !fs::is_directory(srcfile)) {
-        try {
-            if(srcfile.extension() == ".wxy") {
-                auto dst = srcfile;
-                if(dst.extension() == ".wxy") {
-                    dst.replace_extension();
-                }
-                wxy_extract(dst, srcfile, [](auto const&, auto done, auto total) {
-                    printf("\r%4.2fMB/%4.2fMB", done / 1024.0 / 1024.0, total / 1024.0 / 1024.0);
-                    if(done == total) {
-                        printf("\n");
-                    }
-                });
-                puts("Done!");
-            }
-        } catch(std::exception const& err){
-            puts("Error: ");
-            puts(err.what());
+    try {
+        auto const parent = srcfile.parent_path();
+        if(!fs::exists(srcfile) || fs::is_directory(srcfile)) {
+            throw std::exception("No valid file selected!");
         }
+        if(srcfile.extension() == ".wxy") {
+            auto defdst = srcfile;
+            if(defdst.extension() == ".wxy") {
+                defdst.replace_extension();
+            }
+            auto dst = open_dir_browse(defdst, "Destination folder where to extract!");
+            puts("Extracting to:");
+            puts(dst.generic_string().c_str());
+            UpdatePrinter progressBar{};
+            wxy_extract(dst, srcfile, progressBar);
+            msg_done();
+        }
+    } catch(std::exception const& err){
+        msg_error(err);
     }
-    getc(stdin);
+
     return 0;
 }

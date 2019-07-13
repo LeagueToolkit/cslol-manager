@@ -153,7 +153,7 @@ void wad_extract(fspath const& src, fspath const& dst, HashMap const& hashmap,
         dstfile.write(uncompressedBuffer);
         if(update) {
             bdone += entry.sizeUncompressed;
-            update(name, bdone, btotal);
+            update("", bdone, btotal);
         }
     }
 

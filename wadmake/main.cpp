@@ -1,51 +1,35 @@
 #include <string>
 #include <filesystem>
-#include <iostream>
 #include "wadlib.h"
 
 using namespace std;
 namespace fs = std::filesystem;
 
 int main(int argc, char**argv) {
-    fspath srcfile;
-    if(argc > 1) {
-        srcfile = argv[1];
-    }
+    auto progpath = fs::directory_entry(fspath(argv[0]).parent_path()).path();
+    fs::current_path(progpath);
+
+    fspath srcfile = argc > 1 ? argv[1] : "";
 
     if(srcfile.empty()) {
-        puts("Converts folder to .wad.client!");
-        puts("Drop your folder here and press enter:");
-        std::string path;
-        std::getline(std::cin, path);
-        if(path.size() >= 3) {
-            if(path[0] == '"') {
-                path = path.substr(1, path.size() - 2);
-            }
-            srcfile = path;
-        }
+        srcfile = open_dir_browse("", "Source folder from which to make a .wad!");
     }
 
-    auto const parent = srcfile.parent_path();
-    if(fs::exists(srcfile) && fs::is_directory(srcfile) && fs::exists(parent)) {
-        auto const filename = srcfile.filename().generic_string();
-        auto const dstfile = parent / (filename + ".wad.client");
-        try {
-            printf("Making wad from: %s to %s\n",
-                   srcfile.generic_string().c_str(), dstfile.generic_string().c_str());
-            wad_make(dstfile, srcfile, [] (auto const&, auto done, auto total) {
-                printf("\r%4.2fMB/%4.2fMB", done / 1024.0 / 1024.0, total / 1024.0 / 1024.0);
-                if(done == total) {
-                    printf("\n");
-                }
-            });
-            puts("Done!");
-        } catch(std::exception const& err) {
-            puts("Error:");
-            puts(err.what());
+    try {
+        auto const parent = srcfile.parent_path();
+        if(!fs::exists(srcfile) || !fs::is_directory(srcfile) || !fs::exists(parent)) {
+            throw std::exception("No valid file selected!");
         }
-    } else {
-        puts("Srcfile doesn't exist!");
+        auto const defdst = parent / (srcfile.filename().generic_string() + ".wad.client");
+        auto dstfile = save_file_browse(browse_filter_wad, defdst, "Save .wad file destion!");
+        puts("Saving to:");
+        puts(dstfile.generic_string().c_str());
+        UpdatePrinter progressBar{};
+        wad_make(dstfile, srcfile, progressBar);
+        msg_done();
+    } catch(std::exception const& err) {
+        msg_error(err);
     }
-    getc(stdin);
+
     return 0;
 }

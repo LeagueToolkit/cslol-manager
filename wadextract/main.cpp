@@ -1,6 +1,5 @@
 #include <string>
 #include <filesystem>
-#include <iostream>
 #include "wadlib.h"
 #include "file.hpp"
 
@@ -8,54 +7,45 @@ using namespace std;
 namespace fs = std::filesystem;
 
 int main(int argc, char**argv) {
-    fspath srcfile;
-    HashMap hashmap = {};
+    auto progpath = fs::directory_entry(fspath(argv[0]).parent_path()).path();
+    fs::current_path(progpath);
 
-    load_hashdb(hashmap, "xxh64.db");
+    fspath srcfile = argc > 1 ? argv[1] : "";
 
-    if(argc > 1) {
-        srcfile = argv[1];
-    }
     if(srcfile.empty()) {
-        puts("Extract .wad to a folder!");
-        puts("To add (un)hash definitions drop .hashtable or .txt here and press enter.");
-        puts("To extract drop your .wad here and press enter:");
-        std::string path;
-        std::getline(std::cin, path);
-        if(path.size() >= 3) {
-            if(path[0] == '"') {
-                path = path.substr(1, path.size() - 2);
-            }
-            srcfile = path;
-        }
+        srcfile = open_file_browse(browse_filter_wad_or_hashtable, "File.wad.client",
+                                   "Open .wad for extraction!");
     }
+
+    HashMap hashmap = {};
+    load_hashdb(hashmap, progpath /  "xxh64.db");
 
     auto const parent = srcfile.parent_path();
-    if(fs::exists(srcfile) && !fs::is_directory(srcfile)) {
-        try {
-            if(srcfile.extension() == ".hashtable" || srcfile.extension() == ".txt") {
-                import_hashes(hashmap, srcfile);
-                save_hashdb(hashmap, "xxh64.db");
-                puts("Done!");
-            } else if(srcfile.extension() == ".wad" || srcfile.extension() == ".client") {
-                auto dst = srcfile;
-                dst.replace_extension();
-                if(dst.extension() == ".wad") {
-                    dst.replace_extension();
-                }
-                wad_extract(srcfile, dst, hashmap, [](auto const&, auto done, auto total) {
-                    printf("\r%4.2fMB/%4.2fMB", done / 1024.0 / 1024.0, total / 1024.0 / 1024.0);
-                    if(done == total) {
-                        printf("\n");
-                    }
-                });
-                puts("Done!");
-            }
-        } catch(std::exception const& err){
-            puts("Error: ");
-            puts(err.what());
+    try {
+        if(!fs::exists(srcfile) || fs::is_directory(srcfile)) {
+            throw std::exception("No valid file selected!");
         }
+        if(srcfile.extension() == ".hashtable" || srcfile.extension() == ".txt") {
+            puts("Importing hashes(this might take a while)...");
+            import_hashes(hashmap, srcfile);
+            save_hashdb(hashmap, "xxh64.db");
+            msg_done();
+        } else if(srcfile.extension() == ".wad" || srcfile.extension() == ".client") {
+            auto defdst = srcfile;
+            defdst.replace_extension();
+            if(defdst.extension() == ".wad") {
+                defdst.replace_extension();
+            }
+            auto dst = open_dir_browse(defdst, "Destination folder!");
+            puts("Extracting to:");
+            puts(dst.generic_string().c_str());
+            UpdatePrinter progressBar{};
+            wad_extract(srcfile, dst, hashmap, progressBar);
+            msg_done();
+        }
+    } catch(std::exception const& err){
+        msg_error(err);
     }
-    getc(stdin);
+
     return 0;
 }
