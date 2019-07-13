@@ -15,7 +15,7 @@ int main(int argc, char** argv) {
             throw std::exception("League of Legends.exe folder has not been set!");
         }
         wad_mods mods = {};
-        wad_mods_scan_recursive(mods, fspath(".") / "mods");
+        wad_mods_scan_recursive(mods, progpath / "mods");
         UpdatePrinter progressBar{};
         wad_mods_install(std::move(mods), lol, lol / "MOD", progressBar);
         msg_done();

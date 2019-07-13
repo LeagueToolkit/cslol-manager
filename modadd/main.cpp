@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
         auto dstpath = "DATA" / fspath(best);
         auto const defname = dstpath.stem().generic_string() + std::to_string(rand());
         auto const modname = get_input_string_dialog(defname, "Enter the mod name: ");
-        dstpath = "mods" / (modname / dstpath);
+        dstpath = progpath / "mods" / modname / dstpath;
         std::error_code errorc;
         std::filesystem::create_directories(dstpath.parent_path(), errorc);
         if(errorc) {
