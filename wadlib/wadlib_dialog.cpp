@@ -126,7 +126,15 @@ fspath save_file_browse(char const* extensions, fspath defval, std::string title
 
     if (GetSaveFileNameA(&ofn))
     {
-         return ofn.lpstrFile;
+         fspath dst = ofn.lpstrFile;
+         if(dst.extension() != ".client" && defExt == ".client") {
+             dst.replace_extension();
+             if(dst.extension() == ".wad") {
+                 dst.replace_extension();
+             }
+             dst.replace_extension(".wad.client");
+         }
+         return dst;
     }
     return defval;
 }
