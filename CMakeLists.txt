@@ -4,6 +4,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD_LIBRARIES "kernel32.lib User32.lib")
 #set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} /MT")
-project(customlolskins)
-add_executable(customlolskins
-    main.cpp process.hpp patscanner.hpp def.hpp config.hpp)
+project(lolcustomskin)
+add_executable(lolcustomskin
+    game_patcher.cpp process.hpp patscanner.hpp def.hpp config.hpp)
+
+add_executable(lolcustomlauncher
+	client_patcher.cpp process.hpp patscanner.hpp def.hpp)

@@ -163,11 +163,6 @@ struct Data {
     EVP_PKEY_METHOD pmeth;
 };
 
-static char const * const classnames[] = {
-    "League of Legends (TM) Client",
-    // TODO: do chinese, jp, KR clients have english class names as well ?
-};
-
 inline constexpr auto pmeth_pat = Pattern<
     0x68, Any, Any, Any, Any,   // push    offset method_compare
     0x6A, 0x04,                 // push    4

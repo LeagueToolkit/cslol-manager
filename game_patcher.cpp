@@ -9,31 +9,39 @@
 
 using namespace std;
 
-static BOOL CALLBACK FindLoL(HWND hwnd, LPARAM lParam) {
+inline constexpr char const classname[] = "League of Legends (TM) Client";
+
+static BOOL CALLBACK FindLoLCB(HWND hwnd, LPARAM lParam) {
     char exename[256] = {0};
     if(GetWindowTextA(hwnd, exename, sizeof(exename) - 1)) {
-        for(auto const& target: classnames){
-            if(!strcmp(exename, target)) {
-                DWORD pid = 0;
-                if(GetWindowThreadProcessId(hwnd, &pid)){
-                    *reinterpret_cast<DWORD*>(lParam) = pid;
-                    return FALSE;
-                };
-            }
+        if(!strcmp(exename, classname)) {
+            DWORD pid = 0;
+            if(GetWindowThreadProcessId(hwnd, &pid)){
+                *reinterpret_cast<DWORD*>(lParam) = pid;
+                return FALSE;
+            };
         }
     }
     return TRUE;
 }
 
-static bool Scan(Process const& process, Config& config) {
-    if(config.checksum != process.checksum) {
-        config.checksum = process.checksum;
+static DWORD FindLoL() {
+    DWORD pid = 0;
+    for (; !pid; EnumWindows(FindLoLCB, reinterpret_cast<LPARAM>(&pid))) {
+        Sleep(50);
+    };
+    return pid;
+}
+
+static bool Scan(Process const& process, uintptr_t base, Config& config) {
+    auto const header = process.GetHeader(base);
+    if(config.checksum != header.checksum) {
+        config.checksum = header.checksum;
         config.off_fp = 0;
         config.off_pmeth = 0;
     }
     if(!config.off_pmeth || !config.off_fp) {
-        auto const dump = process.Dump();
-        auto const base = process.base;
+        auto const dump = process.Dump(base, header.codeSize);
         if(auto const r = fp_pat(dump); auto const x = std::get<1>(r)) {
             config.off_fp = *reinterpret_cast<uint32_t const*>(x) - base;
         }
@@ -45,12 +53,12 @@ static bool Scan(Process const& process, Config& config) {
     return false;
 }
 
-static bool Register(Process const& process, Config const& config) {
+static bool Register(Process const& process, uintptr_t base, Config const& config) {
     if(!config.off_fp || !config.off_pmeth) {
         return false;
     }
-    auto rFPList = process.OffBase<FileProvider::List>(config.off_fp);
-    auto rMethods = process.OffBase<EVP_PKEY_METHOD*>(config.off_pmeth);
+    auto rFPList = reinterpret_cast<FileProvider::List*>(config.off_fp + base);
+    auto rMethods = reinterpret_cast<EVP_PKEY_METHOD**>(config.off_pmeth + base);
     auto rPmethOrgPtr = process.Read(rMethods);
     auto lPmeth = process.Read(rPmethOrgPtr);
     auto lFPList = process.Read(rFPList);
@@ -87,8 +95,7 @@ static bool Register(Process const& process, Config const& config) {
     return true;
 }
 
-int main()
-{
+int main() {
     puts("Source: https://github.com/moonshadow565/lolskinmod");
     puts("Put your moded files into <LoL Folder>/Game/MOD");
     puts("=============================================================");
@@ -98,14 +105,13 @@ int main()
     for(;;) {
         puts("=============================================================");
         puts("Waiting for league to start...");
-        DWORD pid = 0;
-        for(; !pid ; EnumWindows(FindLoL, reinterpret_cast<LPARAM>(&pid))) {
-            Sleep(50);
-        };
+        DWORD pid = FindLoL();
         try {
-            auto const process = Process(pid, "League of Legends.exe");
-            auto const needsave = Scan(process, config);
-            auto const good = Register(process, config);
+            auto const process = Process(pid);
+            auto const modules = process.GetModules();
+            auto const base = ModuleFind(modules, "League of Legends.exe");
+            auto const needsave = Scan(process, base, config);
+            auto const good = Register(process, base, config);
             if(needsave) {
                 puts("Offsets are updated!");
                 config.print();
@@ -121,7 +127,7 @@ int main()
         } catch(const std::runtime_error& err) {
             printf("Error: %s\n", err.what());
             config.print();
-            getc(stdin);
+            auto _ = getc(stdin);
             return 0;
         }
     }
