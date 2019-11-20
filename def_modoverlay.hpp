@@ -159,12 +159,6 @@ namespace ModOverlay {
         };
     };
 
-    struct DataPayload {
-        FileProvider fp;
-        FileProvider::Vtable fpvtbl;
-        EVP_PKEY_METHOD pmeth;
-    };
-
     inline constexpr auto pat_pmeth = Pattern<
         0x68, Any, Any, Any, Any,   // push    offset method_compare
         0x6A, 0x04,                 // push    4
@@ -235,45 +229,45 @@ namespace ModOverlay {
             return true;
         }
 
-        inline void patch(Process const& process) {
-            auto org_pmeth_arr = process.Rebase<EVP_PKEY_METHOD*>(off_pmeth);
-            auto org_fplist = process.Rebase<FileProvider::List>(off_fp);
+        inline void patch(Process const& process) const {
             auto rem_code = process.Allocate<CodePayload>();
-            auto rem_data = process.Allocate<DataPayload>();
-
             process.Write(rem_code, {});
             process.MarkExecutable(rem_code);
 
+            auto org_pmeth_arr = process.Rebase<EVP_PKEY_METHOD*>(off_pmeth);
+            auto rem_pmeth = process.Allocate<EVP_PKEY_METHOD>();
             auto org_pmeth_first = process.WaitNonZero(org_pmeth_arr);
-            EVP_PKEY_METHOD mod_pmeth;
+            auto mod_pmeth = EVP_PKEY_METHOD {};
             process.Read(org_pmeth_first, mod_pmeth);
             mod_pmeth.verify = rem_code->Verify;
+            process.Write(rem_pmeth, mod_pmeth);
+            process.Write(org_pmeth_arr, rem_pmeth);
 
-            process.Write(rem_data, {
-                .fp = {
-                    .vtable = &rem_data->fpvtbl,
-                    .list = org_fplist,
-                },
-                .fpvtbl = {
-                    .Open = rem_code->Open,
-                    .CheckAccess = rem_code->CheckAccess,
-                    .CreateIterator = rem_code->CreateIterator,
-                    .VectorDeleter = rem_code->VectorDeleter,
-                    .Destructor = rem_code->Destructor,
-                },
-                .pmeth = { mod_pmeth },
-            });
+            auto org_fplist = process.Rebase<FileProvider::List>(off_fp);
+            auto rem_fp = process.Allocate<FileProvider>();
+            auto rem_fpvtbl = process.Allocate<FileProvider::Vtable>();
+            process.Write(rem_fp, {
+                              .vtable = rem_fpvtbl,
+                              .list = org_fplist,
+                          });
+            process.Write(rem_fpvtbl, {
+                              .Open = rem_code->Open,
+                              .CheckAccess = rem_code->CheckAccess,
+                              .CreateIterator = rem_code->CreateIterator,
+                              .VectorDeleter = rem_code->VectorDeleter,
+                              .Destructor = rem_code->Destructor,
+                          });
 
-            FileProvider::List mod_fplist = {};
+
+            auto mod_fplist = FileProvider::List {};
+            process.WaitNonZero(org_fplist->arr);
             process.Read(org_fplist, mod_fplist);
-
-            process.Write(org_pmeth_arr, &rem_data->pmeth);
             process.Write(org_fplist, {
                               .arr = {
-                                  &rem_data->fp,
+                                  rem_fp,
+                                  mod_fplist.arr[0],
                                   mod_fplist.arr[1],
                                   mod_fplist.arr[2],
-                                  mod_fplist.arr[3],
                               },
                               .size = mod_fplist.size + 1,
                           });

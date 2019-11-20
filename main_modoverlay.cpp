@@ -15,7 +15,7 @@ int main() {
         for(;;) {
             puts("=============================================================");
             puts("Waiting for league to start...");
-            auto process = Process("League of Legends.exe", 5);
+            auto process = Process("League of Legends.exe", 100);
             if(config.good(process)) {
                 puts("Early patching...");
                 config.patch(process);
@@ -31,7 +31,7 @@ int main() {
                 }
             }
             puts("Wating for league to exit...");
-            process.WaitExit(5);
+            process.WaitExit(15000);
         }
     } catch(std::exception const& err) {
         puts("Error: ");

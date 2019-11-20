@@ -18,7 +18,7 @@ public:
     Process& operator=(Process&&) = delete;
     
     Process(uint32_t pid);
-    Process(char const* name, uint32_t delay);
+    Process(char const* name, uint32_t loopInterval);
     ~Process();
 
     template<typename T = void>
@@ -34,11 +34,11 @@ public:
         return checksum;
     }
 
-    void WaitExit(uint32_t delay) const;
+    void WaitExit(uint32_t loopInterval) const;
 
-    void* WaitMemoryNonZero(void* address, uint32_t delay) const;
+    void* WaitMemoryNonZero(void* address, uint32_t loopInterval) const;
     
-    void WaitWindow(char const* name, uint32_t delay) const;
+    void WaitWindow(char const* name, uint32_t loopInterval) const;
     
     std::vector<uint8_t> Dump() const;
     
@@ -85,7 +85,7 @@ public:
     inline T* Allocate(size_t count = 1) const {
         return reinterpret_cast<T*>(AllocateMemory(count * sizeof(T)));
     }
-    
+
     template<typename T>
     void MarkExecutable(T* address, size_t count = 1) const {
         MarkMemoryExecutable(address, count * sizeof(T));
