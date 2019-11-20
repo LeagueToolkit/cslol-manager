@@ -1,186 +1,93 @@
 #pragma once
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#include <Windows.h>
-#include <winnt.h>
-#include <Psapi.h>
 #include <cinttypes>
 #include <cstddef>
-#include <cstdio>
-#include <cstring>
-#include <string>
-#include <string_view>
-#include <memory>
-#include <stdexcept>
 #include <vector>
+#include <type_traits>
+
 
 struct Process {
-    struct Module {
-        char name[MAX_PATH];
-        uintptr_t base;
-    };
-    struct Header {
-        size_t codeSize = 0;
-        uint32_t checksum = 1;
-    };
-
-    HANDLE handle = 0;
-
+private:
+    void* handle = nullptr;
+    uint32_t pid = 0;
+    uintptr_t base = 0;
+    size_t size = 0;
+    uint32_t checksum = 1;
+public:
     Process(const Process&) = delete;
-    Process(Process&&) = delete;
     Process& operator=(const Process&) = delete;
     Process& operator=(Process&&) = delete;
+    
+    Process(uint32_t pid);
+    Process(char const* name, uint32_t delay);
+    ~Process();
 
-    inline Process(DWORD pid) {
-        auto const process = OpenProcess(
-            PROCESS_VM_OPERATION
-            | PROCESS_VM_READ
-            | PROCESS_VM_WRITE
-            | PROCESS_QUERY_INFORMATION
-            | SYNCHRONIZE,
-            false,
-            pid);
-        if (!process || process == INVALID_HANDLE_VALUE) {
-            throw std::runtime_error("Failed to open process");
-        }
-        handle = process;
+    template<typename T = void>
+    inline T* Rebase(uintptr_t offset) const {
+        return reinterpret_cast<T*>(offset + base);
     }
 
-    inline ~Process() {
-        if (handle && handle != INVALID_HANDLE_VALUE) {
-            CloseHandle(handle);
-        }
-    }
-
-    inline std::vector<Module> GetModules() const {
-        std::vector<Module> modules;
-        HMODULE mods[1024];
-        DWORD bmsize;
-        if (!EnumProcessModules(handle, mods, sizeof(mods), &bmsize)) {
-            throw std::runtime_error("Failed to enumerate process modules!");
-        }
-        auto const mend = mods + (bmsize / sizeof(HMODULE));
-        modules.reserve(bmsize);
-        for (auto m = mods; m < mend; m++) {
-            Module mod{};
-            if (GetModuleFileNameExA(handle, *m, mod.name, sizeof(mod.name))) {
-                mod.base = reinterpret_cast<uintptr_t>(*m);
-                modules.push_back(mod);
-            }
-        }
-        return modules;
-    }
-
-    inline Header GetHeader(uintptr_t base) const {
-        uint8_t raw[0x1000];
-        if (!ReadProcessMemory(
-            handle,
-            reinterpret_cast<LPVOID>(base),
-            raw,
-            sizeof(raw),
-            nullptr)) {
-            throw std::runtime_error("Failed to read PE header!");
-        }
-        auto dos = reinterpret_cast<PIMAGE_DOS_HEADER>(raw);
-        if (dos->e_magic != IMAGE_DOS_SIGNATURE) {
-            throw std::runtime_error("DOS PE header magic doesn't match!");
-        }
-        auto nt = reinterpret_cast<PIMAGE_NT_HEADERS>(raw + dos->e_lfanew);
-        if (nt->Signature != IMAGE_NT_SIGNATURE) {
-            throw std::runtime_error("NT PE header signature doesn't match!");
-        }
-        return {
-            nt->OptionalHeader.SizeOfCode,
-            static_cast<uint32_t>(nt->OptionalHeader.CheckSum)
-        };
-    }
-
-    inline std::string const Dump(uintptr_t base, size_t size) const {
-        std::string pbuffer{};
-        pbuffer.resize(size + 0x1000);
-        for (size_t p = 0; p < size; p += 0x1000) {
-            ReadProcessMemory(
-                this->handle,
-                reinterpret_cast<void*>(base + p),
-                &pbuffer[p],
-                0x1000,
-                nullptr);
-        }
-        return pbuffer;
-    }
-
-    template<typename T>
-    inline T Read(T* address) const {
-        if (!address) {
-            throw std::runtime_error("Can not read memory from nullptr");
-        }
-        T result = {};
-        if (!ReadProcessMemory(this->handle,
-            reinterpret_cast<void*>(address),
-            &result,
-            sizeof(T),
-            nullptr)) {
-            throw std::runtime_error("Failed to read memory");
-        }
-        return result;
-    }
-
-    template<typename T>
-    inline void Write(T const& result, T* address) const {
-        if (!address) {
-            throw std::runtime_error("Can not write memory to nullptr");
-        }
-        if (!WriteProcessMemory(this->handle,
-            reinterpret_cast<void*>(address),
-            &result,
-            sizeof(T),
-            nullptr)) {
-            throw std::runtime_error("Failed to write memory");
-        }
-    }
-
-    template<typename T>
-    inline T* Allocate() const {
-        auto result = (VirtualAllocEx(this->handle,
-            nullptr,
-            sizeof(T),
-            MEM_RESERVE | MEM_COMMIT,
-            PAGE_READWRITE));
-        if (!result) {
-            throw std::runtime_error("Failed to allocate memory");
-        }
-        return reinterpret_cast<T*>(result);
-    }
-
-    template<typename T>
-    inline DWORD SetProtection(T* address, DWORD flags) const {
-        DWORD old = 0;
-        if (!VirtualProtectEx(this->handle,
-            address,
-            sizeof(T),
-            flags,
-            &old)) {
-            throw std::runtime_error("Failed to change protection");
-        }
-        return old;
-    }
-
-    template<typename T>
-    inline void MarkExecutable(T* address) const {
-        SetProtection(address, PAGE_EXECUTE);
+    inline uintptr_t Debase(uintptr_t offset) const {
+        return offset - base;
     }
     
-    inline void Wait() const {
-        WaitForSingleObject(handle, INFINITE);
+    inline uint32_t Checksum() const {
+        return checksum;
+    }
+
+    void WaitExit(uint32_t delay) const;
+
+    void* WaitMemoryNonZero(void* address, uint32_t delay) const;
+    
+    void WaitWindow(char const* name, uint32_t delay) const;
+    
+    std::vector<uint8_t> Dump() const;
+    
+    void ReadMemory(void* address, void* dest, size_t size) const;
+    
+    void WriteMemory(void* address, void const* src, size_t size) const;
+    
+    void MarkMemoryExecutable(void* address, size_t size) const;
+    
+    void* AllocateMemory(size_t size) const;
+    
+    inline Process(Process&& other) { 
+        std::swap(handle, other.handle); 
+        std::swap(pid, other.pid);
+        std::swap(base, other.base);
+        std::swap(size, other.size);
+        std::swap(checksum, other.checksum);
+    }
+
+    template<typename T>
+    inline T* WaitNonZero(T** address, uint32_t delay = 1) const {
+        return reinterpret_cast<T*>(WaitMemoryNonZero(address, delay));
+    }
+
+    template<typename T>
+    inline void Copy(T* from, T* to, size_t count = 1) const {
+        std::vector<T> buffer{};
+        buffer.resize(count);
+        ReadMemory(from, buffer.data(), count * sizeof(T));
+        WriteMemory(to, buffer.data(), count * sizeof(T));
+    }
+
+    template<typename T>
+    inline void Read(T* address, T& dest, size_t count = 1) const {
+        ReadMemory(address, &dest, count * sizeof(T));
+    }
+
+    template<typename T>
+    inline void Write(T* address, T const& src, size_t count = 1) const {
+        WriteMemory(address, &src, count * sizeof(T));
+    }
+
+    template<typename T>
+    inline T* Allocate(size_t count = 1) const {
+        return reinterpret_cast<T*>(AllocateMemory(count * sizeof(T)));
+    }
+    
+    template<typename T>
+    void MarkExecutable(T* address, size_t count = 1) const {
+        MarkMemoryExecutable(address, count * sizeof(T));
     }
 };
-
-inline uintptr_t ModuleFind(std::vector<Process::Module> const& mods, char const* what) {
-    for (auto const& m : mods) {
-        if (strstr(m.name, what)) {
-            return m.base;
-        }
-    }
-    return 0;
-}
