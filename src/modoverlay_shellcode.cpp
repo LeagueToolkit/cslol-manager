@@ -3,7 +3,7 @@
 
 // Win32: VectorDeleter
 // GNU: Destructor + Deleter
-// g++ -O2 -fno-stack-protector -march=native shellcode.cpp -nostdlib -oshellcode.o
+// g++ -O2 -fno-stack-protector -march=native modoverlay_shellcode.cpp -nostdlib -oshellcode.o
 // objdump -d -C shellcode.o
 // for i in $(objdump -d -C shellcode.o |grep "^ " |cut -f2); do echo -n '0x'$i', '; done | fold -w48 | paste -sd'\n' -
 
@@ -25,6 +25,11 @@ static inline char* small_copy(char* dst, char const* src) {
 }
 
 [[gnu::used]] char const* __cdecl PrefixFn(char* buffer, char const* src, char const* prefix) noexcept {
+    small_copy(small_copy(buffer, prefix) - 1, src);
+    return buffer;
+}
+
+[[gnu::used]] char const* __cdecl PrefixFn_WadOnly(char* buffer, char const* src, char const* prefix) noexcept {
     char const* end = small_copy(small_copy(buffer, prefix) - 1, src) - 4;
     do {
         if (*reinterpret_cast<uint32_t const*>(end) == 0x6461772E) {
@@ -34,7 +39,6 @@ static inline char* small_copy(char* dst, char const* src) {
     } while(end != buffer);
     return src;
 }
-
 
 [[gnu::used]] int __cdecl Verify() { return 1; }
 

@@ -22,15 +22,15 @@ public:
     ~Process();
 
     template<typename T = void>
-    inline T* Rebase(uintptr_t offset) const {
+    inline T* Rebase(uintptr_t offset) const noexcept {
         return reinterpret_cast<T*>(offset + base);
     }
 
-    inline uintptr_t Debase(uintptr_t offset) const {
+    inline uintptr_t Debase(uintptr_t offset) const noexcept {
         return offset - base;
     }
     
-    inline uint32_t Checksum() const {
+    inline uint32_t Checksum() const noexcept {
         return checksum;
     }
 
@@ -50,7 +50,7 @@ public:
     
     void* AllocateMemory(size_t size) const;
     
-    inline Process(Process&& other) { 
+    inline Process(Process&& other) noexcept { 
         std::swap(handle, other.handle); 
         std::swap(pid, other.pid);
         std::swap(base, other.base);

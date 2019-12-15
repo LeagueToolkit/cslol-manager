@@ -3,39 +3,30 @@
 #include <cstddef>
 #include <array>
 
-template<uint16_t op>
-inline constexpr size_t POpSize = (op >> 8) ? (op >> 8) : 1u;
-
+// matches any byte
 inline constexpr uint16_t Any = 0x0100u;
 
-template<uint8_t count>
-inline constexpr uint16_t Cap = (static_cast<uint16_t>(count) << 8) | 0x01u;
+// capture offset of given byte
+template<uint16_t C = Any>
+inline constexpr uint16_t Cap = C | 0x0200u;
 
-template<uint8_t count>
-inline constexpr uint16_t Skip = (static_cast<uint16_t>(count) << 8);
-
+// returns function that searches for the given signature
+// result of search is array with first offset + any offsets captured
 template<uint16_t...ops>
-struct Pattern {
-    inline auto operator()(uint8_t const * const start, uint8_t const * const end) const {
-        auto const capc = ((ops > 0xFF && (ops & 0xFF)) + ... + 1);
-        for(auto i = start; i < end; i++) {
-            auto c = i;
-            if(((POpSize<ops> <= (end - c) &&
-                (ops > 0xFFu || *c == (ops & 0xFF)) &&
-                ((c += POpSize<ops>), true)) &&... )) {
-                std::array<uint8_t const*, capc> results = { i };
-                auto r = 1;
-                auto c = i;
-                (((((ops > 0xFF) &&
-                    (ops & 0xFF) &&
-                    ((results[r++] = c), true)), c += POpSize<ops>)), ...);
-                return results;
+inline constexpr auto Pattern() {
+    return [](uint8_t const* start, size_t size) constexpr noexcept {
+        std::array<uint8_t const*, ((ops & 0x0200 ? 1 : 0) + ... + 1)> result = {};
+        uint8_t const* const end = start + size + sizeof...(ops);
+        for (uint8_t const* i = start; i != end; i++) {
+            uint8_t const* c = i;
+            if (((*c++ == (ops & 0xFF) || (ops & 0x100)) && ...)) {
+                uint8_t const* o = i;
+                size_t r = 0;
+                result[r++] = o;
+                ((ops & 0x200 ? result[r++] = o++ : o++), ...);
+                return result;
             }
         }
-        return std::array<uint8_t const*, capc>{};
-    }
-
-    inline auto operator()(uint8_t const * const start, size_t end) const {
-        return operator()(start, start + end);
-    }
-};
+        return result;
+    };
+}
