@@ -4,6 +4,9 @@
 #include <vector>
 #include <type_traits>
 
+extern void SleepMiliseconds(uint32_t time) noexcept;
+
+extern void ConsoleEchoOff() noexcept;
 
 struct Process {
 private:
@@ -18,8 +21,9 @@ public:
     Process& operator=(Process&&) = delete;
     
     Process(uint32_t pid);
-    Process(char const* name, uint32_t loopInterval);
     ~Process();
+
+    static uint32_t Find(char const* name) noexcept;
 
     template<typename T = void>
     inline T* Rebase(uintptr_t offset) const noexcept {
@@ -34,7 +38,7 @@ public:
         return checksum;
     }
 
-    void WaitExit(uint32_t loopInterval) const;
+    void WaitExit() const;
 
     void* WaitMemoryNonZero(void* address, uint32_t loopInterval) const;
     

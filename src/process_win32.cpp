@@ -7,38 +7,19 @@
 #include <stdexcept>
 #include "process.hpp"
 
-static uint32_t FindProcess(char const* name, uint32_t delay) {
-    DWORD pids[1024];
-    DWORD pidsSize;
-    HMODULE mod;
-    DWORD modsSize;
-    char modName[MAX_PATH];
-    
-    for(;;)
-    if (EnumProcesses(pids, sizeof(pids), &pidsSize)) {
-        auto const pidsEnd = pids + pidsSize / sizeof(pidsSize);
-        for (auto pid = pids; pid != pidsEnd; pid++) {
-            if (*pid) {
-                auto const process = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, *pid);
-                if (process && process != INVALID_HANDLE_VALUE) {
-                    if(EnumProcessModules(process, &mod, sizeof(mod), &modsSize)) {
-                        if(GetModuleBaseNameA(process, mod, modName, sizeof(modName))) {
-                            if(strstr(modName, name)) {
-                                CloseHandle(process);
-                                return *pid;
-                            }
-                        }
-                    }
-                    CloseHandle(process);
-                }
-            }
-        }
-        Sleep(delay);
-    }
+void ConsoleEchoOff() noexcept {
+    HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
+    DWORD mode = 0;
+    GetConsoleMode(hStdin, &mode);
+    SetConsoleMode(hStdin, mode & (DWORD)(~ENABLE_ECHO_INPUT));
 }
 
 
-static BOOL CALLBACK FindLoLCB(HWND hwnd, LPARAM tgt) {
+void SleepMiliseconds(uint32_t time) noexcept {
+    Sleep(time);
+}
+
+static BOOL CALLBACK FindWindowCB(HWND hwnd, LPARAM tgt) {
     auto tgtpid = reinterpret_cast<uint32_t*>(tgt);
     if(DWORD pid = 0; GetWindowThreadProcessId(hwnd, &pid) && *tgtpid == pid){
         *tgtpid = 0;
@@ -47,7 +28,37 @@ static BOOL CALLBACK FindLoLCB(HWND hwnd, LPARAM tgt) {
     return TRUE;
 }
 
-Process::Process(char const* name, uint32_t delay) : Process(FindProcess(name, delay)) {}
+uint32_t Process::Find(char const* name) noexcept {
+    DWORD pids[1024];
+    DWORD pidsSize;
+    HMODULE mod;
+    DWORD modsSize;
+    char modName[MAX_PATH];
+    
+    if (!EnumProcesses(pids, sizeof(pids), &pidsSize)) {
+        return 0;
+    }
+    auto const pidsEnd = pids + pidsSize / sizeof(pidsSize);
+    for (auto pid = pids; pid != pidsEnd; pid++) {
+        if (!*pid) {
+            continue;
+        }
+        auto process = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, *pid);
+        if (!process || process == INVALID_HANDLE_VALUE) {
+            continue;
+        }
+        if(EnumProcessModules(process, &mod, sizeof(mod), &modsSize)) {
+            if(GetModuleBaseNameA(process, mod, modName, sizeof(modName))) {
+                if(strstr(modName, name)) {
+                    CloseHandle(process);
+                    return *pid;
+                }
+            }
+        }
+        CloseHandle(process);
+    }
+    return 0;
+}
 
 Process::Process(uint32_t apid) {
     auto const process = OpenProcess(
@@ -112,7 +123,7 @@ std::vector<uint8_t> Process::Dump() const {
     return buffer;
 }
 
-void Process::WaitExit(uint32_t) const {
+void Process::WaitExit() const {
     WaitForSingleObject(handle, INFINITE);
 }
 
@@ -126,7 +137,7 @@ void* Process::WaitMemoryNonZero(void* address, uint32_t delay) const {
 
 void Process::WaitWindow(char const*, uint32_t delay) const {
     for(uint32_t tgt = pid; tgt == pid; Sleep(delay)) {
-        EnumWindows(FindLoLCB, reinterpret_cast<LPARAM>(&tgt));
+        EnumWindows(FindWindowCB, reinterpret_cast<LPARAM>(&tgt));
     }
 }
 

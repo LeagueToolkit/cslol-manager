@@ -163,13 +163,14 @@ namespace ModOverlay {
     >();
 
 
-    inline constexpr char const schema[] = "lolskinmod-overlay v0 0x%08X 0x%08X 0x%08X\n";
+    inline constexpr char const schema[] = "lolskinmod-overlay v0 0x%08X 0x%08X 0x%08X";
 
     struct Config {
         uint32_t checksum = 0;
         uintptr_t off_fp  = 0;
         uintptr_t off_pmeth  = 0;
         std::array<char, 256> prefix = { "MOD/" };
+        std::string configpath;
 
         inline bool good(Process const& process) const noexcept {
             return checksum == process.Checksum() && off_fp && off_pmeth;
@@ -180,14 +181,14 @@ namespace ModOverlay {
         }
 
         inline void save() const noexcept {
-            if(FILE* file = nullptr; !fopen_s(&file, "lolskinmod.txt", "w") && file) {
+            if(FILE* file = nullptr; !fopen_s(&file, configpath.c_str(), "w") && file) {
                 fprintf_s(file, schema, checksum, off_fp, off_pmeth);
                 fclose(file);
             }
         }
 
         inline void load() noexcept {
-            if(FILE* file = nullptr; !fopen_s(&file, "lolskinmod.txt", "r") && file) {
+            if(FILE* file = nullptr; !fopen_s(&file, configpath.c_str(), "r") && file) {
                 if(fscanf_s(file, schema, &checksum, &off_fp, &off_pmeth) != 3) {
                     checksum = 0;
                     off_fp = 0;
