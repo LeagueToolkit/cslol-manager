@@ -10,7 +10,6 @@
  If you are looking for simple GUI:
   - https://github.com/LoL-Fantome/Fantome 
   - https://github.com/Faintedsup/LCS-Mod-Manager 
-  - https://github.com/GzPhantom/lolcustomGUI 
 
 # Antivirus issues
  Disable or uninstall your antivirus because its garbage. 
