@@ -6,8 +6,6 @@
 
 extern void SleepMiliseconds(uint32_t time) noexcept;
 
-extern void ConsoleEchoOff() noexcept;
-
 struct Process {
 private:
     void* handle = nullptr;

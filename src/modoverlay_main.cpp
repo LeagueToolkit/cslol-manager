@@ -1,20 +1,13 @@
 #include <cstdio>
 #include <stdexcept>
 #include <string_view>
-#include <thread>
-#include <mutex>
-#include <filesystem>
 #include "modoverlay.hpp"
-
-namespace fs = std::filesystem;
 
 struct Main {
     ModOverlay::Config config = {};
     bool once = false;
-    bool paused = false;
-    std::mutex pauseLock;
 
-    Main(int argc, char** argv) {
+    Main(int argc, char** argv) noexcept {
         if(argc > 1) {
             std::string overlay = argv[1];
             if (overlay.size() > 0 && overlay.back() != '/' && overlay.back() != '\\') {
@@ -23,78 +16,42 @@ struct Main {
             std::copy(overlay.data(), overlay.data() + overlay.size() + 1, config.prefix.data());
 
             for (int i = 2; i < argc; i++) {
-                if (std::string_view{ argv[i] } == "--once") {
+                std::string_view arg = argv[i];
+                if (arg == "--once") {
                     once = true;
-                } else if (std::string_view { argv[i] } == "--pause") {
-                    paused = true;
-                } else if (std::string_view { argv[i] } == "--config" && (i + 1) < argc) {
+                } else if (arg == "--config" && (i + 1) < argc) {
                     i++;
                     config.configpath = argv[i];
+                } else if (arg == "-r" || arg == "-i") {
+                    // old options, those are now default anyways
                 } else {
                     fprintf(stdout, "WARNING: Unknown option: %s", argv[i]);
                 }
             }
         }
+
         if (config.configpath.empty()) {
-            auto path = fs::path(argv[0]).parent_path() / "lolcustomskin.txt";
-            config.configpath = path.generic_string();
+            std::string path = argv[0];
+            auto separator = path.find_last_of('/');
+            if(separator == std::string::npos) {
+                separator = path.find_last_of('\\');
+            }
+            if(separator == std::string::npos) {
+                separator = path.size();
+            }
+            path.erase(separator, path.size() - separator);
+            path.append("/lolcustomskin.txt");
+            config.configpath = path;
         }
 
-        ConsoleEchoOff();
-
-        puts("INFO: Source at https://github.com/moonshadow565/lolskinmod");
+        puts("INFO: Source at https://github.com/moonshadow565/lolcustomskin");
         puts("INFO: Put your moded files into <LoL Folder>/Game/MOD");
-        puts("INFO: Press enter to PAUSE or UNPAUSE");
         puts("INFO: =============================================================");
         config.load();
         printf("CONFIG: ");
         config.print();
         putchar('\n');
-        if (paused) {
-            puts("STATUS: PAUSED");
-        } else {
-            puts("STATUS: UNPAUSED");
-        }
         fflush(stdout);
-
-        pauseLock.lock();
-        std::thread thread([this] { process_input(); });
-        thread.detach();
-    }
-
-    [[noreturn]] void process_input() noexcept {
-        for(;;) {
-            getc(stdin);
-            if(pauseLock.try_lock()) {
-                paused = !paused;
-                if (paused) {
-                    puts("STATUS: PAUSED");
-                    fflush(stdout);
-                } else {
-                    puts("STATUS: UNPAUSED");
-                    fflush(stdout);
-                }
-                pauseLock.unlock();
-            }
-        }
-    }
-
-    uint32_t find_league_pid() noexcept {
-        pauseLock.unlock();
-        uint32_t pid = 0;
-        for(;;) {
-            if (pauseLock.try_lock()) {
-                if (!paused) {
-                    pid = Process::Find("League of Legends.exe");
-                    if (pid != 0) {
-                        break;
-                    }
-                }
-                pauseLock.unlock();
-            }
-            SleepMiliseconds(1000);
-        }
-        return pid;
     }
 
     void patch_league_pid(uint32_t pid) noexcept {
@@ -126,9 +83,9 @@ struct Main {
             process.WaitExit();
         } catch(std::exception const& err) {
             printf("ERROR: %s\n", err.what());
-            puts("STATUS: PAUSED");
+            puts("INFO: Press enter to continue...");
             fflush(stdout);
-            paused = true;
+            getc(stdin);
         }
     }
 
@@ -137,7 +94,11 @@ struct Main {
             puts("INFO: =============================================================");
             puts("STATUS: WAIT_LOL_START");
             fflush(stdout);
-            uint32_t pid = find_league_pid();
+            uint32_t pid = 0;
+            while(pid == 0) {
+                SleepMiliseconds(50);
+                pid = Process::Find("League of Legends.exe");
+            }
             puts("STATUS: FOUND_LOL");
             fflush(stdout);
             patch_league_pid(pid);

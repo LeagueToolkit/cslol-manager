@@ -7,13 +7,6 @@
 #include <stdexcept>
 #include "process.hpp"
 
-void ConsoleEchoOff() noexcept {
-    HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
-    DWORD mode = 0;
-    GetConsoleMode(hStdin, &mode);
-    SetConsoleMode(hStdin, mode & (DWORD)(~ENABLE_ECHO_INPUT));
-}
-
 
 void SleepMiliseconds(uint32_t time) noexcept {
     Sleep(time);
