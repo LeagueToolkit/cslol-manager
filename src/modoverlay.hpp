@@ -181,15 +181,15 @@ namespace ModOverlay {
         }
 
         inline void save() const noexcept {
-            if(FILE* file = nullptr; !fopen_s(&file, configpath.c_str(), "w") && file) {
-                fprintf_s(file, schema, checksum, off_fp, off_pmeth);
+            if(FILE* file = fopen(configpath.c_str(), "w"); file) {
+                fprintf(file, schema, checksum, off_fp, off_pmeth);
                 fclose(file);
             }
         }
 
         inline void load() noexcept {
-            if(FILE* file = nullptr; !fopen_s(&file, configpath.c_str(), "r") && file) {
-                if(fscanf_s(file, schema, &checksum, &off_fp, &off_pmeth) != 3) {
+            if(FILE* file = fopen(configpath.c_str(), "r"); file) {
+                if(fscanf(file, schema, &checksum, &off_fp, &off_pmeth) != 3) {
                     checksum = 0;
                     off_fp = 0;
                     off_pmeth = 0;
