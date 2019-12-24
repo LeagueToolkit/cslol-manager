@@ -4,10 +4,10 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{8B310DA3-A642-4078-99BA-046DE8E51391}</ProjectGuid>
+    <ProjectGuid>{657ADF33-4AA7-4311-959D-0D006DCBDD35}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>modapply</RootNamespace>
-    <AssemblyName>modapply</AssemblyName>
+    <RootNamespace>wxyextract</RootNamespace>
+    <AssemblyName>wxyextract</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -35,8 +35,6 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.IO.Compression" />
-    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />

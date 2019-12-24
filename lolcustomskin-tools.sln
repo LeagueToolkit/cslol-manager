@@ -5,7 +5,13 @@ VisualStudioVersion = 16.0.29613.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "modapply", "modapply\modapply.csproj", "{8B310DA3-A642-4078-99BA-046DE8E51391}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LeagueIndex", "LeagueIndex\LeagueIndex.csproj", "{7DDCACD8-A87D-4C47-B5DF-30BFDC7D55F4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "modadd", "modadd\modadd.csproj", "{65F1A957-0613-4924-8418-2858A1B6BE88}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "wadmake", "wadmake\wadmake.csproj", "{0A971A5D-FC3F-41F6-B436-15466D22F164}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "wadextract", "wadextract\wadextract.csproj", "{01C1796F-FEA7-4BBE-9B27-CC11EB33D120}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "wxyextract", "wxyextract\wxyextract.csproj", "{657ADF33-4AA7-4311-959D-0D006DCBDD35}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +23,22 @@ Global
 		{8B310DA3-A642-4078-99BA-046DE8E51391}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8B310DA3-A642-4078-99BA-046DE8E51391}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8B310DA3-A642-4078-99BA-046DE8E51391}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7DDCACD8-A87D-4C47-B5DF-30BFDC7D55F4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7DDCACD8-A87D-4C47-B5DF-30BFDC7D55F4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7DDCACD8-A87D-4C47-B5DF-30BFDC7D55F4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7DDCACD8-A87D-4C47-B5DF-30BFDC7D55F4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{65F1A957-0613-4924-8418-2858A1B6BE88}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{65F1A957-0613-4924-8418-2858A1B6BE88}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{65F1A957-0613-4924-8418-2858A1B6BE88}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{65F1A957-0613-4924-8418-2858A1B6BE88}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0A971A5D-FC3F-41F6-B436-15466D22F164}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0A971A5D-FC3F-41F6-B436-15466D22F164}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0A971A5D-FC3F-41F6-B436-15466D22F164}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0A971A5D-FC3F-41F6-B436-15466D22F164}.Release|Any CPU.Build.0 = Release|Any CPU
+		{01C1796F-FEA7-4BBE-9B27-CC11EB33D120}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{01C1796F-FEA7-4BBE-9B27-CC11EB33D120}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{01C1796F-FEA7-4BBE-9B27-CC11EB33D120}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{01C1796F-FEA7-4BBE-9B27-CC11EB33D120}.Release|Any CPU.Build.0 = Release|Any CPU
+		{657ADF33-4AA7-4311-959D-0D006DCBDD35}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{657ADF33-4AA7-4311-959D-0D006DCBDD35}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{657ADF33-4AA7-4311-959D-0D006DCBDD35}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{657ADF33-4AA7-4311-959D-0D006DCBDD35}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

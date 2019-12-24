@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace modapply
 {
@@ -22,7 +23,7 @@ namespace modapply
 
         static void ExportFile(ZipArchive archive, string source, string dest)
         {
-            using (var infile = new FileStream(source, FileMode.Open))
+            using (var infile = File.OpenRead(source))
             {
                 using (var wadEntry = archive.CreateEntry(dest.Replace('/', '\\')).Open())
                 {
@@ -76,38 +77,51 @@ namespace modapply
             }
         }
 
+        [STAThread]
         static void Main(string[] args)
         {
-            var exeDir = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
-            Console.WriteLine("This tool will now convert all your mods to Fantome format!");
-            Console.WriteLine("Press enter to continue...");
-            Console.ReadLine();
-
-            int modcount = 0;
-            var importDir = $"{exeDir}/mods";
-            var exportDir = $"{exeDir}/ExportedMods";
-            if (Directory.Exists(importDir))
+            try
             {
-                foreach (var directory in Directory.EnumerateDirectories(importDir))
+                var exeDir = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
+                var cancel = MessageBox.Show("This tool will now convert all your mods to Fantome format!", "Are you sure?", MessageBoxButtons.OKCancel, MessageBoxIcon.Question);
+                if ((cancel & DialogResult.Cancel) == DialogResult.Cancel)
                 {
-                    ExportMod(directory, exportDir);
-                    modcount++;
+                    return;
                 }
-                Directory.Move(importDir, importDir + "_backup");
-            }
 
-            if (modcount > 0)
-            {
-                Console.WriteLine($"Exporeted {modcount} mods!");
-                Console.WriteLine($"You can find your converted mods in: {exportDir}/");
-                Process.Start($"{exportDir}/");
+                int modcount = 0;
+                var importDir = $"{exeDir}/mods";
+                var exportDir = $"{exeDir}/ExportedMods";
+                if (Directory.Exists(importDir))
+                {
+                    foreach (var directory in Directory.EnumerateDirectories(importDir))
+                    {
+                        ExportMod(directory, exportDir);
+                        modcount++;
+                    }
+                    Directory.Move(importDir, importDir + "_backup");
+                }
+
+                if (modcount > 0)
+                {
+                    Process.Start($"{exportDir}/");
+                    MessageBox.Show($"{modcount} mods have been sucesfully converted!", "Finished", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    MessageBox.Show("No mods have been installed", "Finished", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+
+                var ok = MessageBox.Show("Download Fantome?", "Get Fantome?", MessageBoxButtons.OKCancel, MessageBoxIcon.Question);
+                if ((ok & DialogResult.OK) == DialogResult.OK)
+                {
+                    Process.Start("https://github.com/LoL-Fantome/Fantome");
+                }
             }
-            else
+            catch(Exception error)
             {
-                Console.WriteLine("No mods installed!");
+                MessageBox.Show(error.StackTrace, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-            Console.WriteLine("Press enter to continue...");
-            Console.ReadLine();
         }
     }
 }

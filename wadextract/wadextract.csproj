@@ -4,10 +4,10 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{8B310DA3-A642-4078-99BA-046DE8E51391}</ProjectGuid>
+    <ProjectGuid>{01C1796F-FEA7-4BBE-9B27-CC11EB33D120}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>modapply</RootNamespace>
-    <AssemblyName>modapply</AssemblyName>
+    <RootNamespace>wadextract</RootNamespace>
+    <AssemblyName>wadextract</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -35,7 +35,6 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.IO.Compression" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
