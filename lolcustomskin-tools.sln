@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29613.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "modapply", "modapply\modapply.csproj", "{8B310DA3-A642-4078-99BA-046DE8E51391}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LeagueIndex", "LeagueIndex\LeagueIndex.csproj", "{7DDCACD8-A87D-4C47-B5DF-30BFDC7D55F4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8B310DA3-A642-4078-99BA-046DE8E51391}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8B310DA3-A642-4078-99BA-046DE8E51391}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8B310DA3-A642-4078-99BA-046DE8E51391}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8B310DA3-A642-4078-99BA-046DE8E51391}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7DDCACD8-A87D-4C47-B5DF-30BFDC7D55F4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7DDCACD8-A87D-4C47-B5DF-30BFDC7D55F4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7DDCACD8-A87D-4C47-B5DF-30BFDC7D55F4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7DDCACD8-A87D-4C47-B5DF-30BFDC7D55F4}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F61EC32B-78C0-4EA0-ADAF-B37CE1FF5E6E}
+	EndGlobalSection
+EndGlobal
