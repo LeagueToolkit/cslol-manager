@@ -37,7 +37,7 @@ namespace modapply
             foreach (var file in Directory.EnumerateFiles(source, "*.*", SearchOption.AllDirectories))
             {
                 var rel = RelativePath(source, file);
-                ExportFile(archive, file, $"{dest}/{rel}");
+                ExportFile(archive, file, $"{dest}\\{rel}");
             }
         }
 
@@ -52,8 +52,8 @@ namespace modapply
             using (var fileStream = new FileStream($"{destDir}/{modname}.zip", FileMode.Create))
             using (var archive = new ZipArchive(fileStream, ZipArchiveMode.Create))
             {
-                archive.CreateEntry("RAW/");
-                using (var meta = new StreamWriter(archive.CreateEntry("META/info.json").Open()))
+                archive.CreateEntry("RAW\\");
+                using (var meta = new StreamWriter(archive.CreateEntry("META\\info.json").Open()))
                 {
                     meta.WriteLine("{");
                     meta.WriteLine($"    \"Name\": \"{modname}\",");
@@ -71,7 +71,7 @@ namespace modapply
                     }
                     else
                     {
-                        ExportFile(archive, wad, $"WAD/{wadname}");
+                        ExportFile(archive, wad, $"WAD\\{wadname}");
                     }
                 }
             }

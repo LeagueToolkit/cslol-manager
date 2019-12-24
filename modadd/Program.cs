@@ -193,8 +193,8 @@ namespace modadd
             using (var fileStream = new FileStream($"{destDir}/{modname}.zip", FileMode.Create))
             using (var archive = new ZipArchive(fileStream, ZipArchiveMode.Create))
             {
-                archive.CreateEntry("RAW/");
-                using (var meta = new StreamWriter(archive.CreateEntry("META/info.json").Open()))
+                archive.CreateEntry("RAW\\");
+                using (var meta = new StreamWriter(archive.CreateEntry("META\\info.json").Open()))
                 {
                     meta.WriteLine("{");
                     meta.WriteLine($"    \"Name\": \"{modname}\",");
@@ -205,7 +205,7 @@ namespace modadd
                 }
                 using (var infile = File.OpenRead(source))
                 {
-                    var dest = $"WAD/{wadname}";
+                    var dest = $"WAD\\{wadname}";
                     using (var wadEntry = archive.CreateEntry(dest.Replace('/', '\\')).Open())
                     {
                         infile.CopyTo(wadEntry);
