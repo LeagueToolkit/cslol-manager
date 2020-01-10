@@ -1,3 +1,3 @@
-# How do i install mods ?
- https://github.com/LoL-Fantome/Fantome  
+# Help, it doesn't work...
+ Check this instead: https://github.com/LoL-Fantome/Fantome
  
