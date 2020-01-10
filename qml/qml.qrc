@@ -1,0 +1,23 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>qtquickcontrols2.conf</file>
+        <file>LCSToolBar.qml</file>
+        <file>LCSDialogNewProfile.qml</file>
+        <file>LCSDialogLoLPath.qml</file>
+        <file>LCSModsView.qml</file>
+        <file>LCSStatusBar.qml</file>
+        <file>LCSDialogOpenZipFantome.qml</file>
+        <file>LCSDialogProgress.qml</file>
+        <file>LCSDialogLog.qml</file>
+        <file>LCSDialogError.qml</file>
+        <file>LCSDialogWarning.qml</file>
+        <file>LCSDialogNewMod.qml</file>
+        <file>LCSDialogNewModImage.qml</file>
+        <file>LCSDialogNewModWadFiles.qml</file>
+        <file>LCSDialogNewModRAWFolder.qml</file>
+        <file>LCSDialogSaveZipFantome.qml</file>
+        <file>LCSDialogEditMod.qml</file>
+        <file>icon.png</file>
+    </qresource>
+</RCC>
