@@ -17,7 +17,8 @@ LCSTools::LCSTools(QObject *parent) : QObject(parent)
     connect(worker_, &LCSToolsImpl::reportError, this, &LCSTools::reportError);
 
     connect(worker_, &LCSToolsImpl::progressStart, this, &LCSTools::progressStart);
-    connect(worker_, &LCSToolsImpl::updateProgress, this, &LCSTools::updateProgress);
+    connect(worker_, &LCSToolsImpl::progressItems, this, &LCSTools::progressItems);
+    connect(worker_, &LCSToolsImpl::progressData, this, &LCSTools::progressData);
     connect(worker_, &LCSToolsImpl::progressEnd, this, &LCSTools::progressEnd);
     connect(worker_, &LCSToolsImpl::initialized, this, &LCSTools::initialized);
     connect(worker_, &LCSToolsImpl::modDeleted, this, &LCSTools::modDeleted);
@@ -49,14 +50,13 @@ LCSTools::LCSTools(QObject *parent) : QObject(parent)
     connect(this, &LCSTools::addModWads, worker_, &LCSToolsImpl::addModWads);
     connect(this, &LCSTools::removeModWads, worker_, &LCSToolsImpl::removeModWads);
 
-    connect(this, &LCSTools::destroyed, thread_, &QThread::deleteLater);
+    connect(this, &LCSTools::destroyed, worker_, &LCSToolsImpl::deleteLater);
+    connect(worker_, &LCSTools::destroyed, thread_, &QThread::deleteLater);
 
     thread_->start();
 }
 
-LCSTools::~LCSTools(){
-    thread_->exit();
-}
+LCSTools::~LCSTools(){}
 
 LCSToolsImpl::LCSState LCSTools::getState() {
     return state_;

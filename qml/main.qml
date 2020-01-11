@@ -53,7 +53,6 @@ ApplicationWindow {
         property alias profilesCurrentIndex: lcsToolBar.profilesCurrentIndex
         property alias leaguePath: lcsTools.leaguePath
         property alias wholeMerge: lcsToolBar.wholeMerge
-        property alias enableProgressBar: lcsToolBar.enableProgressBar
         property alias logVisible: lcsDialogLog.visible
         property alias enableTray: lcsToolBar.enableTray
 
@@ -125,7 +124,7 @@ ApplicationWindow {
             let savedProfile = window.savedProfiles[index]
             let newMods = lcsModsView.saveProfile()
             let name = savedProfile["Name"]
-            lcsTools.saveProfile(name, newMods, run, lcsToolBar.fastMerge)
+            lcsTools.saveProfile(name, newMods, run, lcsToolBar.wholeMerge)
         }
 
         onStopProfile: lcsTools.stopProfile()
@@ -164,6 +163,8 @@ ApplicationWindow {
     statusBar: LCSStatusBar {
         id: lcsStatusBar
         isBussy: lcsTools.state !== LCSTools.StateIdle
+        statusMessage: lcsTools.status
+        visible: isBussy
     }
 
     LCSDialogOpenZipFantome {
@@ -220,10 +221,6 @@ ApplicationWindow {
         }
     }
 
-    LCSDialogProgress {
-        id: lcsDialogProgress
-    }
-
     LCSDialogLog {
         id: lcsDialogLog
         width: 640
@@ -242,29 +239,11 @@ ApplicationWindow {
     LCSTools {
         id: lcsTools
 
-        onStatusChanged: logInfo(status,"")
-
-        onProgressStart: {
-            if (lcsToolBar.enableProgressBar) {
-                lcsDialogProgress.title = message
-                lcsDialogProgress.currentName = ""
-                lcsDialogProgress.itemDone = 0
-                lcsDialogProgress.itemTotal = 0
-                lcsDialogProgress.dataDone = 0
-                lcsDialogProgress.dataTotal = 0
-                lcsDialogProgress.open()
-            }
-        }
-        onUpdateProgress:  {
-            if (lcsToolBar.enableProgressBar) {
-                lcsDialogProgress.currentName = name
-                lcsDialogProgress.itemDone = itemsDone
-                lcsDialogProgress.itemTotal = itemsTotal
-                lcsDialogProgress.dataDone = dataDone
-                lcsDialogProgress.dataTotal = dataTotal
-            }
-        }
-        onProgressEnd: if (lcsDialogProgress.visible) lcsDialogProgress.close()
+        onStatusChanged: logInfo("Status changed", status)
+        onProgressStart: lcsStatusBar.start(itemsTotal, dataTotal)
+        onProgressItems: lcsStatusBar.updateItem(itemsDone)
+        onProgressData: lcsStatusBar.updateData(dataDone)
+        onProgressEnd: lcsStatusBar.isCopying = false
 
         onInitialized: {
             let index = lcsToolBar.profilesCurrentIndex
@@ -317,8 +296,14 @@ ApplicationWindow {
         onModWadsAdded: lcsDialogEditMod.wadsAdded(wads)
         onModWadsRemoved: lcsDialogEditMod.wadsRemoved(wads)
 
-        onReportError: logError(category, message)
-        onReportWarning: logError(category, message)
+        onReportError:  {
+            logError(category, message)
+            lcsStatusBar.isCopying = false
+        }
+        onReportWarning: {
+            logError(category, message)
+            lcsStatusBar.isCopying = false
+        }
     }
 
     Component.onCompleted: {

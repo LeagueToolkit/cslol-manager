@@ -9,12 +9,15 @@
 #include <QMetaEnum>
 #include <QCoreApplication>
 #include <QJsonDocument>
+#include <QThread>
 
 LCSToolsImpl::LCSToolsImpl(QObject *parent) :
     QObject(parent),
     process_(nullptr),
     progDirPath_(QCoreApplication::applicationDirPath().toStdString())
 {}
+
+LCSToolsImpl::~LCSToolsImpl() {}
 
 LCSToolsImpl::LCSState LCSToolsImpl::getState() {
     return state_;
@@ -165,9 +168,7 @@ void LCSToolsImpl::exportMod(QString name, QString dest) {
         setState(LCSState::StateBussy);
         setStatus("Export mod");
         try {
-            emit progressStart("Exporting .zip...");
             modIndex_->export_zip(name.toStdString(), dest.toStdString(), *this);
-            emit progressEnd();
         } catch(std::runtime_error const& error) {
             emit reportError("Export mod", QString(error.what()));
         }
@@ -183,11 +184,9 @@ void LCSToolsImpl::installFantomeZip(QString path) {
             if (leaguepath_.isNull() || leaguepath_.isEmpty()) {
                 throw std::runtime_error("League path not set!");
             }
-            emit progressStart("Installing a mod...");
             auto mod = modIndex_->install_from_zip(path.toStdString(), *this);
             emit installedMod(QString::fromStdString(mod->filename()),
                               parseInfoData(mod->filename(), mod->info()));
-            emit progressEnd();
         } catch(std::runtime_error const& error) {
             emit reportError("Install Fantome .zip", QString(error.what()));
         }
@@ -209,13 +208,11 @@ void LCSToolsImpl::makeMod(QString fileName, QString image, QJsonObject infoData
                 queue.addItem(LCS::fs::path(item.toString().toStdString()), LCS::Conflict::Abort);
             }
             infoData = validateAndCorrect(fileName, infoData);
-            emit progressStart("Creating a new mod...");
             auto mod = modIndex_->make(fileName.toStdString(),
                                        dumpInfoData(infoData),
                                        image.toStdString(),
                                        queue,
                                        *this);
-            emit progressEnd();
             emit installedMod(QString::fromStdString(mod->filename()),
                               infoData);
         } catch(std::runtime_error const& error) {
@@ -245,13 +242,11 @@ void LCSToolsImpl::saveProfile(QString name, QJsonObject mods, bool run, bool wh
                     queue.addMod(i->second.get(), LCS::Conflict::Abort);
                 }
             }
-            emit progressStart("Saving the profile...");
             if (whole) {
                 queue.write_whole(*this);
             } else {
                 queue.write(*this);
             }
-            emit progressEnd();
             queue.cleanup();
             emit profileSaved(name, mods);
         } catch(std::runtime_error const& error) {
@@ -310,6 +305,7 @@ void LCSToolsImpl::runProfile(QString name) {
                 connect(process_, &QProcess::errorOccurred, this, &LCSToolsImpl::errorOccured);
                 connect(process_, QOverload<int>::of(&QProcess::finished), this, &LCSToolsImpl::finished);
                 connect(process_, &QProcess::started, this, &LCSToolsImpl::started);
+                connect(this, &LCSToolsImpl::destroyed, process_, &QProcess::kill);
             }
 
             process_->start(exeName, QStringList({
@@ -428,9 +424,7 @@ void LCSToolsImpl::addModWads(QString fileName, QJsonArray wads) {
             for(auto wadPath: wads) {
                 wadMake.addItem(LCS::fs::path(wadPath.toString().toStdString()), LCS::Conflict::Abort);
             }
-            progressStart("Adding wads");
             auto added = modIndex_->add_mod_wads(fileName.toStdString(), wadMake, *this, LCS::Conflict::Abort);
-            progressEnd();
             QJsonArray names;
             for(auto const& wad: added) {
                 names.push_back(QString::fromStdString(wad->name()));
@@ -478,52 +472,28 @@ void LCSToolsImpl::started() {
 }
 
 /// Interface implementations
-void LCSToolsImpl::startItem(const std::filesystem::path& path, size_t) noexcept {
-    progressName_ = QString::fromStdString(path.generic_string());
-    emit updateProgress(progressName_,
-                   (quint32)progressItemDone_,
-                   (quint32)progressItemTotal_,
-                   progressDataDone_,
-                   progressDataTotal_);
+void LCSToolsImpl::startItem(LCS::fs::path const& path, size_t bytes) noexcept {
+    auto name = QString::fromStdString(path.filename().generic_string());
+    auto size = QString::number(bytes / 1024.0 / 1024.0, 'f', 2);
+    setStatus("Processing " + name + "(" + size + "MB)");
 }
 
 void LCSToolsImpl::consumeData(size_t ammount) noexcept {
     progressDataDone_ += ammount;
-    emit updateProgress(progressName_,
-                   (quint32)progressItemDone_,
-                   (quint32)progressItemTotal_,
-                   progressDataDone_,
-                   progressDataTotal_);
+    emit progressData((quint64)progressDataDone_);
 }
 
 void LCSToolsImpl::finishItem() noexcept {
     progressItemDone_++;
-    emit updateProgress(progressName_,
-                   (quint32)progressItemDone_,
-                   (quint32)progressItemTotal_,
-                   progressDataDone_,
-                   progressDataTotal_);
+    emit progressItems((quint32)progressItemDone_);
 }
 
 void LCSToolsImpl::startMulti(size_t itemCount, size_t dataTotal) noexcept {
-    progressName_ = "";
-    progressItemTotal_ = itemCount;
     progressItemDone_ = 0;
-    progressDataTotal_ = dataTotal;
     progressDataDone_ = 0;
-    emit updateProgress(progressName_,
-                   (quint32)progressItemDone_,
-                   (quint32)progressItemTotal_,
-                   progressDataDone_,
-                   progressDataTotal_);
+    emit progressStart((quint32)itemCount, (quint64)dataTotal);
 }
 
 void LCSToolsImpl::finishMulti() noexcept {
-    progressDataDone_ = progressDataTotal_;
-    progressItemDone_ = progressItemTotal_;
-    emit updateProgress(progressName_,
-                   (quint32)progressItemDone_,
-                   (quint32)progressItemTotal_,
-                   progressDataDone_,
-                   progressDataTotal_);
+    emit progressEnd();
 }

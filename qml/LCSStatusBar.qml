@@ -4,21 +4,47 @@ import QtQuick.Controls 1.4
 
 StatusBar {
     property bool isBussy: false
-    property string statusMessage: ""
+    property alias statusMessage: statusMessageLabel.text
+    property bool isCopying: true
+    property int itemDone: 0
+    property int itemTotal: 0
+    property int dataDone: 0
+    property int dataTotal: 0
+
+    function start(newItemTotal, newDataTotal) {
+        itemDone = 0
+        itemTotal = newItemTotal
+        dataDone = 0
+        dataTotal = newDataTotal
+        isCopying = true
+    }
+
+    function updateItem(newItemDone) {
+        if (isCopying && newItemDone > itemDone) {
+            itemDone = newItemDone
+        }
+    }
+
+    function updateData(newDataDone) {
+        if (isCopying && newDataDone > dataDone) {
+            dataDone = newDataDone
+        }
+    }
 
     RowLayout {
-        Item {
-            height: statusMessageLabel.height
-            width: statusMessageLabel.height
-            BusyIndicator {
-                anchors.fill: parent
-                visible: isBussy
-                running: visible
-            }
-        }
+        id: row
+        width: parent.width
         Label {
+            Layout.fillWidth: true
             id: statusMessageLabel
-            text: isBussy ? statusMessage : "Idle"
+            text: ""
+        }
+        ProgressBar {
+            id: progressBarData
+            minimumValue: 0
+            maximumValue: 1
+            indeterminate: !isCopying
+            value: dataDone / dataTotal
         }
     }
 }

@@ -31,8 +31,9 @@ signals:
     void statusChanged(QString status);
     void leaguePathChanged(QString leaguePath);
 
-    void progressStart(QString message);
-    void updateProgress(QString name, quint32 itemsDone, quint32 itemsTotal, quint64 dataDone, quint64 dataTotal);
+    void progressStart(quint32 itemsTotal, quint64 dataTotal);
+    void progressItems(quint32 itemsDone);
+    void progressData(quint64 dataDone);
     void progressEnd();
 
     void initialized(QJsonObject mods, QJsonObject savedProfiles);

@@ -7,7 +7,6 @@ ToolBar {
 
     property bool isBussy: false
     property bool patcherRunning: false
-    property alias enableProgressBar: progressBarCheck.checked
     property alias profilesModel: profilesComboBox.model
     property alias profilesCurrentIndex: profilesComboBox.currentIndex
     property alias menuButtonHeight: mainMenuButton.height
@@ -58,12 +57,6 @@ ToolBar {
                     text: qsTr("Merge whole")
                     checkable: true
                     checked: false
-                }
-                MenuItem {
-                    id: progressBarCheck
-                    text: qsTr("Progress bar")
-                    checkable: true
-                    checked: true
                 }
                 MenuItem {
                     id: enableTrayCheck

@@ -8,7 +8,6 @@
         <file>LCSModsView.qml</file>
         <file>LCSStatusBar.qml</file>
         <file>LCSDialogOpenZipFantome.qml</file>
-        <file>LCSDialogProgress.qml</file>
         <file>LCSDialogLog.qml</file>
         <file>LCSDialogError.qml</file>
         <file>LCSDialogWarning.qml</file>
