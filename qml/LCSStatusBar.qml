@@ -8,8 +8,8 @@ StatusBar {
     property bool isCopying: true
     property int itemDone: 0
     property int itemTotal: 0
-    property int dataDone: 0
-    property int dataTotal: 0
+    property real dataDone: 0
+    property real dataTotal: 0
 
     function start(newItemTotal, newDataTotal) {
         itemDone = 0
