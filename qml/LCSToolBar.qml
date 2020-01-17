@@ -7,8 +7,9 @@ ToolBar {
 
     property bool isBussy: false
     property bool patcherRunning: false
-    property alias profilesModel: profilesComboBox.model
+    property var profilesModel: []
     property alias profilesCurrentIndex: profilesComboBox.currentIndex
+    property alias profilesCurrentName: profilesComboBox.currentText
     property alias menuButtonHeight: mainMenuButton.height
     property alias enableTray: enableTrayCheck.checked
     property alias wholeMerge: wholeMergeCheck.checked
@@ -79,8 +80,8 @@ ToolBar {
             id: profilesComboBox
             Layout.fillWidth: true
             currentIndex: 0
-            textRole: "Name"
             enabled: !isBussy
+            model: lcsToolBar.profilesModel
         }
         ToolButton {
             text: qsTr("Save")

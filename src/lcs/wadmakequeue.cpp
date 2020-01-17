@@ -7,7 +7,7 @@ using namespace LCS;
 
 WadMakeQueue::WadMakeQueue(WadIndex const& index) : index_(index) {}
 
-void WadMakeQueue::addItem(const std::filesystem::path& path, Conflict conflict) {
+void WadMakeQueue::addItem(fs::path const& path, Conflict conflict) {
     if (fs::is_directory(path)) {
         addItem(WadMake(path), conflict);
     } else {
@@ -42,9 +42,7 @@ void WadMakeQueue::addItem(WadMakeQueue::Item item, Conflict conflict) {
     }
 }
 
-void WadMakeQueue::write(fs::path path, ProgressMulti& progress) const {
-    path = fs::absolute(path);
-    fs::create_directories(path);
+void WadMakeQueue::write(fs::path const& path, ProgressMulti& progress) const {
     progress.startMulti(items_.size(), size());
     for(auto const& kvp: items_) {
         auto const& name = kvp.first;

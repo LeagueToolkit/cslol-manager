@@ -36,10 +36,11 @@ signals:
     void progressData(quint64 dataDone);
     void progressEnd();
 
-    void initialized(QJsonObject mods, QJsonObject savedProfiles);
+    void initialized(QJsonObject mods, QJsonArray profiles, QString profileName, QJsonObject profileMods);
     void modDeleted(QString name);
     void installedMod(QString fileName, QJsonObject infoData);
     void profileSaved(QString name, QJsonObject mods);
+    void profileLoaded(QString name, QJsonObject profileMods);
     void profileDeleted(QString name);
     void updateProfileStatus(QString message);
     void modEditStarted(QString fileName, QJsonObject infoData, QString image, QJsonArray wads);
@@ -53,11 +54,12 @@ signals:
 
 
     void changeLeaguePath(QString newLeaguePath);
-    void init(QJsonObject profiles);
+    void init();
     void deleteMod(QString name);
     void exportMod(QString name, QString dest);
     void installFantomeZip(QString path);
     void saveProfile(QString name, QJsonObject mods, bool run, bool whole);
+    void loadProfile(QString name);
     void deleteProfile(QString name);
     void runProfile(QString name);
     void stopProfile();

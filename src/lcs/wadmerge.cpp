@@ -64,24 +64,6 @@ size_t WadMerge::size() const noexcept {
     return size_;
 }
 
-size_t WadMerge::size_whole() const noexcept {
-    if(!sizeFastCalculated_) {
-        size_t sum = 0;
-        std::unordered_set<Wad const*> fullWads;
-        for(auto const& [xxhash, entry]: entries_) {
-            if (entry.kind_ == EntryKind::Extra) {
-                sum += entry.sizeCompressed;
-            } else if (auto full = fullWads.find(entry.wad_); full == fullWads.end()) {
-                sum += (uint32_t)(entry.wad_->dataSize());
-                fullWads.insert(full, entry.wad_);
-            }
-        }
-        sizeFast_ = sum;
-        sizeFastCalculated_ = true;
-    }
-    return sizeFast_;
-}
-
 void WadMerge::write(Progress& progress) const {
     size_t totalSize = size();
     progress.startItem(path_, totalSize);
@@ -134,6 +116,24 @@ void WadMerge::write(Progress& progress) const {
         copyStream(source, dest, size, buffer, progress);
     }
     progress.finishItem();
+}
+
+size_t WadMerge::size_whole() const noexcept {
+    if(!sizeFastCalculated_) {
+        size_t sum = 0;
+        std::unordered_set<Wad const*> fullWads;
+        for(auto const& [xxhash, entry]: entries_) {
+            if (entry.kind_ == EntryKind::Extra) {
+                sum += entry.sizeCompressed;
+            } else if (auto full = fullWads.find(entry.wad_); full == fullWads.end()) {
+                sum += (uint32_t)(entry.wad_->dataSize());
+                fullWads.insert(full, entry.wad_);
+            }
+        }
+        sizeFast_ = sum;
+        sizeFastCalculated_ = true;
+    }
+    return sizeFast_;
 }
 
 void WadMerge::write_whole(Progress& progress) const {

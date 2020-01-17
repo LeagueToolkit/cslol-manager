@@ -24,6 +24,7 @@ LCSTools::LCSTools(QObject *parent) : QObject(parent)
     connect(worker_, &LCSToolsImpl::modDeleted, this, &LCSTools::modDeleted);
     connect(worker_, &LCSToolsImpl::installedMod, this, &LCSTools::installedMod);
     connect(worker_, &LCSToolsImpl::profileSaved, this, &LCSTools::profileSaved);
+    connect(worker_, &LCSToolsImpl::profileLoaded, this, &LCSTools::profileLoaded);
     connect(worker_, &LCSToolsImpl::profileDeleted, this, &LCSTools::profileDeleted);
     connect(worker_, &LCSToolsImpl::updateProfileStatus, this, &LCSTools::updateProfileStatus);
     connect(worker_, &LCSToolsImpl::modEditStarted, this, &LCSTools::modEditStarted);
@@ -39,6 +40,7 @@ LCSTools::LCSTools(QObject *parent) : QObject(parent)
     connect(this, &LCSTools::exportMod, worker_, &LCSToolsImpl::exportMod);
     connect(this, &LCSTools::installFantomeZip, worker_, &LCSToolsImpl::installFantomeZip);
     connect(this, &LCSTools::saveProfile, worker_, &LCSToolsImpl::saveProfile);
+    connect(this, &LCSTools::loadProfile, worker_, &LCSToolsImpl::loadProfile);
     connect(this, &LCSTools::deleteProfile, worker_, &LCSToolsImpl::deleteProfile);
     connect(this, &LCSTools::runProfile, worker_, &LCSToolsImpl::runProfile);
     connect(this, &LCSTools::stopProfile, worker_, &LCSToolsImpl::stopProfile);

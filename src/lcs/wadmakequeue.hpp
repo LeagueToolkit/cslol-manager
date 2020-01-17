@@ -14,7 +14,7 @@ namespace LCS {
 
         void addItem(fs::path const& path, Conflict conflict);
 
-        void write(fs::path path, ProgressMulti& progress) const;
+        void write(fs::path const& path, ProgressMulti& progress) const;
 
         size_t size() const noexcept;
 

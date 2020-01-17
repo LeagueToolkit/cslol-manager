@@ -1,6 +1,7 @@
 #ifndef LCS_MODUNZIP_HPP
 #define LCS_MODUNZIP_HPP
 #include "common.hpp"
+#include "wadmake.hpp"
 #include <miniz.h>
 
 namespace LCS {
@@ -15,24 +16,26 @@ namespace LCS {
 
         // Throws std::runtime_error
         void extract(fs::path const& dest, ProgressMulti& progress);
-    private:
-        void extract_meta_files(fs::path const& dest, ProgressMulti& progress);
-        void extract_wad_files(fs::path const& dest, ProgressMulti& progress);
-        void extract_wad_folders(fs::path const& dest, ProgressMulti& progress);
 
-        struct Entry {
+        inline auto size() const noexcept {
+            return size_;
+        }
+    private:
+        struct CopyFile {
             fs::path path;
             mz_uint index;
             size_t size;
         };
+        WadMakeUnZip& addFolder(std::string name);
+        void extractFile(fs::path const& dest, CopyFile const& file, Progress& progress);
 
         fs::path path_;
-        std::vector<Entry> metafile_;
-        std::vector<Entry> wadfile_;
-        std::unordered_map<std::string, std::map<uint64_t, Entry>> wadfolder_;
+        std::vector<CopyFile> metafile_;
+        std::vector<CopyFile> wadfile_;
+        std::unordered_map<std::string, WadMakeUnZip> wadfolder_;
         mz_zip_archive zip_archive = {};
-        size_t itemCount = 0;
-        size_t dataCount = 0;
+        size_t size_ = 0;
+        size_t items_ = 0;
     };
 }
 

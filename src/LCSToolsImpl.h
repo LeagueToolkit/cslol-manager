@@ -25,7 +25,7 @@ public:
     Q_ENUM(LCSState)
 
     explicit LCSToolsImpl(QObject *parent = nullptr);
-    ~LCSToolsImpl();
+    ~LCSToolsImpl() override;
 signals:
     void stateChanged(LCSState state);
     void statusChanged(QString message);
@@ -36,10 +36,11 @@ signals:
     void progressData(quint64 dataDone);
     void progressEnd();
 
-    void initialized(QJsonObject mods, QJsonObject savedProfiles);
+    void initialized(QJsonObject mods, QJsonArray profiles, QString profileName, QJsonObject profileMods);
     void modDeleted(QString name);
     void installedMod(QString fileName, QJsonObject infoData);
     void profileSaved(QString name, QJsonObject mods);
+    void profileLoaded(QString name, QJsonObject profileMods);
     void profileDeleted(QString name);
     void updateProfileStatus(QString message);
     void modEditStarted(QString fileName, QJsonObject infoData, QString image, QJsonArray wads);
@@ -53,11 +54,12 @@ signals:
 
 public slots:
     void changeLeaguePath(QString newLeaguePath);
-    void init(QJsonObject profiles);
+    void init();
     void deleteMod(QString name);
     void exportMod(QString name, QString dest);
     void installFantomeZip(QString path);
     void saveProfile(QString name, QJsonObject mods, bool run, bool whole);
+    void loadProfile(QString name);
     void deleteProfile(QString name);
     void runProfile(QString name);
     void stopProfile();
@@ -89,6 +91,13 @@ private:
     QString status_ = "";
     void setState(LCSState state);
     void setStatus(QString status);
+
+    QJsonArray listProfiles();
+    QJsonObject readProfile(QString profileName);
+    void writeProfile(QString profileName, QJsonObject profile);
+    QString readCurrentProfile();
+    void writeCurrentProfile(QString profile);
+
 
 /// ProgressMulti impl
 private:

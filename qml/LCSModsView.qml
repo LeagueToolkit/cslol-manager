@@ -5,6 +5,10 @@ import QtQuick.Controls 1.4
 
 TableView {
     id: lcsModsView
+    enabled: !isBussy
+
+    property bool isBussy: false
+
     property real rowHeight: 0
 
     signal modRemoved(string fileName)

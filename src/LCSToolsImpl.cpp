@@ -42,6 +42,68 @@ QString LCSToolsImpl::getLeaguePath() {
 }
 
 /// util
+QJsonArray LCSToolsImpl::listProfiles() {
+    QJsonArray profiles;
+    auto profilesPath = progDirPath_ / "profiles";
+    if (!LCS::fs::exists(profilesPath)) {
+        LCS::fs::create_directories(profilesPath);
+    }
+    for(auto const& entry: LCS::fs::directory_iterator(profilesPath)) {
+        auto path = entry.path();
+        if (entry.is_directory() && !LCS::fs::exists(path.generic_string() + ".profile")) {
+            std::error_code error = {};
+            LCS::fs::remove_all(path, error);
+        } else if (entry.is_regular_file() && path.extension() == ".profile") {
+            auto name = path.filename();
+            name.replace_extension();
+            profiles.push_back(QString::fromStdString(name.generic_string()));
+        }
+    }
+    if (!profiles.contains("Default Profile")) {
+        profiles.push_front("Default Profile");
+    }
+    return profiles;
+}
+
+QJsonObject LCSToolsImpl::readProfile(QString profileName) {
+    QJsonObject profile;
+    std::ifstream infile(progDirPath_ / "profiles" / (profileName + ".profile").toStdString());
+    std::string line;
+    while(std::getline(infile, line)) {
+        if (line.empty()) {
+            continue;
+        }
+        profile.insert(QString::fromStdString(line), true);
+    }
+    return profile;
+}
+
+void LCSToolsImpl::writeProfile(QString profileName, QJsonObject profile) {
+    std::ofstream outfile(progDirPath_ / "profiles" / (profileName + ".profile").toStdString());
+    for(auto mod: profile.keys()) {
+        auto modname = mod.toStdString();
+        if (modname.empty()) {
+            continue;
+        }
+        outfile << modname << '\n';
+    }
+}
+
+QString LCSToolsImpl::readCurrentProfile() {
+    QJsonObject profile;
+    std::ifstream infile(progDirPath_ / "current.profile");
+    std::string line;
+    if (!std::getline(infile, line) || line.empty()) {
+        line = "Default Profile";
+    }
+    return QString::fromStdString(line);
+}
+
+void LCSToolsImpl::writeCurrentProfile(QString profile) {
+    std::ofstream outfile(progDirPath_ / "current.profile");
+    outfile << profile.toStdString() << '\n';
+}
+
 namespace {
     QJsonObject validateAndCorrect(QString fileName, QJsonObject object) {
         if (!object.contains("Name") || !object["Name"].isString() || object["Name"].toString().isEmpty()) {
@@ -118,7 +180,7 @@ void LCSToolsImpl::changeLeaguePath(QString newLeaguePath) {
     }
 }
 
-void LCSToolsImpl::init(QJsonObject savedProfiles) {
+void LCSToolsImpl::init() {
     if (state_ == LCSState::StateUnitialized) {
         setState(LCSState::StateBussy);
         setStatus("Load mods");
@@ -129,18 +191,14 @@ void LCSToolsImpl::init(QJsonObject savedProfiles) {
                 mods.insert(QString::fromStdString(rawFileName),
                             parseInfoData(rawFileName, rawMod->info()));
             }
-            try {
-                for(auto const& entry: LCS::fs::directory_iterator(progDirPath_ / "profiles")) {
-                    auto path = entry.path();
-                    auto name = QString::fromStdString(path.filename().generic_string());
-                    if (!savedProfiles.contains(name)) {
-                        //LCS::fs::remove_all(entry.path());
-                    }
-                }
-            } catch(std::runtime_error const& error) {
-                emit reportWarning("Clean Profiles", QString(error.what()));
+            auto profiles = listProfiles();
+            auto profileName = readCurrentProfile();
+            if (!profiles.contains(profileName)) {
+                profileName = "Default Profile";
+                writeCurrentProfile(profileName);
             }
-            emit initialized(mods, savedProfiles);
+            auto profileMods = readProfile(profileName);
+            emit initialized(mods, profiles, profileName, profileMods);
             setState(LCSState::StateIdle);
         } catch(std::runtime_error const& error) {
             emit reportError("Load mods", QString(error.what()));
@@ -213,8 +271,7 @@ void LCSToolsImpl::makeMod(QString fileName, QString image, QJsonObject infoData
                                        image.toStdString(),
                                        queue,
                                        *this);
-            emit installedMod(QString::fromStdString(mod->filename()),
-                              infoData);
+            emit installedMod(QString::fromStdString(mod->filename()), infoData);
         } catch(std::runtime_error const& error) {
             emit reportError("Make mod", QString(error.what()));
         }
@@ -222,22 +279,21 @@ void LCSToolsImpl::makeMod(QString fileName, QString image, QJsonObject infoData
     }
 }
 
-
 void LCSToolsImpl::saveProfile(QString name, QJsonObject mods, bool run, bool whole) {
     if (state_ == LCSState::StateIdle) {
         setState(LCSState::StateBussy);
         setStatus("Save profile");
+        if (name.isEmpty() || name.isNull()) {
+            name = "Default Profile";
+        }
         try {
             if (leaguepath_.isNull() || leaguepath_.isEmpty()) {
                 throw std::runtime_error("League path not set!");
             }
             LCS::WadIndex index(leaguePathStd_);
             LCS::WadMergeQueue queue(progDirPath_ / "profiles" / name.toStdString(), index);
-            for (auto m = mods.begin(); m != mods.end(); m++) {
-                if (!m.value().toBool()) {
-                    continue;
-                }
-                auto fileName = m.key().toStdString();
+            for(auto key: mods.keys()) {
+                auto fileName = key.toStdString();
                 if (auto i = modIndex_->mods().find(fileName); i != modIndex_->mods().end()) {
                     queue.addMod(i->second.get(), LCS::Conflict::Abort);
                 }
@@ -248,6 +304,8 @@ void LCSToolsImpl::saveProfile(QString name, QJsonObject mods, bool run, bool wh
                 queue.write(*this);
             }
             queue.cleanup();
+            writeCurrentProfile(name);
+            writeProfile(name, mods);
             emit profileSaved(name, mods);
         } catch(std::runtime_error const& error) {
             emit reportError("Save profile", QString(error.what()));
@@ -259,11 +317,29 @@ void LCSToolsImpl::saveProfile(QString name, QJsonObject mods, bool run, bool wh
     }
 }
 
+void LCSToolsImpl::loadProfile(QString name) {
+    if (state_ == LCSState::StateIdle) {
+        setState(LCSState::StateBussy);
+        setStatus("Save profile");
+        if (name.isEmpty() || name.isNull()) {
+            name = "Default Profile";
+        }
+        try {
+            auto profileMods = readProfile(name);
+            emit profileLoaded(name, profileMods);
+        } catch(std::runtime_error const& error) {
+            emit reportError("Load profile", QString(error.what()));
+        }
+        setState(LCSState::StateIdle);
+    }
+}
+
 void LCSToolsImpl::deleteProfile(QString name) {
     if (state_ == LCSState::StateIdle) {
         setState(LCSState::StateBussy);
         setStatus("Delete profile");
         try {
+            LCS::fs::remove(progDirPath_ / "profiles" / (name + ".profile").toStdString());
             LCS::fs::remove_all(progDirPath_ / "profiles" / name.toStdString());
             emit profileDeleted(name);
         } catch(std::runtime_error const& error) {
@@ -324,7 +400,6 @@ void LCSToolsImpl::stopProfile() {
         }
     }
 }
-
 
 void LCSToolsImpl::startEditMod(QString fileName) {
     if (state_ == LCSState::StateIdle) {
@@ -437,10 +512,7 @@ void LCSToolsImpl::addModWads(QString fileName, QJsonArray wads) {
     }
 }
 
-
-
 /// Private slots
-
 void LCSToolsImpl::readyReadStandardOutput() {
     auto data = QString::fromUtf8(process_->readAllStandardOutput());
     for(auto line: data.split("\n")) {

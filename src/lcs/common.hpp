@@ -56,9 +56,10 @@ namespace LCS {
             size_t count = std::min(S, size - i);
             source.read(buffer, count);
             dest.write(buffer, count);
-            progress.consumeData(count);
+            // progress.consumeData(count);
             i += count;
         }
+        progress.consumeData(size);
     }
 
     struct Mod;

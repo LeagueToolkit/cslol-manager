@@ -49,8 +49,6 @@ ApplicationWindow {
 
     Settings {
         id: settings
-        property alias profiles: window.savedProfiles
-        property alias profilesCurrentIndex: lcsToolBar.profilesCurrentIndex
         property alias leaguePath: lcsTools.leaguePath
         property alias wholeMerge: lcsToolBar.wholeMerge
         property alias logVisible: lcsDialogLog.visible
@@ -69,11 +67,7 @@ ApplicationWindow {
         fileName: "config.ini"
     }
 
-    property bool criticalFail: false
-    property bool loaded: false
-    property var savedProfiles: [
-        { "Name": "Default", "Mods": {}, "Time": 0 },
-    ]
+    property bool isBussy: lcsTools.state !== LCSTools.StateIdle
 
     function exit() {
         if (trayIcon.available && trayIcon.visible) {
@@ -103,11 +97,10 @@ ApplicationWindow {
 
     toolBar: LCSToolBar {
         id: lcsToolBar
-        enabled: !window.criticalFail
-        isBussy: lcsTools.state !== LCSTools.StateIdle
+        isBussy: window.isBussy
         patcherRunning: lcsTools.state === LCSTools.StateExternalRunning
 
-        profilesModel: savedProfiles
+        profilesModel: [ "Default Profile" ]
 
         onInstallFantomeZip: lcsDialogOpenZipFantome.open()
 
@@ -120,32 +113,25 @@ ApplicationWindow {
         onExit: window.exit()
 
         onSaveProfileAndRun:  {
-            let index = lcsToolBar.profilesCurrentIndex
-            let savedProfile = window.savedProfiles[index]
-            let newMods = lcsModsView.saveProfile()
-            let name = savedProfile["Name"]
-            lcsTools.saveProfile(name, newMods, run, lcsToolBar.wholeMerge)
+            let name = lcsToolBar.profilesCurrentName
+            let mods = lcsModsView.saveProfile()
+            lcsTools.saveProfile(name, mods, run, lcsToolBar.wholeMerge)
         }
 
         onStopProfile: lcsTools.stopProfile()
 
-        onLoadProfile: {
-            let index = lcsToolBar.profilesCurrentIndex
-            lcsModsView.loadProfile(window.savedProfiles[index]["Mods"])
-        }
+        onLoadProfile: lcsTools.loadProfile(lcsToolBar.profilesCurrentName)
 
         onNewProfile: lcsDialogNewProfile.open()
 
-        onRemoveProfile: {
-            let index = lcsToolBar.profilesCurrentIndex
-            lcsTools.deleteProfile(savedProfiles[index]["Name"])
-        }
+        onRemoveProfile: lcsTools.deleteProfile(lcsToolBar.profilesCurrentName)
+
     }
 
     LCSModsView {
         id: lcsModsView
         anchors.fill: parent
-        enabled: !lcsTools.bussy && !window.criticalFail
+        isBussy: window.isBussy
         rowHeight: lcsToolBar.height
 
         onModRemoved: lcsTools.deleteMod(fileName)
@@ -162,7 +148,7 @@ ApplicationWindow {
 
     statusBar: LCSStatusBar {
         id: lcsStatusBar
-        isBussy: lcsTools.state !== LCSTools.StateIdle
+        isBussy: window.isBussy
         statusMessage: lcsTools.status
         visible: isBussy
     }
@@ -185,7 +171,7 @@ ApplicationWindow {
     LCSDialogEditMod {
         id: lcsDialogEditMod
         visible: false
-        isBussy: lcsTools.state !== LCSTools.StateIdle
+        isBussy: window.isBussy
 
         onChangeInfoData: lcsTools.changeModInfo(fileName, infoData)
         onChangeImage: lcsTools.changeModImage(fileName, image)
@@ -197,18 +183,15 @@ ApplicationWindow {
     LCSDialogNewProfile {
         id: lcsDialogNewProfile
         onAccepted: {
-            for(let i = 0; i < window.savedProfiles.length; i++) {
-                if (text.toLowerCase() === window.savedProfiles[i]["Name"].toLowerCase()) {
+            for(let i in  lcsToolBar.profilesModel) {
+                if (text.toLowerCase() ===  lcsToolBar.profilesModel[i].toLowerCase()) {
                     logError("Bad profile", "This profile already exists!")
                     return
                 }
             }
-            let index = lcsToolBar.profilesCurrentIndex
-            window.savedProfiles[window.savedProfiles.length] = {
-                "Name": text,
-                "Mods": {}
-            }
-            window.savedProfiles = window.savedProfiles
+            let index =  lcsToolBar.profilesModel.length
+            lcsToolBar.profilesModel[index] = text
+            lcsToolBar.profilesModel = lcsToolBar.profilesModel
             lcsToolBar.profilesCurrentIndex = index
         }
     }
@@ -246,10 +229,16 @@ ApplicationWindow {
         onProgressEnd: lcsStatusBar.isCopying = false
 
         onInitialized: {
-            let index = lcsToolBar.profilesCurrentIndex
-            let profileMods = window.savedProfiles[index]["Mods"]
+            lcsToolBar.profilesModel = profiles
+            lcsToolBar.profilesCurrentIndex = 0
+            for(let i in profiles) {
+                if (profiles[i] === profileName) {
+                    lcsToolBar.profilesCurrentIndex = i
+                    break
+                }
+            }
             for(let fileName in mods) {
-                lcsModsView.addMod(fileName, mods[fileName], profileMods[fileName])
+                lcsModsView.addMod(fileName, mods[fileName], fileName in profileMods)
             }
             if(lcsTools.leaguePath == "") {
                 lcsDialogLolPath.open()
@@ -257,29 +246,20 @@ ApplicationWindow {
         }
         onModDeleted: {}
         onInstalledMod: lcsModsView.addMod(fileName, infoData, false)
-        onProfileSaved: {
-            let index = lcsToolBar.profilesCurrentIndex
-            window.savedProfiles[index] = {
-                "Name": name,
-                "Mods": mods,
-            }
-            window.savedProfiles = window.savedProfiles
-            lcsToolBar.profilesCurrentIndex = index
-        }
+        onProfileSaved: {}
+        onProfileLoaded: lcsModsView.loadProfile(profileMods)
         onProfileDeleted: {
             let index = lcsToolBar.profilesCurrentIndex
+            if (lcsToolBar.profilesModel.length > 1) {
+                lcsToolBar.profilesModel.splice(index, 1)
+                lcsToolBar.profilesModel = lcsToolBar.profilesModel
+            } else {
+                lcsToolBar.profilesModel = [ "Default Profile" ]
+            }
             if (index > 0) {
-                window.savedProfiles.splice(index, 1)
-                window.savedProfiles = window.savedProfiles
                 lcsToolBar.profilesCurrentIndex = index - 1
             } else {
-                lcsModsView.clearEnabled()
-                window.savedProfiles[index] = {
-                    "Name": "Default",
-                    "Mods": [],
-                }
-                window.savedProfiles = window.savedProfiles
-                lcsToolBar.profilesCurrentIndex = index
+                lcsToolBar.profilesCurrentIndex = 0
             }
         }
         onUpdateProfileStatus: lcsDialogLog.log(message)
@@ -307,6 +287,6 @@ ApplicationWindow {
     }
 
     Component.onCompleted: {
-        lcsTools.init(savedProfiles)
+        lcsTools.init()
     }
 }
