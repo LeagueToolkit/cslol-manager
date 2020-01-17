@@ -7,8 +7,9 @@
 #include <stdexcept>
 #include "process.hpp"
 
+using namespace LCS;
 
-void SleepMiliseconds(uint32_t time) noexcept {
+void LCS::SleepMiliseconds(uint32_t time) noexcept {
     Sleep(time);
 }
 
@@ -85,8 +86,8 @@ Process::Process(uint32_t apid) {
         CloseHandle(process);
         throw std::runtime_error("Failed to open process");
     }
-    
-    auto const nt = reinterpret_cast<PIMAGE_NT_HEADERS>(raw + dos->e_lfanew);
+
+    auto const nt = reinterpret_cast<PIMAGE_NT_HEADERS32>(raw + dos->e_lfanew);
     if (nt->Signature != IMAGE_NT_SIGNATURE) {
         CloseHandle(process);
         throw std::runtime_error("Failed to open process");
@@ -94,7 +95,7 @@ Process::Process(uint32_t apid) {
     
     handle = process;
     pid = apid;
-    base = reinterpret_cast<uintptr_t>(mod);
+    base = static_cast<PtrStorage>(reinterpret_cast<uintptr_t>(mod));
     size = nt->OptionalHeader.SizeOfCode;
     checksum = static_cast<uint32_t>(nt->OptionalHeader.CheckSum);
 }
@@ -120,47 +121,63 @@ void Process::WaitExit() const {
     WaitForSingleObject(handle, INFINITE);
 }
 
-void* Process::WaitMemoryNonZero(void* address, uint32_t delay) const {
-    void* result = nullptr;
+PtrStorage Process::WaitMemoryNonZero(void* address, uint32_t delay, uint32_t timeout) const {
+    PtrStorage result = 0;
+    uint32_t elapsed = 0;
     for(; !result; Sleep(delay)) {
         ReadProcessMemory(handle, address, &result, sizeof(result), nullptr);
+        elapsed += delay;
+        if (elapsed > timeout) {
+            throw std::runtime_error("Timed out waiting for memory non-zero!");
+        }
     }
     return result;
 }
 
-void Process::WaitWindow(char const*, uint32_t delay) const {
+bool Process::FindWindowName(const char* name) const {
+    uint32_t tgt = pid;
+    EnumWindows(FindWindowCB, reinterpret_cast<LPARAM>(&tgt));
+    return tgt != pid;
+}
+
+void Process::WaitWindow(char const*, uint32_t delay, uint32_t timeout) const {
+    uint32_t elapsed = 0;
     for(uint32_t tgt = pid; tgt == pid; Sleep(delay)) {
         EnumWindows(FindWindowCB, reinterpret_cast<LPARAM>(&tgt));
+        elapsed += delay;
+        if (elapsed > timeout) {
+            throw std::runtime_error("Timed out waiting for window!");
+        }
     }
 }
 
-void Process::ReadMemory(void* address, void* dest, size_t size) const {
+void Process::ReadMemory(void* address, void* dest, size_t sizeBytes) const {
     if (!address) {
         throw std::runtime_error("Can not read memory from nullptr");
     }
-    if (!ReadProcessMemory(handle, address, dest, size, nullptr)) {
+    if (!ReadProcessMemory(handle, address, dest, sizeBytes, nullptr)) {
         throw std::runtime_error("Failed to read memory");
     }
 }
 
-void Process::WriteMemory(void* address, void const* src, size_t size) const {
+void Process::WriteMemory(void* address, void const* src, size_t sizeBytes) const {
     if (!address) {
         throw std::runtime_error("Can not read memory from nullptr");
     }
-    if (!WriteProcessMemory(handle, address, src, size, nullptr)) {
+    if (!WriteProcessMemory(handle, address, src, sizeBytes, nullptr)) {
         throw std::runtime_error("Failed to read memory");
     }
 }
 
-void Process::MarkMemoryExecutable(void *address, size_t size) const {
+void Process::MarkMemoryExecutable(void *address, size_t sizeBytes) const {
     DWORD old = 0;
-    if (!VirtualProtectEx(handle, address, size, PAGE_EXECUTE, &old)) {
+    if (!VirtualProtectEx(handle, address, sizeBytes, PAGE_EXECUTE, &old)) {
         throw std::runtime_error("Failed to change protection");
     }
 }
 
-void* Process::AllocateMemory(size_t size) const {
-    auto ptr = VirtualAllocEx(handle, nullptr, size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+void* Process::AllocateMemory(size_t sizeBytes) const {
+    auto ptr = VirtualAllocEx(handle, nullptr, sizeBytes, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
     if(!ptr) {
         throw std::runtime_error("Failed to allocate memory");
     }

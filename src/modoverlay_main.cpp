@@ -3,6 +3,7 @@
 #include <string_view>
 #include "modoverlay.hpp"
 
+using namespace LCS;
 struct Main {
     ModOverlay::Config config = {};
     bool once = false;
@@ -45,7 +46,7 @@ struct Main {
         }
 
         puts("INFO: Source at https://github.com/moonshadow565/lolcustomskin");
-        puts("INFO: Put your moded files into <LoL Folder>/Game/MOD");
+        printf("INFO: Put your moded files into: %s\n", config.prefix.data());
         puts("INFO: =============================================================");
         config.load();
         printf("CONFIG: ");
@@ -64,6 +65,7 @@ struct Main {
             } else {
                 puts("STATUS: OFFSET_UPDATE");
                 fflush(stdout);
+                process.WaitWindow("League of Legends (TM) Client", 50);
                 if (config.rescan(process)) {
                     config.save();
 

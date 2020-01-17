@@ -7,7 +7,7 @@
 #include "patscanner.hpp"
 #include "process.hpp"
 
-namespace ModOverlay {
+namespace LCS::ModOverlay {
     struct CodePayload {
         uint8_t Verify[0x10] = {
             0xB8, 0x01, 0x00, 0x00, 0x00, 0xC3, 0x90, 0x90,
@@ -80,61 +80,62 @@ namespace ModOverlay {
         };
     };
 
-
     struct EVP_PKEY_METHOD {
         int pkey_id;
         int flags;
-        uintptr_t init;
-        uintptr_t copy;
-        uintptr_t cleanup;
-        uintptr_t paramgen_init;
-        uintptr_t paramgen;
-        uintptr_t keygen_init;
-        uintptr_t keygen;
-        uintptr_t sign_init;
-        uintptr_t sign;
-        uintptr_t verify_init;
-        uint8_t* verify;
-        uintptr_t verify_recover_init;
-        uintptr_t verify_recover;
-        uintptr_t signctx_init;
-        uintptr_t signctx;
-        uintptr_t verifyctx_init;
-        uintptr_t verifyctx;
-        uintptr_t encrypt_init;
-        uintptr_t encrypt;
-        uintptr_t decrypt_init;
-        uintptr_t decrypt;
-        uintptr_t derive_init;
-        uintptr_t derive;
-        uintptr_t ctrl;
-        uintptr_t ctrl_str;
-        uintptr_t digestsign;
-        uintptr_t digestverify;
-        uintptr_t check;
-        uintptr_t public_check;
-        uintptr_t param_check;
-        uintptr_t digest_custom;
+        Ptr<void> init;
+        Ptr<void> copy;
+        Ptr<void> cleanup;
+        Ptr<void> paramgen_init;
+        Ptr<void> paramgen;
+        Ptr<void> keygen_init;
+        Ptr<void> keygen;
+        Ptr<void> sign_init;
+        Ptr<void> sign;
+        Ptr<void> verify_init;
+        Ptr<uint8_t> verify;
+        Ptr<void> verify_recover_init;
+        Ptr<void> verify_recover;
+        Ptr<void> signctx_init;
+        Ptr<void> signctx;
+        Ptr<void> verifyctx_init;
+        Ptr<void> verifyctx;
+        Ptr<void> encrypt_init;
+        Ptr<void> encrypt;
+        Ptr<void> decrypt_init;
+        Ptr<void> decrypt;
+        Ptr<void> derive_init;
+        Ptr<void> derive;
+        Ptr<void> ctrl;
+        Ptr<void> ctrl_str;
+        Ptr<void> digestsign;
+        Ptr<void> digestverify;
+        Ptr<void> check;
+        Ptr<void> public_check;
+        Ptr<void> param_check;
+        Ptr<void> digest_custom;
     };
 
     struct FileProvider {
         struct Vtable {
-            uint8_t* Open;
-            uint8_t* CheckAccess;
-            uint8_t* CreateIterator;
+            Ptr<uint8_t> Open;
+            Ptr<uint8_t> CheckAccess;
+            Ptr<uint8_t>CreateIterator;
 #ifndef __APPLE__
-            uint8_t* VectorDeleter;
+            Ptr<uint8_t> VectorDeleter;
 #else
-            uint8_t* Destructor;
-            uint8_t* Deleter;
+            Ptr<uint8_t> Destructor;
+            Ptr<uint8_t> Deleter;
 #endif
-            uint8_t* IsRads;
-        } *vtable;
+            Ptr<uint8_t> IsRads;
+        };
         struct List {
-            FileProvider* arr[4];
+            Ptr<FileProvider> arr[4];
             uint32_t size;
-        } *list;
-        uint8_t* prefixFn;
+        };
+        Ptr<Vtable> vtable;
+        Ptr<List> list;
+        Ptr<uint8_t> prefixFn;
         std::array<char, 256> prefix;
         char Info[0x10] = {
             'C' ,'u' ,'s' ,'t' ,'o' ,'m' ,' ' ,'L' ,
@@ -167,8 +168,8 @@ namespace ModOverlay {
 
     struct Config {
         uint32_t checksum = 0;
-        uintptr_t off_fp  = 0;
-        uintptr_t off_pmeth  = 0;
+        PtrStorage off_fp  = 0;
+        PtrStorage off_pmeth  = 0;
         std::array<char, 256> prefix = { "MOD/" };
         std::string configpath;
 
@@ -199,7 +200,6 @@ namespace ModOverlay {
         }
 
         inline bool rescan(Process const& process) noexcept {
-            process.WaitWindow("League of Legends (TM) Client", 50);
             auto data = process.Dump();
             auto res_pmeth = pat_pmeth(data.data(), data.size());
             auto res_fp = pat_fp(data.data(), data.size());
@@ -208,8 +208,8 @@ namespace ModOverlay {
                 return false;
             }
 
-            off_pmeth = process.Debase(*reinterpret_cast<uintptr_t const*>(res_pmeth[1]));
-            off_fp = process.Debase(*reinterpret_cast<uintptr_t const*>(res_fp[1]));
+            off_pmeth = process.Debase(*reinterpret_cast<PtrStorage const*>(res_pmeth[1]));
+            off_fp = process.Debase(*reinterpret_cast<PtrStorage const*>(res_fp[1]));
             checksum = process.Checksum();
             return true;
         }
@@ -219,7 +219,7 @@ namespace ModOverlay {
             process.Write(rem_code, {});
             process.MarkExecutable(rem_code);
 
-            auto org_pmeth_arr = process.Rebase<EVP_PKEY_METHOD*>(off_pmeth);
+            auto org_pmeth_arr = process.Rebase<Ptr<EVP_PKEY_METHOD>>(off_pmeth);
             auto rem_pmeth = process.Allocate<EVP_PKEY_METHOD>();
             auto org_pmeth_first = process.WaitNonZero(org_pmeth_arr);
             auto mod_pmeth = EVP_PKEY_METHOD {};
@@ -231,13 +231,13 @@ namespace ModOverlay {
             auto org_fplist = process.Rebase<FileProvider::List>(off_fp);
             auto rem_fp = process.Allocate<FileProvider>();
             auto rem_fpvtbl = process.Allocate<FileProvider::Vtable>();
-            process.Write(rem_fp, {
+            process.Write(rem_fp, FileProvider {
                               .vtable = rem_fpvtbl,
                               .list = org_fplist,
                               .prefixFn = rem_code->PrefixFn,
                               .prefix = prefix,
                           });
-            process.Write(rem_fpvtbl, {
+            process.Write(rem_fpvtbl, FileProvider::Vtable {
                               .Open = rem_code->Open,
                               .CheckAccess = rem_code->CheckAccess,
                               .CreateIterator = rem_code->CreateIterator,
@@ -252,9 +252,9 @@ namespace ModOverlay {
 
 
             auto mod_fplist = FileProvider::List {};
-            process.WaitNonZero(org_fplist->arr);
+            process.WaitNonZero(Ptr { &org_fplist->arr[0] });
             process.Read(org_fplist, mod_fplist);
-            process.Write(org_fplist, {
+            process.Write(org_fplist, FileProvider::List{
                               .arr = {
                                   rem_fp,
                                   mod_fplist.arr[0],
