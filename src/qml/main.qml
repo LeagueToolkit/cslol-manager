@@ -2,8 +2,7 @@ import QtQuick 2.10
 import QtQuick.Layouts 1.10
 import QtQuick.Controls 1.4
 import Qt.labs.settings 1.0
-import Qt.labs.platform 1.1
-import Qt.labs.settings 1.1
+import Qt.labs.platform 1.0
 import lolcustomskin.tools 1.0
 
 ApplicationWindow {
@@ -98,7 +97,7 @@ ApplicationWindow {
     toolBar: LCSToolBar {
         id: lcsToolBar
         isBussy: window.isBussy
-        patcherRunning: lcsTools.state === LCSTools.StateExternalRunning
+        patcherRunning: lcsTools.state === LCSTools.StateRunning
 
         profilesModel: [ "Default Profile" ]
 

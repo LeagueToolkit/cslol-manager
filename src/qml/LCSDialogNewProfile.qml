@@ -1,8 +1,7 @@
 import QtQuick 2.10
 import QtQuick.Layouts 1.10
 import QtQuick.Controls 1.4
-import QtQuick.Dialogs 1.3
-
+import QtQuick.Dialogs 1.2
 
 Dialog {
     id: newProfileDialog

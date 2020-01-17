@@ -393,7 +393,7 @@ void LCSToolsImpl::runProfile(QString name) {
 }
 
 void LCSToolsImpl::stopProfile() {
-    if (state_ == LCSState::StateExternalRunning) {
+    if (state_ == LCSState::StateRunning) {
         if (process_->isOpen()){
             setStatus("Stop profile");
             process_->kill();
@@ -540,7 +540,7 @@ void LCSToolsImpl::finished(int) {
 }
 
 void LCSToolsImpl::started() {
-    setState(LCSState::StateExternalRunning);
+    setState(LCSState::StateRunning);
 }
 
 /// Interface implementations

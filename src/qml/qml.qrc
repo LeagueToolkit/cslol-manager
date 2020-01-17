@@ -1,7 +1,6 @@
 <RCC>
     <qresource prefix="/">
         <file>main.qml</file>
-        <file>qtquickcontrols2.conf</file>
         <file>LCSToolBar.qml</file>
         <file>LCSDialogNewProfile.qml</file>
         <file>LCSDialogLoLPath.qml</file>

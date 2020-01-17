@@ -10,7 +10,6 @@
 #include "lcs/common.hpp"
 #include "lcs/modindex.hpp"
 
-
 class LCSToolsImpl : public QObject, public LCS::ProgressMulti
 {
     Q_OBJECT
@@ -20,7 +19,7 @@ public:
         StateUnitialized = 0,
         StateIdle = 1,
         StateBussy = 2,
-        StateExternalRunning = 3,
+        StateRunning = 3,
     };
     Q_ENUM(LCSState)
 
