@@ -159,6 +159,20 @@ Dialog {
                         width: itemsView.width
                         resizable: false
                     }
+                    DropArea {
+                        id: fileDropArea
+                        anchors.fill: parent
+                        onDropped: {
+                            if (drop.hasUrls) {
+                                let files = drop.urls
+                                for(let i in drop.urls) {
+                                    itemsModel.append({
+                                                        "Path": files[i].toString().replace("file:///", "")
+                                                      })
+                                }
+                            }
+                        }
+                    }
                 }
 
                 RowLayout {

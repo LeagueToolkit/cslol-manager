@@ -143,6 +143,7 @@ ApplicationWindow {
 
         onModEdit: lcsTools.startEditMod(fileName)
 
+        onImportFile: lcsTools.installFantomeZip(file.toString().replace("file:///", ""))
     }
 
     statusBar: LCSStatusBar {

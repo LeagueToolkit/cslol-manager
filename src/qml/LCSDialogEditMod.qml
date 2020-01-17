@@ -207,6 +207,20 @@ Dialog {
                         width: itemsView.width
                         resizable: false
                     }
+                    DropArea {
+                        id: fileDropArea
+                        anchors.fill: parent
+                        onDropped: {
+                            if (drop.hasUrls) {
+                                let files = drop.urls
+                                let wads = []
+                                for(let i in drop.urls) {
+                                    wads[wads.length] = files[i].toString().replace("file:///", "")
+                                }
+                                lcsDialogEditMod.addWads(wads)
+                            }
+                        }
+                    }
                 }
 
                 RowLayout {

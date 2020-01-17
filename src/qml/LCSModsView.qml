@@ -17,6 +17,8 @@ TableView {
 
     signal modEdit(string fileName)
 
+    signal importFile(string file)
+
     function addMod(fileName, info, enabled) {
         lcsModsViewModel.append({
                                     "FileName": fileName,
@@ -74,6 +76,19 @@ TableView {
         let modsCount = lcsModsViewModel.count
         for(let i = 0; i < modsCount; i++) {
             lcsModsViewModel.setProperty(i, "Enabled", false)
+        }
+    }
+
+    DropArea {
+        id: fileDropArea
+        anchors.fill: parent
+        onDropped: {
+            if (drop.hasUrls) {
+                let url = drop.urls[0]
+                if (url.endsWith('.zip')) {
+                    lcsModsView.importFile(url)
+                }
+            }
         }
     }
 
