@@ -120,7 +120,7 @@ namespace LCS::ModOverlay {
         struct Vtable {
             Ptr<uint8_t> Open;
             Ptr<uint8_t> CheckAccess;
-            Ptr<uint8_t>CreateIterator;
+            Ptr<uint8_t> CreateIterator;
 #ifndef __APPLE__
             Ptr<uint8_t> VectorDeleter;
 #else
@@ -232,22 +232,22 @@ namespace LCS::ModOverlay {
             auto rem_fp = process.Allocate<FileProvider>();
             auto rem_fpvtbl = process.Allocate<FileProvider::Vtable>();
             process.Write(rem_fp, FileProvider {
-                              .vtable = rem_fpvtbl,
-                              .list = org_fplist,
-                              .prefixFn = rem_code->PrefixFn,
-                              .prefix = prefix,
+                              rem_fpvtbl,
+                              org_fplist,
+                              rem_code->PrefixFn,
+                              prefix,
                           });
             process.Write(rem_fpvtbl, FileProvider::Vtable {
-                              .Open = rem_code->Open,
-                              .CheckAccess = rem_code->CheckAccess,
-                              .CreateIterator = rem_code->CreateIterator,
+                              rem_code->Open,
+                              rem_code->CheckAccess,
+                              rem_code->CreateIterator,
 #ifndef __APPLE__
-                              .VectorDeleter = rem_code->VectorDeleter,
+                              rem_code->VectorDeleter,
 #else
-                              .Destructor = rem_code->Destructor,
-                              .Deleter = rem_code->Deleter,
+                              rem_code->Destructor,
+                              rem_code->Deleter,
 #endif
-                              .IsRads = rem_code->IsRads,
+                              rem_code->IsRads,
                           });
 
 
@@ -255,13 +255,13 @@ namespace LCS::ModOverlay {
             process.WaitNonZero(Ptr { &org_fplist->arr[0] });
             process.Read(org_fplist, mod_fplist);
             process.Write(org_fplist, FileProvider::List{
-                              .arr = {
+                              {
                                   rem_fp,
                                   mod_fplist.arr[0],
                                   mod_fplist.arr[1],
                                   mod_fplist.arr[2],
                               },
-                              .size = mod_fplist.size + 1,
+                              mod_fplist.size + 1,
                           });
         }
     };
