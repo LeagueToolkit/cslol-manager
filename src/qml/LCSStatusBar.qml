@@ -4,7 +4,7 @@ import QtQuick.Controls 1.4
 
 StatusBar {
     property bool isBussy: false
-    property alias statusMessage: statusMessageLabel.text
+    property string statusMessage: ""
     property bool isCopying: true
     property int itemDone: 0
     property int itemTotal: 0
@@ -37,7 +37,7 @@ StatusBar {
         Label {
             Layout.fillWidth: true
             id: statusMessageLabel
-            text: ""
+            text: isBussy ? statusMessage : "Idle"
         }
         ProgressBar {
             id: progressBarData

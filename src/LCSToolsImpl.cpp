@@ -13,9 +13,10 @@
 
 LCSToolsImpl::LCSToolsImpl(QObject *parent) :
     QObject(parent),
-    process_(nullptr),
     progDirPath_(QCoreApplication::applicationDirPath().toStdString())
-{}
+{
+    patcher_.configpath = (progDirPath_ / "lolcustomskin.txt").generic_string();
+}
 
 LCSToolsImpl::~LCSToolsImpl() {}
 
@@ -185,6 +186,7 @@ void LCSToolsImpl::init() {
         setState(LCSState::StateBussy);
         setStatus("Load mods");
         try {
+            patcher_.load();
             modIndex_ = std::make_unique<LCS::ModIndex>(progDirPath_ / "installed");
             QJsonObject mods;
             for(auto const& [rawFileName, rawMod]: modIndex_->mods()) {
@@ -357,47 +359,58 @@ void LCSToolsImpl::runProfile(QString name) {
             emit reportError("Run profile", "League Path not set");
             setState(LCSState::StateIdle);
         } else {
-            auto exePath = progDirPath_ / "lolcustomskin.exe";
-            if (!LCS::fs::exists(exePath)) {
-                emit reportError("Run profile", "lolcustomskin.exe not found!");
-                setState(LCSState::StateIdle);
-                return;
-            }
-
-            if (!LCS::fs::is_regular_file(exePath)) {
-                emit reportError("Run profile", "lolcustomskin.exe is not a file!");
-                setState(LCSState::StateIdle);
-                return;
-            }
-
-            auto profilePath = progDirPath_ / "profiles" / name.toStdString();
-            auto pathName = QString::fromStdString(profilePath.generic_string());
-            auto exeName = QString::fromStdString(exePath.generic_string());
-
-            if (!process_) {
-                process_ = new QProcess(this);
-                process_->moveToThread(this->thread());
-                connect(process_, &QProcess::readyReadStandardOutput, this, &LCSToolsImpl::readyReadStandardOutput);
-                connect(process_, &QProcess::errorOccurred, this, &LCSToolsImpl::errorOccured);
-                connect(process_, QOverload<int>::of(&QProcess::finished), this, &LCSToolsImpl::finished);
-                connect(process_, &QProcess::started, this, &LCSToolsImpl::started);
-                connect(this, &LCSToolsImpl::destroyed, process_, &QProcess::kill);
-            }
-
-            process_->start(exeName, QStringList({
-                                                     pathName
-                                                     //, "--exit-error"
-                                                 }), QIODevice::OpenModeFlag::ReadOnly);
+            auto profilePath = (progDirPath_ / "profiles" / name.toStdString()).generic_string() + "/";
+            memcpy(patcher_.prefix.data(), profilePath.c_str(), profilePath.size() + 1);
+            std::thread thread([this] {
+                try {
+                    setStatus("Wait for League");
+                    setState(LCSState::StateRunning);
+                    while(state_ == LCSState::StateRunning) {
+                        uint32_t pid =  LCS::Process::Find("League of Legends.exe");
+                        if (pid == 0) {
+                            LCS::SleepMiliseconds(250);
+                            continue;
+                        }
+                        setState(LCSState::StatePatching);
+                        {
+                            auto process = LCS::Process(pid);
+                            if (!patcher_.good(process)) {
+                                setStatus("Scan offsets");
+                                process.WaitWindow("League of Legends (TM) Client", 10);
+                                if (!patcher_.rescan(process)) {
+                                    throw std::runtime_error("Failed to find offsets");
+                                }
+                                patcher_.save();
+                                setStatus("Patch late");
+                            } else {
+                                setStatus("Patch early");
+                            }
+                            patcher_.patch(process);
+                            setStatus("Wait for league to exit");
+//                            while (!process.Exited()) {
+//                                LCS::SleepMiliseconds(1000);
+//                            }
+                            process.WaitExit();
+                        }
+                        setStatus("League exited");
+                        setStatus("Wait for League");
+                        setState(LCSState::StateRunning);
+                    }
+                    setStatus("Patcher stoped");
+                    setState(LCSState::StateIdle);
+                } catch(std::runtime_error const& error) {
+                    emit reportError("Patch League", QString(error.what()));
+                    setState(LCSState::StateIdle);
+                }
+            });
+            thread.detach();
         }
     }
 }
 
 void LCSToolsImpl::stopProfile() {
     if (state_ == LCSState::StateRunning) {
-        if (process_->isOpen()){
-            setStatus("Stop profile");
-            process_->kill();
-        }
+        setState(LCSState::StateStoping);
     }
 }
 
@@ -510,37 +523,6 @@ void LCSToolsImpl::addModWads(QString fileName, QJsonArray wads) {
         }
         setState(LCSState::StateIdle);
     }
-}
-
-/// Private slots
-void LCSToolsImpl::readyReadStandardOutput() {
-    auto data = QString::fromUtf8(process_->readAllStandardOutput());
-    for(auto line: data.split("\n")) {
-        if (line.startsWith("ERROR: ")) {
-            process_->kill();
-        } else if(line.startsWith("INFO: ")) {
-        } else {
-            emit updateProfileStatus(line);
-        }
-    }
-}
-
-void LCSToolsImpl::errorOccured(QProcess::ProcessError error) {
-    if (error == QProcess::ProcessError::FailedToStart) {
-        emit reportError("Run profile", "Failed to start lolcustomskin.exe");
-        setState(LCSState::StateIdle);
-    } else if (error != QProcess::ProcessError::Crashed) {
-        emit reportError("Run profile", "Unknown error in lolcustomskin.exe");
-    }
-    setState(LCSState::StateIdle);
-}
-
-void LCSToolsImpl::finished(int) {
-    setState(LCSState::StateIdle);
-}
-
-void LCSToolsImpl::started() {
-    setState(LCSState::StateRunning);
 }
 
 /// Interface implementations

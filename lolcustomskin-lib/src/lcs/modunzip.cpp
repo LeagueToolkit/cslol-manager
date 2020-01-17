@@ -106,7 +106,7 @@ void ModUnZip::extract(fs::path const& dest, ProgressMulti& progress) {
 
 WadMakeUnZip& ModUnZip::addFolder(std::string name) {
     if (auto wad = wadfolder_.find(name); wad == wadfolder_.end()) {
-        return wadfolder_.insert(wad, std::pair {
+        return wadfolder_.emplace_hint(wad, std::pair {
                                     name, WadMakeUnZip(name, &zip_archive)
                                 })->second;
     } else {

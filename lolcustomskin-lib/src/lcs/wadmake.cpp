@@ -118,7 +118,7 @@ void WadMake::write(fs::path const& path, Progress& progress) const {
                                                   uncompressedBuffer.data(), uncompressedSize,
                                                   3);
             entry.sizeCompressed = (uint32_t)compressedSize;
-            entry.type = Wad::Entry::ZlibCompressed;
+            entry.type = Wad::Entry::ZStandardCompressed;
             sha256.init();
             sha256.process(compressedBuffer.data(), compressedBuffer.data() + compressedSize);
             sha256.finish();
@@ -175,7 +175,7 @@ void WadMakeUnZip::write(fs::path const& path, Progress& progress) const {
     fs::create_directories(path.parent_path());
     std::ofstream outfile;
     outfile.exceptions(std::ofstream::failbit | std::ifstream::badbit);
-    outfile.open(path_, std::ios::binary);
+    outfile.open(path, std::ios::binary);
     outfile.seekp((std::streamoff)(sizeof(Wad::Header) + sizeof(Wad::Entry) * entries_.size()));
 
     std::vector<Wad::Entry> entries = {};
@@ -219,7 +219,7 @@ void WadMakeUnZip::write(fs::path const& path, Progress& progress) const {
                                                   uncompressedBuffer.data(), uncompressedSize,
                                                   3);
             entry.sizeCompressed = (uint32_t)compressedSize;
-            entry.type = Wad::Entry::ZlibCompressed;
+            entry.type = Wad::Entry::ZStandardCompressed;
             sha256.init();
             sha256.process(compressedBuffer.data(), compressedBuffer.data() + compressedSize);
             sha256.finish();

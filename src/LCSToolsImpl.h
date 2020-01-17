@@ -9,6 +9,7 @@
 #include <QJsonObject>
 #include "lcs/common.hpp"
 #include "lcs/modindex.hpp"
+#include "modoverlay.hpp"
 
 class LCSToolsImpl : public QObject, public LCS::ProgressMulti
 {
@@ -20,6 +21,8 @@ public:
         StateIdle = 1,
         StateBussy = 2,
         StateRunning = 3,
+        StatePatching = 4,
+        StateStoping = 5,
     };
     Q_ENUM(LCSState)
 
@@ -73,16 +76,9 @@ public slots:
 
     LCSState getState();
     QString getLeaguePath();
-public:
-    void startItem(std::filesystem::path const& path, size_t) noexcept override;
-    void consumeData(size_t ammount) noexcept override;
-    void finishItem() noexcept override;
-    void startMulti(size_t itemCount, size_t dataTotal) noexcept override;
-    void finishMulti() noexcept override;
-
 private:
-    std::unique_ptr<LCS::ModIndex> modIndex_;
-    QProcess* process_ = nullptr;
+    std::unique_ptr<LCS::ModIndex> modIndex_ = nullptr;
+    LCS::ModOverlay::Config patcher_ = {};
     QString leaguepath_;
     LCS::fs::path leaguePathStd_;
     LCS::fs::path progDirPath_;
@@ -97,17 +93,17 @@ private:
     QString readCurrentProfile();
     void writeCurrentProfile(QString profile);
 
-
 /// ProgressMulti impl
+public:
+    void startItem(std::filesystem::path const& path, size_t) noexcept override;
+    void consumeData(size_t ammount) noexcept override;
+    void finishItem() noexcept override;
+    void startMulti(size_t itemCount, size_t dataTotal) noexcept override;
+    void finishMulti() noexcept override;
+
 private:
     size_t progressItemDone_;
     size_t progressDataDone_;
-
-private slots:
-    void readyReadStandardOutput();
-    void errorOccured(QProcess::ProcessError error);
-    void finished(int exitCode);
-    void started();
 };
 
 

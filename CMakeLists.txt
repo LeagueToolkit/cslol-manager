@@ -15,6 +15,10 @@ set(CMAKE_AUTORCC ON)
 find_package(Qt5 COMPONENTS Core Quick Gui Widgets REQUIRED)
 
 add_executable(lolcustomskin-tools WIN32
+    lolcustomskin/src/modoverlay.hpp
+    lolcustomskin/src/patscanner.hpp
+    lolcustomskin/src/process.hpp
+    lolcustomskin/src/process_win32.cpp
     src/LCSTools.h
     src/LCSTools.cpp
     src/LCSToolsImpl.h
