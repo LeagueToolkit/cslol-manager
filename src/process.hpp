@@ -3,9 +3,12 @@
 #include <cstddef>
 #include <vector>
 #include <type_traits>
+#include <thread>
 
 namespace LCS {
-    extern void SleepMiliseconds(uint32_t time) noexcept;
+    inline void SleepMiliseconds(uint32_t time) noexcept {
+         std::this_thread::sleep_for(std::chrono::milliseconds(time));
+    }
 
     using PtrStorage = uint32_t;
 
@@ -74,6 +77,8 @@ namespace LCS {
         inline uint32_t Checksum() const noexcept {
             return checksum;
         }
+
+        bool Exited() const noexcept;
 
         void WaitExit() const;
 

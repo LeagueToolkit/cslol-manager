@@ -3,15 +3,14 @@
 #include <winnt.h>
 #include <Psapi.h>
 #include <WinUser.h>
+#include <TlHelp32.h>
 #include <utility>
+#include <thread>
 #include <stdexcept>
 #include "process.hpp"
 
 using namespace LCS;
 
-void LCS::SleepMiliseconds(uint32_t time) noexcept {
-    Sleep(time);
-}
 
 static BOOL CALLBACK FindWindowCB(HWND hwnd, LPARAM tgt) {
     auto tgtpid = reinterpret_cast<uint32_t*>(tgt);
@@ -23,36 +22,19 @@ static BOOL CALLBACK FindWindowCB(HWND hwnd, LPARAM tgt) {
 }
 
 uint32_t Process::Find(char const* name) noexcept {
-    DWORD pids[1024];
-    DWORD pidsSize;
-    HMODULE mod;
-    DWORD modsSize;
-    char modName[MAX_PATH];
-    
-    if (!EnumProcesses(pids, sizeof(pids), &pidsSize)) {
-        return 0;
+    PROCESSENTRY32 entry = {};
+    entry.dwSize = sizeof(PROCESSENTRY32);
+    auto handle = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    for(bool i = Process32First(handle, &entry); i ; i = Process32Next(handle, &entry)) {
+        if (strstr(entry.szExeFile, name)) {
+            CloseHandle(handle);
+            return entry.th32ProcessID;
+        }
     }
-    auto const pidsEnd = pids + pidsSize / sizeof(pidsSize);
-    for (auto pid = pids; pid != pidsEnd; pid++) {
-        if (!*pid) {
-            continue;
-        }
-        auto process = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, *pid);
-        if (!process || process == INVALID_HANDLE_VALUE) {
-            continue;
-        }
-        if(EnumProcessModules(process, &mod, sizeof(mod), &modsSize)) {
-            if(GetModuleBaseNameA(process, mod, modName, sizeof(modName))) {
-                if(strstr(modName, name)) {
-                    CloseHandle(process);
-                    return *pid;
-                }
-            }
-        }
-        CloseHandle(process);
-    }
+    CloseHandle(handle);
     return 0;
 }
+
 
 Process::Process(uint32_t apid) {
     auto const process = OpenProcess(
@@ -115,6 +97,18 @@ std::vector<uint8_t> Process::Dump() const {
         ReadProcessMemory(handle, reinterpret_cast<void*>(base + p), buffer.data() + p, 0x1000, nullptr);
     }
     return buffer;
+}
+
+
+bool Process::Exited() const noexcept {
+    if (!handle || handle == INVALID_HANDLE_VALUE ) {
+        return true;
+    }
+    DWORD exitCode;
+    if (!GetExitCodeProcess(handle, &exitCode)) {
+        return true;
+    }
+    return exitCode != STILL_ACTIVE;
 }
 
 void Process::WaitExit() const {
