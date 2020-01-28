@@ -105,6 +105,16 @@ void LCSToolsImpl::writeCurrentProfile(QString profile) {
     outfile << profile.toStdString() << '\n';
 }
 
+LCS::WadIndex const& LCSToolsImpl::wadIndex() {
+    if (leaguepath_.isNull() || leaguepath_.isEmpty()) {
+        throw std::runtime_error("League path not set!");
+    }
+    if (wadIndex_ == nullptr) {
+        wadIndex_ = std::make_unique<LCS::WadIndex>(leaguePathStd_);
+    }
+    return *wadIndex_;
+}
+
 namespace {
     QJsonObject validateAndCorrect(QString fileName, QJsonObject object) {
         if (!object.contains("Name") || !object["Name"].isString() || object["Name"].toString().isEmpty()) {
@@ -170,6 +180,7 @@ void LCSToolsImpl::changeLeaguePath(QString newLeaguePath) {
             if (newLeaguePath != leaguepath_) {
                 leaguePathStd_ = path;
                 leaguepath_ = newLeaguePath;
+                wadIndex_ = nullptr;
                 emit leaguePathChanged(leaguepath_);
             }
         } else {
@@ -241,9 +252,6 @@ void LCSToolsImpl::installFantomeZip(QString path) {
         setState(LCSState::StateBussy);
         setStatus("Install Fantome .zip");
         try {
-            if (leaguepath_.isNull() || leaguepath_.isEmpty()) {
-                throw std::runtime_error("League path not set!");
-            }
             auto mod = modIndex_->install_from_zip(path.toStdString(), *this);
             emit installedMod(QString::fromStdString(mod->filename()),
                               parseInfoData(mod->filename(), mod->info()));
@@ -259,10 +267,7 @@ void LCSToolsImpl::makeMod(QString fileName, QString image, QJsonObject infoData
         setState(LCSState::StateBussy);
         setStatus("Make mod");
         try {
-            if (leaguepath_.isNull() || leaguepath_.isEmpty()) {
-                throw std::runtime_error("League path not set!");
-            }
-            LCS::WadIndex index(leaguePathStd_);
+            auto const& index = wadIndex();
             LCS::WadMakeQueue queue(index);
             for(auto item: items) {
                 queue.addItem(LCS::fs::path(item.toString().toStdString()), LCS::Conflict::Abort);
@@ -289,10 +294,7 @@ void LCSToolsImpl::saveProfile(QString name, QJsonObject mods, bool run, bool wh
             name = "Default Profile";
         }
         try {
-            if (leaguepath_.isNull() || leaguepath_.isEmpty()) {
-                throw std::runtime_error("League path not set!");
-            }
-            LCS::WadIndex index(leaguePathStd_);
+            auto const& index = wadIndex();
             LCS::WadMergeQueue queue(progDirPath_ / "profiles" / name.toStdString(), index);
             for(auto key: mods.keys()) {
                 auto fileName = key.toStdString();
@@ -355,56 +357,51 @@ void LCSToolsImpl::runProfile(QString name) {
     if (state_ == LCSState::StateIdle) {
         setState(LCSState::StateBussy);
         setStatus("Run profile");
-        if (leaguepath_.isNull() || leaguepath_.isEmpty()) {
-            emit reportError("Run profile", "League Path not set");
-            setState(LCSState::StateIdle);
-        } else {
-            auto profilePath = (progDirPath_ / "profiles" / name.toStdString()).generic_string() + "/";
-            memcpy(patcher_.prefix.data(), profilePath.c_str(), profilePath.size() + 1);
-            std::thread thread([this] {
-                try {
+        auto profilePath = (progDirPath_ / "profiles" / name.toStdString()).generic_string() + "/";
+        memcpy(patcher_.prefix.data(), profilePath.c_str(), profilePath.size() + 1);
+        std::thread thread([this] {
+            try {
+                setStatus("Wait for League");
+                setState(LCSState::StateRunning);
+                while(state_ == LCSState::StateRunning) {
+                    uint32_t pid =  LCS::Process::Find("League of Legends.exe");
+                    if (pid == 0) {
+                        LCS::SleepMiliseconds(250);
+                        continue;
+                    }
+                    setState(LCSState::StatePatching);
+                    {
+                        auto process = LCS::Process(pid);
+                        if (!patcher_.good(process)) {
+                            setStatus("Scan offsets");
+                            process.WaitWindow("League of Legends (TM) Client", 10);
+                            if (!patcher_.rescan(process)) {
+                                throw std::runtime_error("Failed to find offsets");
+                            }
+                            patcher_.save();
+                            setStatus("Patch late");
+                        } else {
+                            setStatus("Patch early");
+                        }
+                        patcher_.patch(process);
+                        setStatus("Wait for league to exit");
+//                        while (!process.Exited()) {
+//                            LCS::SleepMiliseconds(1000);
+//                        }
+                        process.WaitExit();
+                    }
+                    setStatus("League exited");
                     setStatus("Wait for League");
                     setState(LCSState::StateRunning);
-                    while(state_ == LCSState::StateRunning) {
-                        uint32_t pid =  LCS::Process::Find("League of Legends.exe");
-                        if (pid == 0) {
-                            LCS::SleepMiliseconds(250);
-                            continue;
-                        }
-                        setState(LCSState::StatePatching);
-                        {
-                            auto process = LCS::Process(pid);
-                            if (!patcher_.good(process)) {
-                                setStatus("Scan offsets");
-                                process.WaitWindow("League of Legends (TM) Client", 10);
-                                if (!patcher_.rescan(process)) {
-                                    throw std::runtime_error("Failed to find offsets");
-                                }
-                                patcher_.save();
-                                setStatus("Patch late");
-                            } else {
-                                setStatus("Patch early");
-                            }
-                            patcher_.patch(process);
-                            setStatus("Wait for league to exit");
-//                            while (!process.Exited()) {
-//                                LCS::SleepMiliseconds(1000);
-//                            }
-                            process.WaitExit();
-                        }
-                        setStatus("League exited");
-                        setStatus("Wait for League");
-                        setState(LCSState::StateRunning);
-                    }
-                    setStatus("Patcher stoped");
-                    setState(LCSState::StateIdle);
-                } catch(std::runtime_error const& error) {
-                    emit reportError("Patch League", QString(error.what()));
-                    setState(LCSState::StateIdle);
                 }
-            });
-            thread.detach();
-        }
+                setStatus("Patcher stoped");
+                setState(LCSState::StateIdle);
+            } catch(std::runtime_error const& error) {
+                emit reportError("Patch League", QString(error.what()));
+                setState(LCSState::StateIdle);
+            }
+        });
+        thread.detach();
     }
 }
 
@@ -504,11 +501,8 @@ void LCSToolsImpl::addModWads(QString fileName, QJsonArray wads) {
         setState(LCSState::StateBussy);
         setStatus("Add mod wads");
         try {
-            if (leaguepath_.isNull() || leaguepath_.isEmpty()) {
-                throw std::runtime_error("League path not set!");
-            }
-            LCS::WadIndex wadIndex(leaguePathStd_);
-            LCS::WadMakeQueue wadMake(wadIndex);
+            auto const& index = wadIndex();
+            LCS::WadMakeQueue wadMake(index);
             for(auto wadPath: wads) {
                 wadMake.addItem(LCS::fs::path(wadPath.toString().toStdString()), LCS::Conflict::Abort);
             }

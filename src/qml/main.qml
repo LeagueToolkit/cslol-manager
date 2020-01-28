@@ -150,7 +150,7 @@ ApplicationWindow {
         id: lcsStatusBar
         isBussy: window.isBussy
         statusMessage: lcsTools.status
-        visible: isBussy
+        visible: window.isBussy
     }
 
     LCSDialogOpenZipFantome {

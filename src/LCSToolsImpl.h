@@ -78,6 +78,7 @@ public slots:
     QString getLeaguePath();
 private:
     std::unique_ptr<LCS::ModIndex> modIndex_ = nullptr;
+    std::unique_ptr<LCS::WadIndex> wadIndex_ = nullptr;
     LCS::ModOverlay::Config patcher_ = {};
     QString leaguepath_;
     LCS::fs::path leaguePathStd_;
@@ -92,6 +93,7 @@ private:
     void writeProfile(QString profileName, QJsonObject profile);
     QString readCurrentProfile();
     void writeCurrentProfile(QString profile);
+    LCS::WadIndex const& wadIndex();
 
 /// ProgressMulti impl
 public:

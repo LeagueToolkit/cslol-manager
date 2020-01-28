@@ -71,7 +71,7 @@ namespace LCS {
 
         void write(fs::path const& path, Progress& progress) const;
 
-        inline size_t size() const noexcept;
+        size_t size() const noexcept;
 
         inline auto const& name() const& noexcept {
             return name_;
