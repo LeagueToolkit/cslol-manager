@@ -1,6 +1,7 @@
 #ifndef LCS_WAD_HPP
 #define LCS_WAD_HPP
 #include "common.hpp"
+#include "HashTable.hpp"
 
 namespace LCS {
     struct Wad {
@@ -75,6 +76,8 @@ namespace LCS {
         inline auto size() const noexcept {
             return size_;
         }
+
+        void extract(fs::path const& dest, HashTable const& hashtable, Progress& progress) const;
     private:
         fs::path path_;
         size_t size_;

@@ -13,6 +13,8 @@ add_subdirectory(dep/zstd)
 add_library(lolcustomskin-lib STATIC
     src/lcs/common.hpp
     src/lcs/common.cpp
+    src/lcs/hashtable.hpp
+    src/lcs/hashtable.cpp
     src/lcs/mod.hpp
     src/lcs/mod.cpp
     src/lcs/modindex.hpp
