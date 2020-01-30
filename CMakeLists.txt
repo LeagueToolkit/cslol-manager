@@ -12,3 +12,4 @@ endif()
 
 add_subdirectory(lolcustomskin-lib)
 add_subdirectory(lolcustomskin-gui)
+add_subdirectory(lolcustomskin-wadextract)

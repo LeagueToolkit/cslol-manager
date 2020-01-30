@@ -95,7 +95,7 @@ void Wad::extract(fs::path const& dest, HashTable const& hashtable, Progress& pr
     uncompressedBuffer.reserve((size_t)(maxUncompressed));
 
     for(auto const& entry: entries_) {
-        file_.seekg((std::streamoff)entry.dataOffset);
+        file_.seekg((std::streampos)entry.dataOffset, std::ios::beg);
         if (entry.type == Entry::Uncompressed) {
             file_.read(uncompressedBuffer.data(), entry.sizeUncompressed);
         } else if(entry.type == Entry::ZlibCompressed) {
@@ -136,8 +136,10 @@ void Wad::extract(fs::path const& dest, HashTable const& hashtable, Progress& pr
                     }
                 }
             }
-            std::ofstream outfile(outpath, std::ios::binary);
+            fs::create_directories(outpath.parent_path());
+            std::ofstream outfile;
             outfile.exceptions(std::ofstream::failbit | std::ofstream::badbit);
+            outfile.open(outpath, std::ios::binary);
             outfile.write(uncompressedBuffer.data(), entry.sizeUncompressed);
         }
         progress.consumeData(entry.sizeUncompressed);
