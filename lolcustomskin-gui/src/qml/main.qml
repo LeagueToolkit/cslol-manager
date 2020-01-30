@@ -103,7 +103,10 @@ ApplicationWindow {
 
         onInstallFantomeZip: lcsDialogOpenZipFantome.open()
 
-        onCreateNewMod: lcsDialogNewMod.open()
+        onCreateNewMod: {
+            lcsDialogNewMod.clear()
+            lcsDialogNewMod.open()
+        }
 
         onChangeGamePath: lcsDialogLolPath.open()
 
