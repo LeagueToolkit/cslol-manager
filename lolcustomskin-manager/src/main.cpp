@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
 
     app.setOrganizationName("moonshadow565");
     app.setOrganizationDomain("lcs");
-    app.setApplicationName("LCS-tools");
+    app.setApplicationName("lolcustomskin-manager");
     QSettings::setPath(QSettings::Format::IniFormat, QSettings::Scope::SystemScope, QCoreApplication::applicationDirPath());
     QSettings::setDefaultFormat(QSettings::Format::IniFormat);
 

@@ -1,3 +1,3 @@
 [submodule "lolcustomskin"]
-	path = lolcustomskin-gui/lolcustomskin
+	path = lolcustomskin-manager/lolcustomskin
 	url = https://github.com/moonshadow565/lolcustomskin

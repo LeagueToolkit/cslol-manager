@@ -11,7 +11,7 @@ if(MSVC)
 endif()
 
 add_subdirectory(lolcustomskin-lib)
-add_subdirectory(lolcustomskin-gui)
+add_subdirectory(lolcustomskin-manager)
 add_subdirectory(lolcustomskin-wadextract)
 add_subdirectory(lolcustomskin-wadmake)
 add_subdirectory(lolcustomskin-wxyextract)

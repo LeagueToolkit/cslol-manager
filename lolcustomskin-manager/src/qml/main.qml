@@ -10,7 +10,7 @@ ApplicationWindow {
     visible: true
     width: 640
     height: 480
-    title: qsTr("League Custom Skin Tools")
+    title: qsTr("LolCustomSkin Manager")
 
     SystemTrayIcon {
         id: trayIcon
