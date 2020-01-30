@@ -57,14 +57,22 @@ Mod* ModIndex::install_from_zip(fs::path path, ProgressMulti& progress) {
     if (fs::exists(dest)) {
         throw std::runtime_error("Mod already exists!");
     }
+
     fs::path tmp = path_ / "tmp";
     if (fs::exists(tmp)) {
         fs::remove_all(tmp);
     }
+    fs::create_directories(tmp);
+
     {
         ModUnZip zip(path);
         zip.extract(tmp, progress);
     }
+    fs::create_directories(dest.parent_path());
+    if (!fs::exists(tmp / "META" / "info.json")) {
+        throw std::runtime_error("Not a valid mod file!");
+    }
+
     fs::rename(tmp, dest);
     auto mod = new Mod { std::move(dest) };
     mods_.insert_or_assign(mod->filename(),  std::unique_ptr<Mod>{mod});
@@ -81,10 +89,12 @@ Mod* ModIndex::make(const std::string_view& fileName,
     if (fs::exists(dest)) {
         throw std::runtime_error("Mod already exists!");
     }
+
     fs::path tmp = path_ / "tmp";
     if (fs::exists(tmp)) {
         fs::remove_all(tmp);
     }
+    fs::create_directories(tmp);
     fs::create_directories(tmp / "META");
     {
         std::ofstream outfile;
@@ -99,6 +109,8 @@ Mod* ModIndex::make(const std::string_view& fileName,
     fs::create_directories(tmp / "WAD");
     queue.write(tmp / "WAD", progress);
 
+
+    fs::create_directories(dest.parent_path());
     fs::rename(tmp, dest);
     auto mod = new Mod { std::move(dest) };
     mods_.insert_or_assign(mod->filename(),  std::unique_ptr<Mod>{mod});

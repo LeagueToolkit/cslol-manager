@@ -437,12 +437,12 @@ void WxyExtract::extract_files(fs::path const& dest, Progress& progress) const {
 void WxyExtract::extract_meta(fs::path const& dest, Progress& progress) const {
     fs::create_directories(dest);
     {
-        json j = {{
+        json j = {
             { "Name", name_ },
             { "Author", author_ },
             { "Version", version_ },
             { "Description", "Converted from .wxy" },
-        }};
+        };
         std::ofstream outfile;
         outfile.exceptions(std::ofstream::failbit | std::ofstream::badbit);
         outfile.open(dest / "info.json", std::ios::binary);
