@@ -4,6 +4,7 @@
 #include <miniz.h>
 #include <zstd.h>
 #include <charconv>
+#include "utility.hpp"
 
 using namespace LCS;
 
@@ -33,51 +34,6 @@ Wad::Wad(const std::filesystem::path& path, const std::string& name)
     }
 }
 
-namespace  {
-    struct MagicExt {
-        char const* const magic;
-        size_t const magic_size;
-        char const* const ext;
-        size_t const ext_size;
-        size_t const offset;
-
-        template<size_t SM, size_t SE>
-        constexpr inline MagicExt(char const(&magica)[SM], char const(&exta)[SE], size_t offseta = 0) noexcept
-            : magic(magica),
-              magic_size(SM - 1),
-              ext(exta),
-              ext_size(SE - 1),
-              offset(offseta)
-        {}
-    };
-
-    static inline constexpr MagicExt const magicext[] = {
-        { "OggS", "ogg" },
-        { "\x00\x01\x00\x00\x00", "ttf" },
-        { "OTTO\x00", "otf" },
-        { "DDS", "dds" },
-        { "PROP", "bin" },
-        { "PTCH", "bin" },
-        { "BKHD", "bnk" },
-        { "r3d2Mesh", "scb" },
-        { "[ObjectBegin]", "sco" },
-        { "r3d2aims", "aimesh" },
-        { "r3d2anmd", "anm" },
-        { "r3d2canm", "anm" },
-        { "r3d2sklt", "skl" },
-        { "r3d2wght", "wgt" },
-        { "r3d2", "wpk" },
-        { "\x33\x22\x11\x00", "skn" },
-        { "PreLoadBuildingBlocks = {", "preload" },
-        { "\x1BLuaQ\x00\x01\x04\x04", "luabin" },
-        { "\x1BLuaQ\x00\x01\x04\x08", "luabin64" },
-        { "OPAM", "mob" },
-        { "[MaterialBegin]", "mat" },
-        { "WGEO", "wgeo" },
-        { "MGEO", "mgeo" },
-        { "NVR\x00", "nvr" },
-    };
-}
 
 void Wad::extract(fs::path const& dest, HashTable const& hashtable, Progress& progress) const {
     size_t totalSize = 0;
@@ -126,15 +82,7 @@ void Wad::extract(fs::path const& dest, HashTable const& hashtable, Progress& pr
                 char hex[16];
                 auto result = std::to_chars(hex, hex + sizeof(hex), entry.xxhash, 16);
                 outpath /= std::string(hex, result.ptr);
-                for(auto const& magic: magicext) {
-                    if(entry.sizeUncompressed < (magic.ext_size + magic.offset)) {
-                        continue;
-                    }
-                    if(std::memcmp(magic.magic, uncompressedBuffer.data() + magic.offset, magic.magic_size) == 0) {
-                        outpath.replace_extension(std::string(magic.ext, magic.ext_size));
-                        break;
-                    }
-                }
+                outpath.replace_extension(ScanExtension(uncompressedBuffer.data(), entry.sizeUncompressed));
             }
             fs::create_directories(outpath.parent_path());
             std::ofstream outfile;

@@ -1,46 +1,24 @@
 #include "wxyextract.hpp"
+#include "utility.hpp"
 #include <miniz.h>
 #include <type_traits>
 #include <xxhash.h>
 #include <numeric>
 #include <algorithm>
+#include <json.hpp>
+#include <cstring>
 
 using namespace LCS;
+
+using json = nlohmann::json;
 
 namespace {
     static inline constexpr uint8_t methodNone = 0;
     static inline constexpr uint8_t methodDeflate = 1;
     static inline constexpr uint8_t methodZlib = 2;
 
-    static inline void decompressStr(std::string& str) {
-        str.insert(str.begin(), 'x');
-        char buffer[1024];
-        mz_stream strm = {};
-        if (mz_inflateInit2(&strm, 15) != Z_OK) {
-            throw std::runtime_error("Failed to init uncompress stream!");
-        }
-        strm.next_in = (unsigned char const*)(str.data());
-        strm.avail_in = (unsigned int)(str.size());
-        strm.next_out = (unsigned char*)buffer;
-        strm.avail_out = (unsigned int)(sizeof(buffer));
-        mz_inflate(&strm, MZ_FINISH);
-        mz_inflateEnd(&strm);
-        str.resize((size_t)strm.total_out);
-        std::copy(buffer, buffer + strm.total_out, str.data());
-    }
-
-    static const char prefixDeploy[] = "deploy/";
-    static const char prefixProjects[] = "projects/";
-
-    static inline void decryptStr(std::string& str) {
-        int32_t i = 0;
-        int32_t nameSize = static_cast<int32_t>(str.size());
-        for(auto& c : str) {
-            auto& b = reinterpret_cast<uint8_t&>(c);
-            b = b ^ static_cast<uint8_t>(i * 17 + (nameSize - i) * 42);
-            i++;
-        }
-    }
+    inline constexpr static const char prefixDeploy[] = "deploy/";
+    inline constexpr static const char prefixProjects[] = "projects/";
 
     static inline uint64_t xxhashStr(std::string str, bool isProject = false) {
         XXH64_state_s xxstate{};
@@ -57,13 +35,13 @@ namespace {
 
     template<typename T>
     static inline void read(std::ifstream& file, T& value) {
-        static_assert(std::is_arithmetic_v<T>);
+        static_assert(std::is_arithmetic_v<T> || std::is_enum_v<T>);
         file.read((char*)&value, sizeof(T));
     }
 
     template<typename T, size_t S>
     static inline void read(std::ifstream& file, std::array<T, S>& value) {
-        static_assert(std::is_arithmetic_v<T>);
+        static_assert(std::is_arithmetic_v<T> || std::is_enum_v<T>);
         file.read((char*)&value, sizeof(T) * S);
     }
 
@@ -100,108 +78,100 @@ WxyExtract::WxyExtract(fs::path const& path)
     if(magic != std::array{'W', 'X', 'Y', 'S'}) {
         throw std::runtime_error("Not a .wxy file!");
     }
-    read(file_, wooxyFileVersion);
-    if(wooxyFileVersion < 6) {
+    read(file_, wxyVersion_);
+    if(wxyVersion_ < 6) {
         read_old();
     } else {
         read_oink();
     }
+    build_paths();
 }
 
-
-void WxyExtract::extract_files(fs::path const& dest, Progress& progress) const {
-    size_t total = 0;
-    size_t maxUncompressed = 0;
-    size_t maxCompressed = 0;
-    for(auto const& entry: this->filesList) {
-        maxCompressed = std::max(maxCompressed, (size_t)entry.compressedSize);
-        maxUncompressed = std::max(maxUncompressed, (size_t)entry.uncompresedSize);
-        total += (size_t)entry.compressedSize;
+void WxyExtract::decompressStr(std::string& str) const {
+    if (str.empty()) {
+        return;
     }
-
-    progress.startItem(path_, total);
-    std::vector<char> uncompressedBuffer;
-    std::vector<char> compressedBuffer;
-    uncompressedBuffer.reserve(maxUncompressed+6);
-    compressedBuffer.reserve(maxCompressed+6);
-
-    for(auto const& entry: this->filesList) {
-        file_.seekg((std::streamoff)entry.offset, std::ios::beg);
-        if(entry.compressionMethod == methodNone) {
-            file_.read(uncompressedBuffer.data(), (std::streamsize)entry.uncompresedSize);
-        } else if(entry.compressionMethod == methodZlib) {
-            if(this->wooxyFileVersion < 6) {
-                uint16_t extra = this->wooxyFileVersion <= 4 ? 1 : 2;
-                file_.seekg((std::streamoff)-extra, std::ios::cur);
-                file_.read(compressedBuffer.data(), entry.compressedSize);
-                compressedBuffer[0] = 0x78;
-                if(extra > 1) {
-                    compressedBuffer[1] = -0x64;
-                }
-            } else {
-                file_.read(compressedBuffer.data(), entry.compressedSize);
-            }
-            mz_stream strm = {};
-            if (mz_inflateInit2(&strm,15) != MZ_OK) {
-                throw std::runtime_error("Failed to init uncompress stream!");
-            }
-            strm.next_in = (unsigned char const*)compressedBuffer.data();
-            strm.avail_in = (unsigned int)(entry.compressedSize);
-            strm.next_out = (unsigned char*)uncompressedBuffer.data();
-            strm.avail_out = (unsigned int)(entry.uncompresedSize);
-            mz_inflate(&strm, MZ_FINISH);
-            mz_inflateEnd(&strm);
-        } else if(entry.compressionMethod == methodDeflate) {
-            file_.read(compressedBuffer.data(), entry.compressedSize);
-            mz_stream strm = {};
-            if (mz_inflateInit2(&strm,-15) != MZ_OK) {
-                throw std::runtime_error("Failed to init uncompress stream!");
-            }
-            strm.next_in = (unsigned char const*)compressedBuffer.data();
-            strm.avail_in = (unsigned int)(entry.compressedSize);
-            strm.next_out = (unsigned char*)uncompressedBuffer.data();
-            strm.avail_out = (unsigned int)(entry.uncompresedSize);
-            mz_inflate(&strm, MZ_FINISH);
-            mz_inflateEnd(&strm);
-        } else {
-            throw std::runtime_error("Unknow compression method!");
+    char buffer[1024];
+    mz_stream strm = {};
+    if (wxyVersion_ < 6) {
+        str.insert(str.begin(), 0x78);
+        if (mz_inflateInit2(&strm, 15) != MZ_OK) {
+            throw std::runtime_error("Failed to init uncompress stream!");
         }
-        fs::path outpath = dest / entry.fileGamePath;
-        fs::create_directories(outpath.parent_path());
-
-        std::ofstream outfile;
-        outfile.exceptions(std::ofstream::failbit | std::ofstream::badbit);
-        outfile.open(outpath, std::ios::binary);
-        outfile.write(uncompressedBuffer.data(), entry.uncompresedSize);
-        progress.consumeData((size_t)(entry.compressedSize));
+    } else {
+        if (mz_inflateInit2(&strm, -15) != MZ_OK) {
+            throw std::runtime_error("Failed to init uncompress stream!");
+        }
     }
+    strm.next_in = (unsigned char const*)(str.data());
+    strm.avail_in = (unsigned int)(str.size());
+    strm.next_out = (unsigned char*)buffer;
+    strm.avail_out = (unsigned int)(sizeof(buffer));
+    mz_inflate(&strm, MZ_FINISH);
+    mz_inflateEnd(&strm);
+    str.resize((size_t)strm.total_out);
+    std::copy(buffer, buffer + strm.total_out, str.data());
+}
 
-    progress.finishItem();
+void WxyExtract::decryptStr(std::string& str) const {
+    if (wxyVersion_ > 6) {
+        int32_t i = 0;
+        int32_t nameSize = static_cast<int32_t>(str.size());
+        for(auto& c : str) {
+            uint8_t b = (uint8_t)c;
+            b = (uint8_t)(b ^ (uint8_t)(i * 17 + (nameSize - i) * 42));
+            c = (char)b;
+            i++;
+        }
+    }
+}
+
+void WxyExtract::decryptStr2(std::string& str) const {
+    if (wxyVersion_ > 6) {
+        int32_t i = 0;
+        int32_t nameSize = static_cast<int32_t>(str.size());
+        for(auto& c : str) {
+            uint8_t b = (uint8_t)c;
+            b = (uint8_t)(b ^ (uint8_t)(i * 42 + (nameSize - i) * 17));
+            c = (char)b;
+            i++;
+        }
+    }
 }
 
 void WxyExtract::read_old() {
-    read(file_, this->skinName);
-    read(file_, this->skinAuthor);
-    read(file_, this->skinVersion);
+    read(file_, name_);
+    read(file_, author_);
+    read(file_, version_);
+    decompressStr(name_);
+    decompressStr(author_);
+    decompressStr(version_);
 
-    if(this->wooxyFileVersion >= 3) {
-        read(file_, this->category);
-        read(file_, this->subCategory);
+    if(wxyVersion_ >= 3) {
+        read(file_, category_);
+        read(file_, subCategory_);
+        decompressStr(category_);
+        decompressStr(subCategory_);
         int32_t imageCount = 0;
         read(file_, imageCount);
         for(int32_t i = 1; i <= imageCount; i++) {
-            int32_t imageSize = 0;
-            read(file_, imageSize);
-            file_.seekg(imageSize + 1, std::ios::cur);
+            uint32_t size = 0;
+            bool main = false;
+            read(file_, size);
+            read(file_, main);
+            uint32_t offset = (uint32_t)file_.tellg();
+            file_.seekg((std::streamoff)size, std::ios::cur);
+            previews_.push_back(Preview { Preview::Image, main, offset + 1, size - 5 });
+        }
+    } else {
+        uint32_t size = 0;
+        read(file_, size);
+        if (size != 0) {
+            uint32_t offset = (uint32_t)file_.tellg();
+            file_.seekg((std::streamoff)size, std::ios::cur);
+            previews_.push_back(Preview { Preview::Image, true, offset + 1, size - 5 });
         }
     }
-
-    if(this->wooxyFileVersion < 3) {
-        int32_t imageSize = 0;
-        read(file_, imageSize);
-        file_.seekg(imageSize + 1, std::ios::cur);
-    }
-
 
     std::vector<std::string> projectsList;
 
@@ -213,7 +183,7 @@ void WxyExtract::read_old() {
         decompressStr(str);
     }
 
-    if(this->wooxyFileVersion >= 4) {
+    if(wxyVersion_ >= 4) {
         int32_t deleteCount;
         read(file_, deleteCount);
         for(int32_t i = 0; i < deleteCount; i++) {
@@ -222,7 +192,7 @@ void WxyExtract::read_old() {
             if(projectIndex >= projectCount || projectIndex < 0) {
                 throw std::runtime_error("delete file doesn't reference valid projcet!");
             }
-            auto& skn = this->deleteList.emplace_back();
+            auto& skn = deleteList_.emplace_back();
             skn.project =  projectsList[static_cast<size_t>(i)];
             read(file_, skn.fileGamePath);
             decompressStr(skn.fileGamePath);
@@ -237,12 +207,12 @@ void WxyExtract::read_old() {
         if(projectIndex >= projectCount || projectIndex < 0) {
             throw std::runtime_error("delete file doesn't reference valid projcet!");
         }
-        auto& skn = this->filesList.emplace_back();
+        auto& skn = filesList_.emplace_back();
         skn.project = projectsList[static_cast<size_t>(projectIndex)];
         read(file_, skn.fileGamePath);
         read(file_, skn.uncompresedSize);
         read(file_, skn.compressedSize);
-        if(this->wooxyFileVersion != 1) {
+        if(wxyVersion_ != 1) {
             read(file_, skn.checksum);
         }
         skn.compressionMethod = skn.compressedSize == skn.uncompresedSize ? 0 : 2;
@@ -251,10 +221,10 @@ void WxyExtract::read_old() {
 
     int32_t offset = (int32_t)file_.tellg();
     for(int32_t i = 0; i < fileCount; i++) {
-        auto& skn = this->filesList[static_cast<size_t>(i)];
+        auto& skn = filesList_[static_cast<size_t>(i)];
         skn.offset = offset;
         offset += skn.compressedSize;
-        if(this->wooxyFileVersion <= 4) {
+        if(wxyVersion_ <= 4) {
             offset -= 1;
         } else {
             offset -= 2;
@@ -281,18 +251,35 @@ void WxyExtract::read_oink() {
     read(file_, cLens.version);
     read(file_, cLens.category);
     read(file_, cLens.subCategory);
-    file_.seekg(cLens.name + cLens.author + cLens.version + cLens.category + cLens.subCategory, std::ios::cur);
+
+    read(file_, name_, cLens.name);
+    read(file_, author_, cLens.author);
+    read(file_, version_, cLens.version);
+    read(file_, category_, cLens.category);
+    read(file_, subCategory_, cLens.subCategory);
+
+    decryptStr2(name_);
+    decryptStr2(author_);
+    decryptStr2(version_);
+    decryptStr2(category_);
+    decryptStr2(subCategory_);
+
+    decompressStr(name_);
+    decompressStr(author_);
+    decompressStr(version_);
+    decompressStr(category_);
+    decompressStr(subCategory_);
 
     int32_t previewContentCount;
     read(file_, previewContentCount);
     for(int32_t i = 0; i < previewContentCount; i++) {
         uint8_t type;
         read(file_, type);
-        if(type == 0) {
-            int32_t size = 0;
-            read(file_, size);
-            file_.seekg(size, std::ios::cur);
-        }
+        uint32_t size = 0;
+        read(file_, size);
+        uint32_t offset = (uint32_t)file_.tellg();
+        file_.seekg((std::streamoff)size, std::ios::cur);
+        previews_.push_back(Preview { (Preview::Type)type, true, offset, size });
     }
 
     uint16_t contentCount;
@@ -317,9 +304,7 @@ void WxyExtract::read_oink() {
             auto& kvp = fileNames.emplace_back();
             read(file_, nameLength);
             read(file_, kvp.second, nameLength);
-            if(this->wooxyFileVersion > 6) {
-                decryptStr(kvp.second);
-            }
+            decryptStr(kvp.second);
             kvp.first = xxhashStr(kvp.second);
         }
 
@@ -328,7 +313,7 @@ void WxyExtract::read_oink() {
         });
 
         for(int32_t f = 0; f < fileCount; f++) {
-            auto& skn = this->filesList.emplace_back();
+            auto& skn = filesList_.emplace_back();
             read(file_, skn.checksum2);
             read(file_, skn.checksum);
             read(file_, skn.adler);
@@ -336,7 +321,7 @@ void WxyExtract::read_oink() {
             read(file_, skn.compressedSize);
             read(file_, skn.compressionMethod);
 
-            if(this->wooxyFileVersion > 6) {
+            if(wxyVersion_ > 6) {
                 skn.adler = skn.adler
                         ^ static_cast<uint32_t>(skn.uncompresedSize)
                         ^ static_cast<uint32_t>(skn.compressedSize)
@@ -348,8 +333,174 @@ void WxyExtract::read_oink() {
         }
     }
     int32_t offset = (int32_t)file_.tellg();
-    for(auto& skn: this->filesList) {
+    for(auto& skn: filesList_) {
         skn.offset = offset;
         offset += skn.compressedSize;
     }
 }
+
+void WxyExtract::build_paths() {
+    for(auto& file: filesList_) {
+        fs::path path = file.fileGamePath;
+        auto beg = path.begin();
+        auto end = path.end();
+        for (auto i = beg; i != end; i++) {
+            std::string name = i->generic_string();
+            std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+            if (name == "levels" || name == "data" || name == "assets") {
+                file.pathFirst = name;
+                beg = i;
+                break;
+            }
+        }
+        if (auto i = beg; i != end) {
+            file.path = *i;
+            i++;
+            while (i != end) {
+                file.path /= *i;
+                i++;
+            }
+        }
+    }
+}
+
+void WxyExtract::extract_files(fs::path const& dest, Progress& progress) const {
+    size_t total = 0;
+    size_t maxUncompressed = 0;
+    size_t maxCompressed = 0;
+    for(auto const& entry: filesList_) {
+        maxCompressed = std::max(maxCompressed, (size_t)entry.compressedSize);
+        maxUncompressed = std::max(maxUncompressed, (size_t)entry.uncompresedSize);
+        total += (size_t)entry.compressedSize;
+    }
+
+    progress.startItem(path_, total);
+    std::vector<char> uncompressedBuffer;
+    std::vector<char> compressedBuffer;
+    uncompressedBuffer.resize(maxUncompressed+6);
+    compressedBuffer.resize(maxCompressed+6);
+
+    for(auto const& entry: filesList_) {
+        file_.seekg((std::streamoff)entry.offset, std::ios::beg);
+        if(entry.compressionMethod == methodNone) {
+            file_.read(uncompressedBuffer.data(), (std::streamsize)entry.uncompresedSize);
+        } else if(entry.compressionMethod == methodZlib) {
+            if(wxyVersion_ < 6) {
+                uint16_t extra = wxyVersion_ <= 4 ? 1 : 2;
+                file_.seekg((std::streamoff)-extra, std::ios::cur);
+                file_.read(compressedBuffer.data(), entry.compressedSize);
+                compressedBuffer[0] = 0x78;
+                if(extra > 1) {
+                    compressedBuffer[1] = -0x64;
+                }
+            } else {
+                file_.read(compressedBuffer.data(), entry.compressedSize);
+            }
+            mz_stream strm = {};
+            if (mz_inflateInit2(&strm, 15) != MZ_OK) {
+                throw std::runtime_error("Failed to init uncompress stream!");
+            }
+            strm.next_in = (unsigned char const*)compressedBuffer.data();
+            strm.avail_in = (unsigned int)(entry.compressedSize);
+            strm.next_out = (unsigned char*)uncompressedBuffer.data();
+            strm.avail_out = (unsigned int)(entry.uncompresedSize);
+            mz_inflate(&strm, MZ_FINISH);
+            mz_inflateEnd(&strm);
+        } else if(entry.compressionMethod == methodDeflate) {
+            file_.read(compressedBuffer.data(), entry.compressedSize);
+            mz_stream strm = {};
+            if (mz_inflateInit2(&strm, -15) != MZ_OK) {
+                throw std::runtime_error("Failed to init uncompress stream!");
+            }
+            strm.next_in = (unsigned char const*)compressedBuffer.data();
+            strm.avail_in = (unsigned int)(entry.compressedSize);
+            strm.next_out = (unsigned char*)uncompressedBuffer.data();
+            strm.avail_out = (unsigned int)(entry.uncompresedSize);
+            mz_inflate(&strm, MZ_FINISH);
+            mz_inflateEnd(&strm);
+        } else {
+            throw std::runtime_error("Unknow compression method!");
+        }
+        fs::path outpath = dest / entry.fileGamePath;
+        fs::create_directories(outpath.parent_path());
+
+        std::ofstream outfile;
+        outfile.exceptions(std::ofstream::failbit | std::ofstream::badbit);
+        outfile.open(outpath, std::ios::binary);
+        outfile.write(uncompressedBuffer.data(), entry.uncompresedSize);
+        progress.consumeData((size_t)(entry.compressedSize));
+    }
+
+    progress.finishItem();
+}
+
+void WxyExtract::extract_meta(fs::path const& dest, Progress& progress) const {
+    fs::create_directories(dest);
+    {
+        json j = {{
+            { "Name", name_ },
+            { "Author", author_ },
+            { "Version", version_ },
+            { "Description", "Converted from .wxy" },
+        }};
+        std::ofstream outfile;
+        outfile.exceptions(std::ofstream::failbit | std::ofstream::badbit);
+        outfile.open(dest / "info.json", std::ios::binary);
+        outfile << j;
+    }
+    size_t total = 0;
+    size_t maxCompressed = 0;
+    for(auto const& preview: previews_) {
+        if(preview.type == Preview::Image) {
+            total += preview.size;
+            maxCompressed = std::max(maxCompressed, (size_t)preview.size);
+        }
+    }
+    progress.startItem(dest, total);
+
+    std::vector<char> compressedBuffer;
+    std::vector<char> uncompressedBuffer;
+    compressedBuffer.resize(maxCompressed);
+    uncompressedBuffer.resize(64 * 1024 * 1024); // ¯\_(ツ)_/ works...
+
+    size_t i = 0;
+    bool foundFirst = false;
+    for(auto const& preview: previews_) {
+        if (preview.type != Preview::Image) {
+            continue;
+        }
+        file_.seekg((std::streamoff)preview.offset, std::ios::beg);
+        file_.read(compressedBuffer.data(), (std::streamsize)preview.size);
+        mz_stream strm = {};
+        if (mz_inflateInit2(&strm, -15) != MZ_OK) {
+            throw std::runtime_error("Failed to init uncompress stream!");
+        }
+        strm.next_in = (unsigned char const*)compressedBuffer.data();
+        strm.avail_in = (unsigned int)(preview.size);
+        strm.next_out = (unsigned char*)uncompressedBuffer.data();
+        strm.avail_out = (unsigned int)(uncompressedBuffer.size());
+        mz_inflate(&strm, MZ_FINISH);
+        mz_inflateEnd(&strm);
+
+        auto extension = ScanExtension(uncompressedBuffer.data(), (size_t)(strm.total_out));
+        if (!extension.empty()) {
+            fs::path outpath = dest;
+            if (!foundFirst && extension == "png") {
+                outpath /= "image.png";
+                foundFirst = true;
+            } else {
+                outpath /= "image" + std::to_string(i) + "." + extension;
+                i++;
+            }
+            std::ofstream outfile;
+            outfile.exceptions(std::ofstream::failbit | std::ofstream::badbit);
+            outfile.open(outpath, std::ios::binary);
+            outfile.write(uncompressedBuffer.data(), (std::streamsize)(strm.total_out));
+        }
+
+        progress.consumeData((size_t)preview.size);
+    }
+
+    progress.finishItem();
+}
+

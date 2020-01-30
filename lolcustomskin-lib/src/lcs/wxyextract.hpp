@@ -11,12 +11,36 @@ namespace LCS {
         WxyExtract& operator=(WxyExtract&&) = delete;
 
         void extract_files(fs::path const& dest, Progress& progress) const;
+
+        void extract_meta(fs::path const& dest, Progress& progress) const;
+
+        inline auto const& name() const& noexcept {
+            return name_;
+        }
+
+        inline auto const& author() const& noexcept {
+            return author_;
+        }
+
+        inline auto const& version() const& noexcept {
+            return version_;
+        }
+
+        inline auto const& category() const& noexcept {
+            return category_;
+        }
+
+        inline auto const& subCategory() const& noexcept {
+            return subCategory_;
+        }
     private:
         fs::path path_;
         mutable std::ifstream file_;
+
         struct SkinFile {
+            fs::path path;
+            std::string pathFirst;
             std::string fileGamePath;
-            std::string fileUserPath;
             int32_t uncompresedSize;
             int32_t compressedSize;
             std::array<uint8_t, 16> checksum;
@@ -26,25 +50,35 @@ namespace LCS {
             int32_t offset;
             uint8_t compressionMethod;
         };
-        struct Image {
-            uint8_t type;
-            int32_t offset;
+
+        struct Preview {
+            enum Type : uint8_t {
+                Image = 0,
+                Model = 1,
+            };
+            Type type;
+            bool main;
+            uint32_t offset;
             uint32_t size;
         };
 
-        std::string skinName;
-        std::string skinAuthor;
-        std::string skinVersion;
-        std::string category;
-        std::string subCategory;
-        int32_t wooxyFileVersion;
-        std::string filePath;
-        std::vector<SkinFile> filesList;
-        std::vector<SkinFile> deleteList;
-        std::vector<Image> images;
+        std::string name_;
+        std::string author_;
+        std::string version_;
+        std::string category_;
+        std::string subCategory_;
+        int32_t wxyVersion_;
+        std::vector<SkinFile> filesList_;
+        std::vector<SkinFile> deleteList_;
+        std::vector<Preview> previews_;
 
         void read_old();
         void read_oink();
+        void build_paths();
+
+        void decryptStr(std::string& str) const;
+        void decryptStr2(std::string& str) const;
+        void decompressStr(std::string& str) const;
     };
 }
 

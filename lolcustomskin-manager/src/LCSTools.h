@@ -25,6 +25,8 @@ public:
     using LCSState = LCSToolsImpl::LCSState;
     explicit LCSTools(QObject *parent = nullptr);
     ~LCSTools();
+    Q_INVOKABLE QString fromFile(QString file);
+    Q_INVOKABLE QString toFile(QString file);
 
 signals:
     void stateChanged(LCSState state);

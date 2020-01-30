@@ -86,7 +86,7 @@ TableView {
             if (drop.hasUrls) {
                 let url = drop.urls[0]
                 if (url.endsWith('.zip')) {
-                    lcsModsView.importFile(url)
+                    lcsModsView.importFile(lcsTools.fromFile(url))
                 }
             }
         }

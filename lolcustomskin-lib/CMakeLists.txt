@@ -37,6 +37,8 @@ add_library(lolcustomskin-lib STATIC
     src/lcs/wadmergequeue.cpp
     src/lcs/wxyextract.hpp
     src/lcs/wxyextract.cpp
+    src/lcs/utility.hpp
+    src/lcs/utility.cpp
 )
 
 target_link_libraries(lolcustomskin-lib PRIVATE picosha2 json xxhash miniz zstd)

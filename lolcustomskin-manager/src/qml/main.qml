@@ -146,7 +146,7 @@ ApplicationWindow {
 
         onModEdit: lcsTools.startEditMod(fileName)
 
-        onImportFile: lcsTools.installFantomeZip(file.toString().replace("file:///", ""))
+        onImportFile: lcsTools.installFantomeZip(file)
     }
 
     statusBar: LCSStatusBar {
@@ -158,12 +158,12 @@ ApplicationWindow {
 
     LCSDialogOpenZipFantome {
         id: lcsDialogOpenZipFantome
-        onAccepted: lcsTools.installFantomeZip(file.toString().replace("file:///", ""))
+        onAccepted: lcsTools.installFantomeZip(lcsTools.fromFile(file))
     }
 
     LCSDialogSaveZipFantome {
         id: lcsDialogSaveZipFantome
-        onAccepted: lcsTools.exportMod(modName, file.toString().replace("file:///", ""))
+        onAccepted: lcsTools.exportMod(modName, lcsTools.fromFile(file))
     }
 
     LCSDialogNewMod {
@@ -201,10 +201,8 @@ ApplicationWindow {
 
     LCSDialogLoLPath {
         id: lcsDialogLolPath
-        folder: lcsTools.leaguePath != "" ? "file:///" + lcsTools.leaguePath : ""
-        onAccepted:  {
-            lcsTools.leaguePath = folder.toString().replace("file:///", "");
-        }
+        folder: lcsTools.toFile(lcsTools.leaguePath)
+        onAccepted: lcsTools.leaguePath = lcsTools.fromFile(folder)
     }
 
     LCSDialogLog {

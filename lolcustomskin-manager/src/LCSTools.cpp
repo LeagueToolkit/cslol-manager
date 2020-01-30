@@ -60,6 +60,22 @@ LCSTools::LCSTools(QObject *parent) : QObject(parent)
 
 LCSTools::~LCSTools(){}
 
+QString LCSTools::fromFile(QString file) {
+    if (file.isNull() || file.isEmpty()) {
+        return "";
+    }
+    QUrl url = file;
+    return url.toLocalFile();
+}
+
+QString LCSTools::toFile(QString file) {
+    if (file.isNull() || file.isEmpty()) {
+        return "";
+    }
+    QUrl url = QUrl::fromLocalFile(file);
+    return url.toString();
+}
+
 LCSToolsImpl::LCSState LCSTools::getState() {
     return state_;
 }

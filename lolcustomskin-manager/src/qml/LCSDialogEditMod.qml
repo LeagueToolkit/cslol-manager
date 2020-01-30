@@ -215,7 +215,7 @@ Dialog {
                                 let files = drop.urls
                                 let wads = []
                                 for(let i in drop.urls) {
-                                    wads[wads.length] = files[i].toString().replace("file:///", "")
+                                    wads[wads.length] = lcsTools.fromFile(files[i])
                                 }
                                 lcsDialogEditMod.addWads(wads)
                             }
@@ -254,7 +254,7 @@ Dialog {
 
     LCSDialogNewModImage {
         id: dialogImage
-        onAccepted: lcsDialogEditMod.changeImage(file.toString().replace("file:///", ""))
+        onAccepted: lcsDialogEditMod.changeImage(lcsTools.fromFile(file))
     }
 
     LCSDialogNewModWadFiles {
@@ -262,7 +262,7 @@ Dialog {
         onAccepted: {
             let wads = []
             for(let i = 0; i < files.length; i++) {
-                wads[wads.length] = files[i].toString().replace("file:///", "")
+                wads[wads.length] = lcsTools.fromFile(files[i])
             }
             lcsDialogEditMod.addWads(wads)
         }
@@ -271,7 +271,7 @@ Dialog {
     LCSDialogNewModRAWFolder {
         id: dialogRawFolder
         onAccepted: {
-            lcsDialogEditMod.addWads([folder.toString().replace("file:///", "")])
+            lcsDialogEditMod.addWads([lcsTools.fromFile(folder)])
         }
     }
 }

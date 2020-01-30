@@ -166,9 +166,7 @@ Dialog {
                             if (drop.hasUrls) {
                                 let files = drop.urls
                                 for(let i in drop.urls) {
-                                    itemsModel.append({
-                                                        "Path": files[i].toString().replace("file:///", "")
-                                                      })
+                                    itemsModel.append({ "Path": lcsTools.fromFile(files[i]) })
                                 }
                             }
                         }
@@ -214,7 +212,7 @@ Dialog {
     LCSDialogNewModImage {
         id: dialogImage
         onAccepted:  {
-            fieldImage.text = file.toString().replace("file:///", "")
+            fieldImage.text = lcsTools.fromFile(file)
         }
     }
 
@@ -222,9 +220,7 @@ Dialog {
         id: dialogWadFiles
         onAccepted: {
             for(let i = 0; i < files.length; i++) {
-                itemsModel.append({
-                                    "Path": files[i].toString().replace("file:///", "")
-                                  })
+                itemsModel.append({ "Path": lcsTools.fromFile(files[i]) })
             }
         }
     }
@@ -232,9 +228,7 @@ Dialog {
     LCSDialogNewModRAWFolder {
         id: dialogRawFolder
         onAccepted:  {
-            itemsModel.append({
-                                "Path": folder.toString().replace("file:///", "")
-                              })
+            itemsModel.append({ "Path": lcsTools.fromFile(folder) })
         }
     }
 }
