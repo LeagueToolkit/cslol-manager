@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(lolcustomskin-tools LANGUAGES CXX)
+project(lcs-tools LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -10,7 +10,7 @@ add_subdirectory(dep/xxhash)
 add_subdirectory(dep/miniz)
 add_subdirectory(dep/zstd)
 
-add_library(lolcustomskin-lib STATIC
+add_library(lcs-lib STATIC
     src/lcs/common.hpp
     src/lcs/common.cpp
     src/lcs/hashtable.hpp
@@ -41,5 +41,5 @@ add_library(lolcustomskin-lib STATIC
     src/lcs/utility.cpp
 )
 
-target_link_libraries(lolcustomskin-lib PRIVATE picosha2 json xxhash miniz zstd)
-target_include_directories(lolcustomskin-lib PUBLIC src/)
+target_link_libraries(lcs-lib PRIVATE picosha2 json xxhash miniz zstd)
+target_include_directories(lcs-lib PUBLIC src/)

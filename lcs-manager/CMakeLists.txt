@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(lolcustomskin-manager LANGUAGES CXX)
+project(lcs-manager LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -10,7 +10,7 @@ set(CMAKE_AUTORCC ON)
 
 find_package(Qt5 COMPONENTS Core Quick Gui Widgets QmlImportScanner REQUIRED)
 
-add_executable(lolcustomskin-manager WIN32
+add_executable(lcs-manager WIN32
     lolcustomskin/src/modoverlay.hpp
     lolcustomskin/src/patscanner.hpp
     lolcustomskin/src/process.hpp
@@ -23,7 +23,7 @@ add_executable(lolcustomskin-manager WIN32
     src/qml/qml.qrc
     src/qml/rc.rc
 )
-target_compile_definitions(lolcustomskin-manager PRIVATE $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>)
-target_link_libraries(lolcustomskin-manager PRIVATE lolcustomskin-lib Qt5::Core Qt5::Gui Qt5::Quick Qt5::Widgets)
-target_include_directories(lolcustomskin-manager PRIVATE lolcustomskin/src)
-qt5_import_qml_plugins(lolcustomskin-manager)
+target_compile_definitions(lcs-manager PRIVATE $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>)
+target_link_libraries(lcs-manager PRIVATE lcs-lib Qt5::Core Qt5::Gui Qt5::Quick Qt5::Widgets)
+target_include_directories(lcs-manager PRIVATE lolcustomskin/src)
+qt5_import_qml_plugins(lcs-manager)
