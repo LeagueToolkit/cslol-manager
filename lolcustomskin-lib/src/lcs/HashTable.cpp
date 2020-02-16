@@ -6,15 +6,21 @@ using namespace LCS;
 
 void HashTable::add_from_file(fs::path const& path) {
     std::ifstream file(path);
-    std::string line_hex;
-    std::string line_path;
-    while(file >> line_hex >> line_path && !line_hex.empty() && !line_path.empty()) {
-        if (line_path.size() > 255) {
+    std::string line;
+    while(std::getline(file, line) && !line.empty()) {
+        auto space = line.find_first_of(' ');
+        if (space == std::string::npos) {
             continue;
         }
-        fs::path path = line_path;
+        std::string_view line_hex = { line.data(), space };
+        std::string_view line_path = { line.data() + space + 1, line.size() - space - 1 };
+        fs::path path_converted = line_path;
+        std::string normal = path_converted.lexically_normal().generic_string();
+        if (normal != line_path) {
+            continue;
+        }
         bool good = true;
-        for(auto const& component: path) {
+        for(auto const& component: path_converted) {
             if (component.native().size() > 127) {
                 good = false;
                 break;
@@ -28,7 +34,6 @@ void HashTable::add_from_file(fs::path const& path) {
         if (result.ec != std::errc{} || result.ptr != (line_hex.data() + line_hex.size())) {
             continue;
         }
-        // printf("Hash: %016llX %s\n", hash, line_path.c_str());
-        hashes_.insert_or_assign(hash, fs::path(line_path));
+        hashes_.insert_or_assign(hash, path_converted.lexically_normal().generic_string());
     }
 }

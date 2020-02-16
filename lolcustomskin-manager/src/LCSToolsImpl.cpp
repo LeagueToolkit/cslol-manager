@@ -385,9 +385,6 @@ void LCSToolsImpl::runProfile(QString name) {
                         }
                         patcher_.patch(process);
                         setStatus("Wait for league to exit");
-//                        while (!process.Exited()) {
-//                            LCS::SleepMiliseconds(1000);
-//                        }
                         process.WaitExit();
                     }
                     setStatus("League exited");
