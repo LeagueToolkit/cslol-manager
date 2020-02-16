@@ -48,33 +48,33 @@ Process::Process(uint32_t apid) {
     if (!process || process == INVALID_HANDLE_VALUE) {
         throw std::runtime_error("Failed to open process");
     }
-
-    HMODULE mod;
-    DWORD modSize;
-    char raw[0x1000];
-    
-    if (!EnumProcessModules(process, &mod, sizeof(mod), &modSize)) {
+    HMODULE mod = {};
+    DWORD modSize = {};
+    char raw[0x1000] = {};
+    size_t tries = 10;
+    do {
+        if (!EnumProcessModules(process, &mod, sizeof(mod), &modSize)) {
+            std::this_thread::sleep_for(std::chrono::milliseconds{100});
+        }
+    } while(!mod && tries != 10);
+    if (!mod) {
         CloseHandle(process);
         throw std::runtime_error("Failed to enum  process modules");
     }
-    
     if (!ReadProcessMemory(process, mod, raw, sizeof(raw), nullptr)) {
         CloseHandle(process);
         throw std::runtime_error("Failed to open process");
     }
-    
     auto const dos = reinterpret_cast<PIMAGE_DOS_HEADER>(raw);
     if (dos->e_magic != IMAGE_DOS_SIGNATURE) {
         CloseHandle(process);
         throw std::runtime_error("Failed to open process");
     }
-
     auto const nt = reinterpret_cast<PIMAGE_NT_HEADERS32>(raw + dos->e_lfanew);
     if (nt->Signature != IMAGE_NT_SIGNATURE) {
         CloseHandle(process);
         throw std::runtime_error("Failed to open process");
     }
-    
     handle = process;
     pid = apid;
     base = static_cast<PtrStorage>(reinterpret_cast<uintptr_t>(mod));
@@ -118,7 +118,7 @@ void Process::WaitExit() const {
 PtrStorage Process::WaitMemoryNonZero(void* address, uint32_t delay, uint32_t timeout) const {
     PtrStorage result = 0;
     uint32_t elapsed = 0;
-    for(; !result; Sleep(delay)) {
+    for(; !result; std::this_thread::sleep_for(std::chrono::milliseconds{delay})) {
         ReadProcessMemory(handle, address, &result, sizeof(result), nullptr);
         elapsed += delay;
         if (elapsed > timeout) {
@@ -136,7 +136,7 @@ bool Process::FindWindowName(const char* name) const {
 
 void Process::WaitWindow(char const*, uint32_t delay, uint32_t timeout) const {
     uint32_t elapsed = 0;
-    for(uint32_t tgt = pid; tgt == pid; Sleep(delay)) {
+    for(uint32_t tgt = pid; tgt == pid; std::this_thread::sleep_for(std::chrono::milliseconds{delay})) {
         EnumWindows(FindWindowCB, reinterpret_cast<LPARAM>(&tgt));
         elapsed += delay;
         if (elapsed > timeout) {
