@@ -25,6 +25,9 @@ uint32_t Process::Find(char const* name) noexcept {
     PROCESSENTRY32 entry = {};
     entry.dwSize = sizeof(PROCESSENTRY32);
     auto handle = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (!handle || handle == INVALID_HANDLE_VALUE) {
+        return 0;
+    }
     for(bool i = Process32First(handle, &entry); i ; i = Process32Next(handle, &entry)) {
         if (strstr(entry.szExeFile, name)) {
             CloseHandle(handle);
@@ -55,25 +58,26 @@ Process::Process(uint32_t apid) {
     do {
         if (!EnumProcessModules(process, &mod, sizeof(mod), &modSize)) {
             SleepMS(100);
+            tries--;
         }
-    } while(!mod && tries != 10);
+    } while(!mod && tries != 0);
     if (!mod) {
         CloseHandle(process);
         throw std::runtime_error("Failed to enum  process modules");
     }
     if (!ReadProcessMemory(process, mod, raw, sizeof(raw), nullptr)) {
         CloseHandle(process);
-        throw std::runtime_error("Failed to open process");
+        throw std::runtime_error("Failed to read memory from process");
     }
     auto const dos = reinterpret_cast<PIMAGE_DOS_HEADER>(raw);
     if (dos->e_magic != IMAGE_DOS_SIGNATURE) {
         CloseHandle(process);
-        throw std::runtime_error("Failed to open process");
+        throw std::runtime_error("Failed to get dos header from process");
     }
     auto const nt = reinterpret_cast<PIMAGE_NT_HEADERS32>(raw + dos->e_lfanew);
     if (nt->Signature != IMAGE_NT_SIGNATURE) {
         CloseHandle(process);
-        throw std::runtime_error("Failed to open process");
+        throw std::runtime_error("Failed to get nt header from process");
     }
     handle = process;
     pid = apid;
