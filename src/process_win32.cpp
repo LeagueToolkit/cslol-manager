@@ -34,7 +34,7 @@ uint32_t Process::Find(char const* name) noexcept {
     PROCESSENTRY32 entry = {};
     entry.dwSize = sizeof(PROCESSENTRY32);
     auto handle = SafeWinHandle(CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0));
-    if (!handle.get()) {
+    if (!handle) {
         return 0;
     }
     for(bool i = Process32First(handle.get(), &entry); i ; i = Process32Next(handle.get(), &entry)) {
@@ -54,7 +54,7 @@ Process::Process(uint32_t apid) {
         | SYNCHRONIZE,
         false,
         apid));
-    if (!process.get()) {
+    if (!process) {
         throw std::runtime_error("Failed to open process");
     }
     HMODULE mod = {};
