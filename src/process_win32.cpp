@@ -25,6 +25,9 @@ uint32_t Process::Find(char const* name) noexcept {
     PROCESSENTRY32 entry = {};
     entry.dwSize = sizeof(PROCESSENTRY32);
     auto handle = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (!handle || handle == INVALID_HANDLE_VALUE) {
+        return 0;
+    }
     for(bool i = Process32First(handle, &entry); i ; i = Process32Next(handle, &entry)) {
         if (strstr(entry.szExeFile, name)) {
             CloseHandle(handle);
@@ -54,26 +57,27 @@ Process::Process(uint32_t apid) {
     size_t tries = 10;
     do {
         if (!EnumProcessModules(process, &mod, sizeof(mod), &modSize)) {
-            std::this_thread::sleep_for(std::chrono::milliseconds{100});
+            SleepMS(100);
+            tries--;
         }
-    } while(!mod && tries != 10);
+    } while(!mod && tries != 0);
     if (!mod) {
         CloseHandle(process);
         throw std::runtime_error("Failed to enum  process modules");
     }
     if (!ReadProcessMemory(process, mod, raw, sizeof(raw), nullptr)) {
         CloseHandle(process);
-        throw std::runtime_error("Failed to open process");
+        throw std::runtime_error("Failed to read memory from process");
     }
     auto const dos = reinterpret_cast<PIMAGE_DOS_HEADER>(raw);
     if (dos->e_magic != IMAGE_DOS_SIGNATURE) {
         CloseHandle(process);
-        throw std::runtime_error("Failed to open process");
+        throw std::runtime_error("Failed to get dos header from process");
     }
     auto const nt = reinterpret_cast<PIMAGE_NT_HEADERS32>(raw + dos->e_lfanew);
     if (nt->Signature != IMAGE_NT_SIGNATURE) {
         CloseHandle(process);
-        throw std::runtime_error("Failed to open process");
+        throw std::runtime_error("Failed to get nt header from process");
     }
     handle = process;
     pid = apid;
@@ -118,7 +122,7 @@ void Process::WaitExit() const {
 PtrStorage Process::WaitMemoryNonZero(void* address, uint32_t delay, uint32_t timeout) const {
     PtrStorage result = 0;
     uint32_t elapsed = 0;
-    for(; !result; std::this_thread::sleep_for(std::chrono::milliseconds{delay})) {
+    for(; !result; SleepMS(delay)) {
         ReadProcessMemory(handle, address, &result, sizeof(result), nullptr);
         elapsed += delay;
         if (elapsed > timeout) {
@@ -136,7 +140,7 @@ bool Process::FindWindowName(const char* name) const {
 
 void Process::WaitWindow(char const*, uint32_t delay, uint32_t timeout) const {
     uint32_t elapsed = 0;
-    for(uint32_t tgt = pid; tgt == pid; std::this_thread::sleep_for(std::chrono::milliseconds{delay})) {
+    for(uint32_t tgt = pid; tgt == pid; SleepMS(delay)) {
         EnumWindows(FindWindowCB, reinterpret_cast<LPARAM>(&tgt));
         elapsed += delay;
         if (elapsed > timeout) {

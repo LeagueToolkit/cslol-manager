@@ -6,7 +6,7 @@
 #include <thread>
 
 namespace LCS {
-    inline void SleepMiliseconds(uint32_t time) noexcept {
+    inline void SleepMS(uint32_t time) noexcept {
          std::this_thread::sleep_for(std::chrono::milliseconds(time));
     }
 
