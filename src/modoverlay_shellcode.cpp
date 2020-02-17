@@ -13,13 +13,13 @@ static inline char* small_copy(char* dst, char const* src) {
     char const* src_iter;
     char* dest_iter;
     int tmp;
-    asm volatile(  
+    asm volatile(
         "1:\tlodsb\n\t"
         "stosb\n\t"
         "testb %%al,%%al\n\t"
         "jne 1b"
         : "=&S" (src_iter), "=&D" (dest_iter), "=&a" (tmp)
-        : "0" (src), "1" (dst) 
+        : "0" (src), "1" (dst)
         : "memory");
     return dest_iter;
 }
@@ -47,22 +47,22 @@ struct FileProvider {
         char buffer[512];
         return list->arr[2]->Open(prefixFn(buffer, src, prefix), mode);
     }
-    
+
     [[gnu::used]] virtual void* CheckAccess(char const* src, uint32_t mode) {
         char buffer[512];
         return list->arr[2]->CheckAccess(prefixFn(buffer, src, prefix), mode);
     }
-    
+
     [[gnu::used]] virtual void* CreateIterator(char const*, uint32_t) { return nullptr; }
-    
+
     [[gnu::used]] virtual FileProvider* VectorDeleter(uint32_t) { return this; }
 
     [[gnu::used]] virtual void Destructor() {}
-    
+
     [[gnu::used]] virtual void Deleter() {}
 
     [[gnu::used]] virtual bool IsRads() { return false; }
-    
+
     struct List {
         FileProvider* arr[4];
         uint32_t size;
