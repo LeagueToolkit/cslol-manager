@@ -54,7 +54,7 @@ Process::Process(uint32_t apid) {
     size_t tries = 10;
     do {
         if (!EnumProcessModules(process, &mod, sizeof(mod), &modSize)) {
-            std::this_thread::sleep_for(std::chrono::milliseconds{100});
+            SleepMS(100);
         }
     } while(!mod && tries != 10);
     if (!mod) {
@@ -118,7 +118,7 @@ void Process::WaitExit() const {
 PtrStorage Process::WaitMemoryNonZero(void* address, uint32_t delay, uint32_t timeout) const {
     PtrStorage result = 0;
     uint32_t elapsed = 0;
-    for(; !result; std::this_thread::sleep_for(std::chrono::milliseconds{delay})) {
+    for(; !result; SleepMS(delay)) {
         ReadProcessMemory(handle, address, &result, sizeof(result), nullptr);
         elapsed += delay;
         if (elapsed > timeout) {
@@ -136,7 +136,7 @@ bool Process::FindWindowName(const char* name) const {
 
 void Process::WaitWindow(char const*, uint32_t delay, uint32_t timeout) const {
     uint32_t elapsed = 0;
-    for(uint32_t tgt = pid; tgt == pid; std::this_thread::sleep_for(std::chrono::milliseconds{delay})) {
+    for(uint32_t tgt = pid; tgt == pid; SleepMS(delay)) {
         EnumWindows(FindWindowCB, reinterpret_cast<LPARAM>(&tgt));
         elapsed += delay;
         if (elapsed > timeout) {
