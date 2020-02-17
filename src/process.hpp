@@ -10,6 +10,15 @@ namespace LCS {
          std::this_thread::sleep_for(std::chrono::milliseconds(time));
     }
 
+    inline auto safe_win_handle(HANDLE handle) {
+        if (handle == INVALID_HANDLE_VALUE) {
+            handle = nullptr;
+        }
+        constexpr auto deleter = [](auto handle) { CloseHandle(handle); };
+        using handle_value = std::remove_pointer_t<HANDLE>;
+        return std::unique_ptr<handle_value, decltype(deleter)>(handle);
+    }
+
     using PtrStorage = uint32_t;
 
     template<typename T>
