@@ -12,6 +12,15 @@
 using namespace LCS;
 
 
+inline auto SafeWinHandle(HANDLE handle) {
+    if (handle == INVALID_HANDLE_VALUE) {
+        handle = nullptr;
+    }
+    constexpr auto deleter = [](auto handle) { CloseHandle(handle); };
+    using handle_value = std::remove_pointer_t<HANDLE>;
+    return std::unique_ptr<handle_value, decltype(deleter)>(handle);
+}
+
 static BOOL CALLBACK FindWindowCB(HWND hwnd, LPARAM tgt) {
     auto tgtpid = reinterpret_cast<uint32_t*>(tgt);
     if(DWORD pid = 0; GetWindowThreadProcessId(hwnd, &pid) && *tgtpid == pid){
@@ -24,7 +33,7 @@ static BOOL CALLBACK FindWindowCB(HWND hwnd, LPARAM tgt) {
 uint32_t Process::Find(char const* name) noexcept {
     PROCESSENTRY32 entry = {};
     entry.dwSize = sizeof(PROCESSENTRY32);
-    auto handle = safe_win_handle(CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0));
+    auto handle = SafeWinHandle(CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0));
     if (!handle.get() || handle.get() == INVALID_HANDLE_VALUE) {
         return 0;
     }
@@ -37,7 +46,7 @@ uint32_t Process::Find(char const* name) noexcept {
 }
 
 Process::Process(uint32_t apid) {
-    auto process = safe_win_handle(OpenProcess(
+    auto process = SafeWinHandle(OpenProcess(
         PROCESS_VM_OPERATION
         | PROCESS_VM_READ
         | PROCESS_VM_WRITE
