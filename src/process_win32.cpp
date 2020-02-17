@@ -12,6 +12,15 @@
 using namespace LCS;
 
 
+inline auto SafeWinHandle(HANDLE handle) {
+    if (handle == INVALID_HANDLE_VALUE) {
+        handle = nullptr;
+    }
+    constexpr auto deleter = [](auto handle) { CloseHandle(handle); };
+    using handle_value = std::remove_pointer_t<HANDLE>;
+    return std::unique_ptr<handle_value, decltype(deleter)>(handle);
+}
+
 static BOOL CALLBACK FindWindowCB(HWND hwnd, LPARAM tgt) {
     auto tgtpid = reinterpret_cast<uint32_t*>(tgt);
     if(DWORD pid = 0; GetWindowThreadProcessId(hwnd, &pid) && *tgtpid == pid){
@@ -24,31 +33,28 @@ static BOOL CALLBACK FindWindowCB(HWND hwnd, LPARAM tgt) {
 uint32_t Process::Find(char const* name) noexcept {
     PROCESSENTRY32 entry = {};
     entry.dwSize = sizeof(PROCESSENTRY32);
-    auto handle = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-    if (!handle || handle == INVALID_HANDLE_VALUE) {
+    auto handle = SafeWinHandle(CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0));
+    if (!handle) {
         return 0;
     }
-    for(bool i = Process32First(handle, &entry); i ; i = Process32Next(handle, &entry)) {
+    for(bool i = Process32First(handle.get(), &entry); i ; i = Process32Next(handle.get(), &entry)) {
         if (strstr(entry.szExeFile, name)) {
-            CloseHandle(handle);
             return entry.th32ProcessID;
         }
     }
-    CloseHandle(handle);
     return 0;
 }
 
-
 Process::Process(uint32_t apid) {
-    auto const process = OpenProcess(
+    auto process = SafeWinHandle(OpenProcess(
         PROCESS_VM_OPERATION
         | PROCESS_VM_READ
         | PROCESS_VM_WRITE
         | PROCESS_QUERY_INFORMATION
         | SYNCHRONIZE,
         false,
-        apid);
-    if (!process || process == INVALID_HANDLE_VALUE) {
+        apid));
+    if (!process) {
         throw std::runtime_error("Failed to open process");
     }
     HMODULE mod = {};
@@ -56,30 +62,26 @@ Process::Process(uint32_t apid) {
     char raw[0x1000] = {};
     size_t tries = 10;
     do {
-        if (!EnumProcessModules(process, &mod, sizeof(mod), &modSize)) {
+        if (!EnumProcessModules(process.get(), &mod, sizeof(mod), &modSize)) {
             SleepMS(100);
             tries--;
         }
     } while(!mod && tries != 0);
     if (!mod) {
-        CloseHandle(process);
         throw std::runtime_error("Failed to enum  process modules");
     }
-    if (!ReadProcessMemory(process, mod, raw, sizeof(raw), nullptr)) {
-        CloseHandle(process);
+    if (!ReadProcessMemory(process.get(), mod, raw, sizeof(raw), nullptr)) {
         throw std::runtime_error("Failed to read memory from process");
     }
     auto const dos = reinterpret_cast<PIMAGE_DOS_HEADER>(raw);
     if (dos->e_magic != IMAGE_DOS_SIGNATURE) {
-        CloseHandle(process);
         throw std::runtime_error("Failed to get dos header from process");
     }
     auto const nt = reinterpret_cast<PIMAGE_NT_HEADERS32>(raw + dos->e_lfanew);
     if (nt->Signature != IMAGE_NT_SIGNATURE) {
-        CloseHandle(process);
         throw std::runtime_error("Failed to get nt header from process");
     }
-    handle = process;
+    handle = process.release();
     pid = apid;
     base = static_cast<PtrStorage>(reinterpret_cast<uintptr_t>(mod));
     size = nt->OptionalHeader.SizeOfCode;
