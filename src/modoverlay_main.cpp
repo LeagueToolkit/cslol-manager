@@ -98,7 +98,7 @@ struct Main {
             fflush(stdout);
             uint32_t pid = 0;
             while(pid == 0) {
-                SleepMiliseconds(50);
+                SleepMS(50);
                 pid = Process::Find("League of Legends.exe");
             }
             puts("STATUS: FOUND_LOL");
