@@ -1,22 +1,19 @@
 #include "LCSToolsImpl.h"
+#include "lcs/mod.hpp"
+#include "lcs/modindex.hpp"
 #include "lcs/wadindex.hpp"
+#include "lcs/wadmakequeue.hpp"
 #include "lcs/wadmerge.hpp"
 #include "lcs/wadmergequeue.hpp"
-#include "lcs/wadmakequeue.hpp"
-#include "lcs/modindex.hpp"
-#include "lcs/mod.hpp"
-#include <QDebug>
-#include <QMetaEnum>
 #include <QCoreApplication>
+#include <QDebug>
 #include <QJsonDocument>
+#include <QMetaEnum>
 #include <QThread>
 
-LCSToolsImpl::LCSToolsImpl(QObject *parent) :
-    QObject(parent),
-    progDirPath_(QCoreApplication::applicationDirPath().toStdString())
-{
-    patcher_.configpath = (progDirPath_ / "lolcustomskin.txt").generic_string();
-}
+LCSToolsImpl::LCSToolsImpl(QObject *parent)
+    : QObject(parent), progDirPath_(QCoreApplication::applicationDirPath().toStdString()),
+      patcherConfig_((progDirPath_ / "lolcustomskin.txt").generic_string()) {}
 
 LCSToolsImpl::~LCSToolsImpl() {}
 
@@ -197,7 +194,7 @@ void LCSToolsImpl::init() {
         setState(LCSState::StateBussy);
         setStatus("Load mods");
         try {
-            patcher_.load();
+            patcher_.load(patcherConfig_.c_str());
             modIndex_ = std::make_unique<LCS::ModIndex>(progDirPath_ / "installed");
             QJsonObject mods;
             for(auto const& [rawFileName, rawMod]: modIndex_->mods()) {
@@ -358,35 +355,37 @@ void LCSToolsImpl::runProfile(QString name) {
         setState(LCSState::StateBussy);
         setStatus("Run profile");
         auto profilePath = (progDirPath_ / "profiles" / name.toStdString()).generic_string() + "/";
-        memcpy(patcher_.prefix.data(), profilePath.c_str(), profilePath.size() + 1);
-        std::thread thread([this] {
+        std::thread thread([this, profilePath = std::move(profilePath)] {
             try {
                 setStatus("Wait for League");
                 setState(LCSState::StateRunning);
-                while(state_ == LCSState::StateRunning) {
-                    uint32_t pid =  LCS::Process::Find("League of Legends.exe");
+                while (state_ == LCSState::StateRunning) {
+                    uint32_t pid = LCS::Process::FindPID("League of Legends.exe");
                     if (pid == 0) {
-                        LCS::SleepMiliseconds(250);
+                        LCS::SleepMS(250);
                         continue;
                     }
                     setState(LCSState::StatePatching);
-                    {
-                        auto process = LCS::Process(pid);
-                        if (!patcher_.good(process)) {
-                            setStatus("Scan offsets");
-                            process.WaitWindow("League of Legends (TM) Client", 10);
-                            if (!patcher_.rescan(process)) {
-                                throw std::runtime_error("Failed to find offsets");
-                            }
-                            patcher_.save();
-                            setStatus("Patch late");
-                        } else {
-                            setStatus("Patch early");
-                        }
-                        patcher_.patch(process);
-                        setStatus("Wait for league to exit");
-                        process.WaitExit();
+                    setStatus("Found league");
+                    auto process = LCS::Process(pid);
+                    setStatus("Wait initialized");
+                    if (!process.WaitInitialized()) {
+                        throw std::runtime_error("League intialization timed out!");
                     }
+                    if (!patcher_.check(process)) {
+                        setStatus("Scan offsets");
+                        if (!patcher_.scan(process)) {
+                            throw std::runtime_error("Failed to find offsets");
+                        }
+                        patcher_.save(patcherConfig_.c_str());
+                        setStatus("Patch late");
+                    } else {
+                        setStatus("Patch early");
+                    }
+                    patcher_.patch(process, profilePath);
+                    setStatus("Wait for league to exit");
+                    process.WaitExit();
+
                     setStatus("League exited");
                     setStatus("Wait for League");
                     setState(LCSState::StateRunning);

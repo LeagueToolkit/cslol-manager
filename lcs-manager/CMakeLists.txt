@@ -12,9 +12,9 @@ find_package(Qt5 COMPONENTS Core Quick Gui Widgets QmlImportScanner REQUIRED)
 
 add_executable(lcs-manager WIN32
     lolcustomskin/src/modoverlay.hpp
-    lolcustomskin/src/patscanner.hpp
+    lolcustomskin/src/modoverlay.cpp
     lolcustomskin/src/process.hpp
-    lolcustomskin/src/process_win32.cpp
+    lolcustomskin/src/process.cpp
     src/LCSTools.h
     src/LCSTools.cpp
     src/LCSToolsImpl.h

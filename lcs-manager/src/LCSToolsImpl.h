@@ -77,12 +77,13 @@ public slots:
     LCSState getState();
     QString getLeaguePath();
 private:
+    LCS::fs::path progDirPath_;
+    QString leaguepath_ = {};
+    LCS::fs::path leaguePathStd_;
+    std::string patcherConfig_ = {};
     std::unique_ptr<LCS::ModIndex> modIndex_ = nullptr;
     std::unique_ptr<LCS::WadIndex> wadIndex_ = nullptr;
-    LCS::ModOverlay::Config patcher_ = {};
-    QString leaguepath_;
-    LCS::fs::path leaguePathStd_;
-    LCS::fs::path progDirPath_;
+    LCS::ModOverlay patcher_ = {};
     LCSState state_ = LCSState::StateUnitialized;
     QString status_ = "";
     void setState(LCSState state);
