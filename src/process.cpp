@@ -19,13 +19,20 @@ namespace {
                                                           PROCESS_QUERY_INFORMATION | SYNCHRONIZE;
     static inline constexpr size_t DUMP_SIZE = 0x4000000;
 
+    struct deleter {
+        inline void operator()(HANDLE handle) const noexcept {
+            if (handle) {
+                CloseHandle(handle);
+            }
+        }
+    };
+
     static inline auto SafeWinHandle(HANDLE handle) noexcept {
         if (handle == INVALID_HANDLE_VALUE) {
             handle = nullptr;
         }
-        constexpr auto deleter = [](auto handle) { CloseHandle(handle); };
         using handle_value = std::remove_pointer_t<HANDLE>;
-        return std::unique_ptr<handle_value, decltype(deleter)>(handle);
+        return std::unique_ptr<handle_value, deleter>(handle);
     }
 }
 
@@ -44,20 +51,33 @@ Process::~Process() noexcept {
     }
 }
 
-uint32_t Process::FindPID(char const *name) noexcept {
+std::optional<Process> Process::Find(char const *name) noexcept {
     PROCESSENTRY32 entry = {};
     entry.dwSize = sizeof(PROCESSENTRY32);
     auto handle = SafeWinHandle(CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0));
     if (!handle) {
-        return 0;
+        return {};
     }
+    HMODULE mod = {};
+    DWORD modSize = {};
+    char dump[1024] = {};
     for (bool i = Process32First(handle.get(), &entry); i;
          i = Process32Next(handle.get(), &entry)) {
         if (strstr(entry.szExeFile, name)) {
-            return entry.th32ProcessID;
+            auto process = Process(entry.th32ProcessID);
+            if (!process.handle_) {
+                return {};
+            }
+            if (!EnumProcessModules(process.handle_, &mod, sizeof(mod), &modSize)) {
+                return {};
+            }
+            if (!ReadProcessMemory(process.handle_, mod, dump, sizeof(dump), nullptr)) {
+                return {};
+            }
+            return std::move(process);
         }
     }
-    return 0;
+    return {};
 }
 
 PtrStorage Process::Base() const {
@@ -65,19 +85,19 @@ PtrStorage Process::Base() const {
         HMODULE mod = {};
         DWORD modSize = {};
         if (!EnumProcessModules(handle_, &mod, sizeof(mod), &modSize)) {
-            throw std::runtime_error("Failed to enum  process modules");
+            throw std::runtime_error("Failed to get base!");
         }
-        base_ = (PtrStorage)(uintptr_t)mod;
+        base_ = (PtrStorage)(uintptr_t)(mod);
     }
     return base_;
 }
 
 uint32_t Process::Checksum() const {
     if (!checksum_) {
-        char raw[0x1000] = {};
+        char raw[1024] = {};
         auto base = Base();
         if (!ReadProcessMemory(handle_, (void const *)(uintptr_t)base, raw, sizeof(raw), nullptr)) {
-            throw std::runtime_error("Failed to read memory from process");
+            throw std::runtime_error("Failed to read PE header");
         }
         auto const dos = (PIMAGE_DOS_HEADER)(raw);
         if (dos->e_magic != IMAGE_DOS_SIGNATURE) {
@@ -112,18 +132,23 @@ bool Process::WaitExit(uint32_t timeout) const {
     }
 }
 
-bool Process::WaitInitialized(uint32_t timeout) const {
-    for (size_t i = 0; i != 10; i++) {
-        switch (WaitForInputIdle(handle_, timeout)) {
-        case 0:
-            return true;
-        case WAIT_TIMEOUT:
-            return false;
-        default:
-            break;
-        }
+void Process::WaitInitialized(uint32_t timeout) const {
+    if (WaitForInputIdle(handle_, timeout) != 0) {
+        throw std::runtime_error("Failed to WaitInitialized!");
     }
-    throw std::runtime_error("Failed to wait for WaitInitialized!");
+}
+
+void Process::WaitMemoryNonZero(void *address, uint32_t delay, uint32_t timeout) const {
+    PtrStorage data;
+    for (; timeout > delay;) {
+        ReadProcessMemory(handle_, address, &data, sizeof(data), nullptr);
+        if (data != 0) {
+            return;
+        }
+        Sleep(delay);
+        timeout -= delay;
+    }
+    throw std::runtime_error("Failed to WaitMemoryNonZero!");
 }
 
 void Process::ReadMemory(void *address, void *dest, size_t size) const {

@@ -20,7 +20,8 @@ namespace LCS {
         std::string to_string() const noexcept;
         void from_string(std::string const &) noexcept;
         bool check(Process const &process) const;
-        bool scan(Process const &process);
+        void scan(Process const &process);
+        void wait_patchable(Process const &process, uint32_t timeout = 60 * 1000);
         void patch(Process const &process, std::string_view prefix) const;
     };
 }

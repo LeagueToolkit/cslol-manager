@@ -6,6 +6,7 @@
 #include <string_view>
 #include <thread>
 
+
 int main(int argc, char** argv) {
     std::string prefix = argc > 1 ? argv[1] : "MOD/";
     std::filesystem::path exefile = argv[0];
@@ -21,33 +22,28 @@ int main(int argc, char** argv) {
     try {
         for (;;) {
             puts("===============================================================================");
-            uint32_t pid = 0;
+            std::optional<LCS::Process> process = {};
             puts("Looking for league");
-            while (pid == 0) {
+            while (!process) {
                 LCS::SleepMS(50);
-                pid = LCS::Process::FindPID("League of Legends.exe");
+                process = LCS::Process::Find("League of Legends.exe");
             }
             puts("Found league");
-            auto process = LCS::Process(pid);
-            if (!process) {
-                throw std::runtime_error("Failed to open process!");
-            }
-            if (!process.WaitInitialized()) {
-                throw std::runtime_error("League not initialized in time!");
-            }
-            if (!overlay.check(process)) {
+            if (!overlay.check(*process)) {
+                puts("Wait initialized!");
+                process->WaitInitialized();
                 puts("Rescanning");
-                if (overlay.scan(process)) {
-                    overlay.save(configfile.c_str());
-                    printf("Config: %s\n", overlay.to_string().c_str());
-                } else {
-                    throw std::runtime_error("Failed to scan for offsets!");
-                }
+                overlay.scan(*process);
+                overlay.save(configfile.c_str());
+                printf("Config: %s\n", overlay.to_string().c_str());
+            } else {
+                puts("Wait patchable");
+                overlay.wait_patchable(*process);
             }
             puts("Patching");
-            overlay.patch(process, prefix);
+            overlay.patch(*process, prefix);
             puts("Waiting for exit");
-            process.WaitExit();
+            process->WaitExit();
         }
     } catch (std::runtime_error const &error) {
         printf("Error: %s\n"

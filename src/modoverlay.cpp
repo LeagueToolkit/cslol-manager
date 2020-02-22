@@ -89,17 +89,20 @@ bool ModOverlay::check(LCS::Process const &process) const {
     return checksum && off_fp && off_pmeth && process.Checksum() == checksum;
 }
 
-bool ModOverlay::scan(LCS::Process const &process) {
+void ModOverlay::scan(LCS::Process const &process) {
     auto data = process.Dump();
     auto res_pmeth = PAT_PMETH(data.data(), data.size());
     auto res_fp = PAT_FP(data.data(), data.size());
     if (!res_pmeth[0] || !res_fp[0]) {
-        return false;
+        throw std::runtime_error("Failed to find offsets");
     }
     off_pmeth = process.Debase(*(PtrStorage const *)(res_pmeth[1]));
     off_fp = process.Debase(*(PtrStorage const *)(res_fp[1]));
     checksum = process.Checksum();
-    return true;
+}
+
+void ModOverlay::wait_patchable(const Process &process, uint32_t timeout) {
+    process.WaitNonZero(process.Rebase(off_pmeth), 1, timeout);
 }
 
 namespace {

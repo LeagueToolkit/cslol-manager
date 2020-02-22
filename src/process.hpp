@@ -1,6 +1,7 @@
 #pragma once
 #include <cinttypes>
 #include <cstddef>
+#include <optional>
 #include <thread>
 #include <type_traits>
 #include <vector>
@@ -51,14 +52,23 @@ namespace LCS {
         Process(void *ahandle) noexcept;
         Process(uint32_t pid) noexcept;
         Process(const Process &) = delete;
-        inline Process(Process &&other) noexcept = default;
+        inline Process(Process &&other) noexcept {
+            std::swap(handle_, other.handle_);
+            std::swap(base_, other.base_);
+            std::swap(checksum_, other.checksum_);
+        }
         Process &operator=(const Process &) = delete;
-        inline Process &operator=(Process &&other) noexcept = default;
+        inline Process &operator=(Process &&other) noexcept {
+            std::swap(handle_, other.handle_);
+            std::swap(base_, other.base_);
+            std::swap(checksum_, other.checksum_);
+            return *this;
+        }
         ~Process() noexcept;
         explicit inline operator bool() const noexcept { return handle_; }
         inline bool operator!() const noexcept { return !handle_; }
 
-        static uint32_t FindPID(char const *name) noexcept;
+        static std::optional<Process> Find(char const *name) noexcept;
 
         PtrStorage Base() const;
 
@@ -66,9 +76,11 @@ namespace LCS {
 
         std::vector<uint8_t> Dump() const;
 
-        bool WaitInitialized(uint32_t timeout = 2 * 60 * 1000) const;
+        void WaitInitialized(uint32_t timeout = 60 * 1000) const;
 
         bool WaitExit(uint32_t timeout = 2 * 60 * 60 * 1000) const;
+
+        void WaitMemoryNonZero(void *addr, uint32_t delay = 1, uint32_t timeout = 60 * 1000) const;
 
         void ReadMemory(void *address, void *dest, size_t size) const;
 
@@ -78,11 +90,9 @@ namespace LCS {
 
         void *AllocateMemory(size_t size) const;
 
-        template <typename T>
-        inline Ptr<T> WaitNonZero(Ptr<Ptr<T>> address, uint32_t delay = 1,
-                                  uint32_t timeout = 1000 * 60) const {
-            auto result = WaitMemoryNonZero(static_cast<void*>(address), delay, timeout);
-            return static_cast<Ptr<T>>(result);
+        inline void WaitNonZero(Ptr<void> address, uint32_t delay = 1,
+                                uint32_t timeout = 60 * 1000) const {
+            WaitMemoryNonZero(static_cast<void *>(address), delay, timeout);
         }
 
         template<typename T>
