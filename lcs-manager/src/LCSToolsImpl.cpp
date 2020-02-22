@@ -360,33 +360,26 @@ void LCSToolsImpl::runProfile(QString name) {
                 setStatus("Wait for League");
                 setState(LCSState::StateRunning);
                 while (state_ == LCSState::StateRunning) {
-                    uint32_t pid = LCS::Process::FindPID("League of Legends.exe");
-                    if (pid == 0) {
+                    auto process = LCS::Process::Find("League of Legends.exe");
+                    if (!process) {
                         LCS::SleepMS(250);
                         continue;
                     }
                     setState(LCSState::StatePatching);
                     setStatus("Found league");
-                    auto process = LCS::Process(pid);
-                    setStatus("Wait initialized");
-                    if (!process.WaitInitialized()) {
-                        throw std::runtime_error("League intialization timed out!");
-                    }
-                    if (!patcher_.check(process)) {
+                    if (!patcher_.check(*process)) {
+                        setStatus("Wait initialized");
+                        process->WaitInitialized();
                         setStatus("Scan offsets");
-                        if (!patcher_.scan(process)) {
-                            throw std::runtime_error("Failed to find offsets");
-                        }
+                        patcher_.scan(*process);
                         patcher_.save(patcherConfig_.c_str());
-                        setStatus("Patch late");
                     } else {
-                        setStatus("Patch early");
+                        setStatus("Wait patchable");
+                        patcher_.wait_patchable(*process);
                     }
-                    patcher_.patch(process, profilePath);
+                    patcher_.patch(*process, profilePath);
                     setStatus("Wait for league to exit");
-                    process.WaitExit();
-
-                    setStatus("League exited");
+                    process->WaitExit();
                     setStatus("Wait for League");
                     setState(LCSState::StateRunning);
                 }
