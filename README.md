@@ -1,3 +1,6 @@
+# Download???
+ https://github.com/moonshadow565/lolcustomskin-tools/releases
+
 # What does this do?
  Patches league to load moded files. 
 
