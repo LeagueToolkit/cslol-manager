@@ -9,6 +9,9 @@
  ![Main window](screenshots/lcs-manager-0.png)  
  ![Editing mods](screenshots/lcs-manager-1.png)  
 
-# Help, it doesn't work...
+# Path errors
+ ![Path fix](screenshots/fix_path.png)  
+
+# Help, it still doesn't work...
  Check this instead: https://github.com/LoL-Fantome/Fantome
  

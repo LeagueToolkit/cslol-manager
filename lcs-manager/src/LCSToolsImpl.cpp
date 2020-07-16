@@ -198,8 +198,6 @@ void LCSToolsImpl::changeBlacklist(bool blacklist) {
                 setState(LCSState::StateBussy);
                 setStatus("Toggle blacklist");
             }
-            setState(LCSState::StateBussy);
-            setStatus("Toggle blacklist");
             blacklist_ = blacklist;
             wadIndex_ = nullptr;
             emit blacklistChanged(blacklist);
