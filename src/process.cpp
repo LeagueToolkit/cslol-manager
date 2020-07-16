@@ -13,6 +13,19 @@
 
 using namespace LCS;
 
+static struct Imports {
+    DWORD (NTAPI *NtWriteVirtualMemory)(HANDLE ProcessHandle, LPVOID BaseAddress,
+                                        LPCVOID Buffer, ULONG BytesToWrite,
+                                        PULONG BytesWritten) = {};
+    Imports() {
+#define resolve(from, name) name = (decltype (name))GetProcAddress(from, #name)
+        auto ntdll = LoadLibraryA("ntdll.dll");
+        resolve(ntdll, NtWriteVirtualMemory);
+#undef resolve
+    }
+} imports {};
+
+
 namespace {
     static inline constexpr DWORD PROCESS_NEEDED_ACCESS = PROCESS_VM_OPERATION | PROCESS_VM_READ |
                                                           PROCESS_VM_WRITE |
@@ -164,7 +177,7 @@ void Process::WriteMemory(void* address, void const* src, size_t sizeBytes) cons
     if (!address) {
         throw std::runtime_error("Can not read memory from nullptr");
     }
-    if (!WriteProcessMemory(handle_, address, src, sizeBytes, nullptr)) {
+    if (imports.NtWriteVirtualMemory(handle_, address, src, sizeBytes, nullptr)) {
         throw std::runtime_error("Failed to read memory");
     }
 }
