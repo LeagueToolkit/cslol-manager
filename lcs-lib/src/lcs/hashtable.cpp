@@ -1,10 +1,13 @@
-#include "HashTable.hpp"
+#include "hashtable.hpp"
+#include "error.hpp"
+#include <fstream>
 #include <charconv>
-#include <cstdio>
 
 using namespace LCS;
 
 void HashTable::add_from_file(fs::path const& path) {
+    lcs_trace_func();
+    lcs_trace("log_file: ", path);
     std::ifstream file(path);
     std::string line;
     while(std::getline(file, line) && !line.empty()) {

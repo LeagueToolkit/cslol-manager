@@ -1,21 +1,23 @@
 #include "LCSToolsImpl.h"
-#include "lcs/mod.hpp"
-#include "lcs/modindex.hpp"
-#include "lcs/wadindex.hpp"
-#include "lcs/wadmakequeue.hpp"
-#include "lcs/wadmerge.hpp"
-#include "lcs/wadmergequeue.hpp"
 #include <QCoreApplication>
 #include <QDebug>
 #include <QJsonDocument>
 #include <QMetaEnum>
 #include <QThread>
 
+static QString get_stack_trace(std::runtime_error const& err) noexcept {
+    return QString::fromStdString(LCS::error_stack_trace(err.what()));
+}
+
 LCSToolsImpl::LCSToolsImpl(QObject *parent)
     : QObject(parent), progDirPath_(QCoreApplication::applicationDirPath().toStdString()),
       patcherConfig_((progDirPath_ / "lolcustomskin.txt").generic_string()) {}
 
-LCSToolsImpl::~LCSToolsImpl() {}
+LCSToolsImpl::~LCSToolsImpl() {
+    if (lockfile_) {
+        delete lockfile_;
+    }
+}
 
 LCSToolsImpl::LCSState LCSToolsImpl::getState() {
     return state_;
@@ -107,7 +109,7 @@ LCS::WadIndex const& LCSToolsImpl::wadIndex() {
         throw std::runtime_error("League path not set!");
     }
     if (wadIndex_ == nullptr) {
-        wadIndex_ = std::make_unique<LCS::WadIndex>(leaguePathStd_);
+        wadIndex_ = std::make_unique<LCS::WadIndex>(leaguePathStd_, blacklist_);
     }
     return *wadIndex_;
 }
@@ -189,12 +191,62 @@ void LCSToolsImpl::changeLeaguePath(QString newLeaguePath) {
     }
 }
 
+void LCSToolsImpl::changeBlacklist(bool blacklist) {
+    if (state_ == LCSState::StateIdle || state_ == LCSState::StateUnitialized) {
+        if (blacklist_ != blacklist) {
+            if (state_ != LCSState::StateUnitialized) {
+                setState(LCSState::StateBussy);
+                setStatus("Toggle blacklist");
+            }
+            setState(LCSState::StateBussy);
+            setStatus("Toggle blacklist");
+            blacklist_ = blacklist;
+            wadIndex_ = nullptr;
+            emit blacklistChanged(blacklist);
+            if (state_ != LCSState::StateUnitialized) {
+                setState(LCSState::StateIdle);
+            }
+        }
+    }
+}
+
 void LCSToolsImpl::init() {
     if (state_ == LCSState::StateUnitialized) {
         setState(LCSState::StateBussy);
+        auto progDir = progDirPath_.generic_string();
+        setStatus("Verify path");
+        if (progDir.size() > 80) {
+            emit reportError("Program path too long", QString::fromStdString(progDir));
+            setState(LCSState::StateCriticalError);
+            return;
+        }
+        bool invalid = [&progDir]() {
+            for (char c: progDir) {
+                if (c < 0) {
+                    return true;
+                }
+            }
+            return false;
+        }();
+        if (invalid) {
+            emit reportError("Program path contains non-english characters", QString::fromStdString(progDir));
+            setState(LCSState::StateCriticalError);
+            return;
+        }
+        setStatus("Acquire lock");
+        auto lockpath = QString::fromStdString((progDirPath_/ "lockfile").generic_string());
+        lockfile_ = new QLockFile(lockpath);
+        if (!lockfile_->tryLock()) {
+            auto lockerror = QString::number((int)lockfile_->error());
+            emit reportError("Acquire lock", QString("Lock error: ") + lockerror);
+            setState(LCSState::StateCriticalError);
+            return;
+        }
         setStatus("Load mods");
         try {
+#ifdef WIN32
             patcher_.load(patcherConfig_.c_str());
+#endif
             modIndex_ = std::make_unique<LCS::ModIndex>(progDirPath_ / "installed");
             QJsonObject mods;
             for(auto const& [rawFileName, rawMod]: modIndex_->mods()) {
@@ -211,7 +263,7 @@ void LCSToolsImpl::init() {
             emit initialized(mods, profiles, profileName, profileMods);
             setState(LCSState::StateIdle);
         } catch(std::runtime_error const& error) {
-            emit reportError("Load mods", QString(error.what()));
+            emit reportError("Load mods", get_stack_trace(error));
             setState(LCSState::StateCriticalError);
         }
     }
@@ -225,7 +277,7 @@ void LCSToolsImpl::deleteMod(QString name) {
             modIndex_->remove(name.toStdString());
             emit modDeleted(name);
         } catch(std::runtime_error const& error) {
-            emit reportError("", QString(error.what()));
+            emit reportError("", get_stack_trace(error));
         }
         setState(LCSState::StateIdle);
     }
@@ -236,9 +288,9 @@ void LCSToolsImpl::exportMod(QString name, QString dest) {
         setState(LCSState::StateBussy);
         setStatus("Export mod");
         try {
-            modIndex_->export_zip(name.toStdString(), dest.toStdString(), *this);
+            modIndex_->export_zip(name.toStdString(), dest.toStdString(), *dynamic_cast<LCS::ProgressMulti*>(this));
         } catch(std::runtime_error const& error) {
-            emit reportError("Export mod", QString(error.what()));
+            emit reportError("Export mod", get_stack_trace(error));
         }
         setState(LCSState::StateIdle);
     }
@@ -249,11 +301,11 @@ void LCSToolsImpl::installFantomeZip(QString path) {
         setState(LCSState::StateBussy);
         setStatus("Install Fantome .zip");
         try {
-            auto mod = modIndex_->install_from_zip(path.toStdString(), *this);
+            auto mod = modIndex_->install_from_zip(path.toStdString(), *dynamic_cast<LCS::ProgressMulti*>(this));
             emit installedMod(QString::fromStdString(mod->filename()),
                               parseInfoData(mod->filename(), mod->info()));
         } catch(std::runtime_error const& error) {
-            emit reportError("Install Fantome .zip", QString(error.what()));
+            emit reportError("Install Fantome .zip", get_stack_trace(error));
         }
         setState(LCSState::StateIdle);
     }
@@ -274,10 +326,10 @@ void LCSToolsImpl::makeMod(QString fileName, QString image, QJsonObject infoData
                                        dumpInfoData(infoData),
                                        image.toStdString(),
                                        queue,
-                                       *this);
+                                       *dynamic_cast<LCS::ProgressMulti*>(this));
             emit installedMod(QString::fromStdString(mod->filename()), infoData);
         } catch(std::runtime_error const& error) {
-            emit reportError("Make mod", QString(error.what()));
+            emit reportError("Make mod", get_stack_trace(error));
         }
         setState(LCSState::StateIdle);
     }
@@ -300,16 +352,16 @@ void LCSToolsImpl::saveProfile(QString name, QJsonObject mods, bool run, bool wh
                 }
             }
             if (whole) {
-                queue.write_whole(*this);
+                queue.write_whole(*dynamic_cast<LCS::ProgressMulti*>(this));
             } else {
-                queue.write(*this);
+                queue.write(*dynamic_cast<LCS::ProgressMulti*>(this));
             }
             queue.cleanup();
             writeCurrentProfile(name);
             writeProfile(name, mods);
             emit profileSaved(name, mods);
         } catch(std::runtime_error const& error) {
-            emit reportError("Save profile", QString(error.what()));
+            emit reportError("Save profile", get_stack_trace(error));
         }
         setState(LCSState::StateIdle);
     }
@@ -329,7 +381,7 @@ void LCSToolsImpl::loadProfile(QString name) {
             auto profileMods = readProfile(name);
             emit profileLoaded(name, profileMods);
         } catch(std::runtime_error const& error) {
-            emit reportError("Load profile", QString(error.what()));
+            emit reportError("Load profile", get_stack_trace(error));
         }
         setState(LCSState::StateIdle);
     }
@@ -344,7 +396,7 @@ void LCSToolsImpl::deleteProfile(QString name) {
             LCS::fs::remove_all(progDirPath_ / "profiles" / name.toStdString());
             emit profileDeleted(name);
         } catch(std::runtime_error const& error) {
-            emit reportError("Delete Profile", QString(error.what()));
+            emit reportError("Delete Profile", get_stack_trace(error));
         }
         setState(LCSState::StateIdle);
     }
@@ -360,6 +412,7 @@ void LCSToolsImpl::runProfile(QString name) {
                 setStatus("Wait for League");
                 setState(LCSState::StateRunning);
                 while (state_ == LCSState::StateRunning) {
+#ifdef WIN32
                     auto process = LCS::Process::Find("League of Legends.exe");
                     if (!process) {
                         LCS::SleepMS(250);
@@ -382,11 +435,14 @@ void LCSToolsImpl::runProfile(QString name) {
                     process->WaitExit();
                     setStatus("Wait for League");
                     setState(LCSState::StateRunning);
+#else
+                  QThread::msleep(250);
+#endif
                 }
                 setStatus("Patcher stoped");
                 setState(LCSState::StateIdle);
             } catch(std::runtime_error const& error) {
-                emit reportError("Patch League", QString(error.what()));
+                emit reportError("Patch League", get_stack_trace(error));
                 setState(LCSState::StateIdle);
             }
         });
@@ -420,7 +476,7 @@ void LCSToolsImpl::startEditMod(QString fileName) {
                 throw std::runtime_error("No such mod found!");
             }
         } catch(std::runtime_error error) {
-            emit reportError("Edit mod", error.what());
+            emit reportError("Edit mod", get_stack_trace(error));
         }
         setState(LCSState::StateIdle);
     }
@@ -435,7 +491,7 @@ void LCSToolsImpl::changeModInfo(QString fileName, QJsonObject infoData) {
             modIndex_->change_mod_info(fileName.toStdString(), dumpInfoData(infoData));
             emit modInfoChanged(fileName, infoData);
         } catch(std::runtime_error error) {
-            emit emit reportError("Change mod info", error.what());
+            emit emit reportError("Change mod info", get_stack_trace(error));
         }
         setState(LCSState::StateIdle);
     }
@@ -449,7 +505,7 @@ void LCSToolsImpl::changeModImage(QString fileName, QString image) {
             modIndex_->change_mod_image(fileName.toStdString(), image.toStdString());
             emit modImageChanged(fileName, image);
         } catch(std::runtime_error error) {
-            emit reportWarning("Change mod image", error.what());
+            emit reportWarning("Change mod image", get_stack_trace(error));
         }
         setState(LCSState::StateIdle);
     }
@@ -463,7 +519,7 @@ void LCSToolsImpl::removeModImage(QString fileName) {
             modIndex_->remove_mod_image(fileName.toStdString());
             emit modImageRemoved(fileName);
         } catch(std::runtime_error error) {
-            emit reportWarning("Remove mod image", error.what());
+            emit reportWarning("Remove mod image", get_stack_trace(error));
         }
         setState(LCSState::StateIdle);
     }
@@ -479,7 +535,7 @@ void LCSToolsImpl::removeModWads(QString fileName, QJsonArray wads) {
             }
             emit modWadsRemoved(fileName, wads);
         } catch(std::runtime_error error) {
-            emit reportError("Remove mod image", error.what());
+            emit reportError("Remove mod image", get_stack_trace(error));
         }
         setState(LCSState::StateIdle);
     }
@@ -495,14 +551,16 @@ void LCSToolsImpl::addModWads(QString fileName, QJsonArray wads) {
             for(auto wadPath: wads) {
                 wadMake.addItem(LCS::fs::path(wadPath.toString().toStdString()), LCS::Conflict::Abort);
             }
-            auto added = modIndex_->add_mod_wads(fileName.toStdString(), wadMake, *this, LCS::Conflict::Abort);
+            auto added = modIndex_->add_mod_wads(fileName.toStdString(), wadMake,
+                                                 *dynamic_cast<LCS::ProgressMulti*>(this),
+                                                 LCS::Conflict::Abort);
             QJsonArray names;
             for(auto const& wad: added) {
                 names.push_back(QString::fromStdString(wad->name()));
             }
             emit modWadsAdded(fileName, names);
         } catch(std::runtime_error error) {
-            emit reportError("Add mod wads", error.what());
+            emit reportError("Add mod wads", get_stack_trace(error));
         }
         setState(LCSState::StateIdle);
     }

@@ -2,6 +2,10 @@
 #define LCS_WADINDEX_H
 #include "common.hpp"
 #include "wad.hpp"
+#include <map>
+#include <unordered_map>
+#include <vector>
+#include <algorithm>
 
 namespace LCS{
     struct WadIndex {
@@ -16,7 +20,7 @@ namespace LCS{
         };
 
         // Throws std::runtime_error
-        WadIndex(fs::path const& path);
+        WadIndex(fs::path const& path, bool blacklist = true);
         WadIndex(WadIndex const&) = delete;
         WadIndex(WadIndex&&) = default;
         WadIndex& operator=(WadIndex const&) = delete;

@@ -2,10 +2,10 @@
 #define LCS_WADINDEXCACHE_HPP
 #include "common.hpp"
 #include "wadindex.hpp"
+#include <unordered_map>
 
 namespace LCS {
-    struct WadIndexCache
-    {
+    struct WadIndexCache {
         WadIndexCache(WadIndex const& index) noexcept;
 
         inline auto const& wads() const& noexcept {

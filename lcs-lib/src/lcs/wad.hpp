@@ -1,7 +1,9 @@
 #ifndef LCS_WAD_HPP
 #define LCS_WAD_HPP
 #include "common.hpp"
-#include "HashTable.hpp"
+#include "hashtable.hpp"
+#include <array>
+#include <fstream>
 
 namespace LCS {
     struct Wad {

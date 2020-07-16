@@ -5,6 +5,8 @@ import QtQuick.Dialogs 1.2
 
 MessageDialog {
     id: lcsDialogError
+    width: 640
+    height: 480
     modality: Qt.ApplicationModal
     standardButtons: StandardButton.Ok
     title: "Error"

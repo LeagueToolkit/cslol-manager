@@ -1,15 +1,26 @@
 #ifndef QMODMANAGERWORKER_H
 #define QMODMANAGERWORKER_H
-
 #include <QObject>
 #include <QString>
 #include <QMap>
 #include <QProcess>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QLockFile>
 #include "lcs/common.hpp"
+#include "lcs/error.hpp"
+#include "lcs/progress.hpp"
+#include "lcs/conflict.hpp"
+#include "lcs/mod.hpp"
 #include "lcs/modindex.hpp"
+#include "lcs/wadindex.hpp"
+#include "lcs/wadmakequeue.hpp"
+#include "lcs/wadmerge.hpp"
+#include "lcs/wadmergequeue.hpp"
+#ifdef WIN32
+#include "process.hpp"
 #include "modoverlay.hpp"
+#endif
 
 class LCSToolsImpl : public QObject, public LCS::ProgressMulti
 {
@@ -30,6 +41,7 @@ public:
     ~LCSToolsImpl() override;
 signals:
     void stateChanged(LCSState state);
+    void blacklistChanged(bool blacklist);
     void statusChanged(QString message);
     void leaguePathChanged(QString leaguePath);
 
@@ -56,6 +68,7 @@ signals:
 
 public slots:
     void changeLeaguePath(QString newLeaguePath);
+    void changeBlacklist(bool blacklist);
     void init();
     void deleteMod(QString name);
     void exportMod(QString name, QString dest);
@@ -77,14 +90,18 @@ public slots:
     LCSState getState();
     QString getLeaguePath();
 private:
+    QLockFile* lockfile_ = nullptr;
     LCS::fs::path progDirPath_;
     QString leaguepath_ = {};
     LCS::fs::path leaguePathStd_;
     std::string patcherConfig_ = {};
     std::unique_ptr<LCS::ModIndex> modIndex_ = nullptr;
     std::unique_ptr<LCS::WadIndex> wadIndex_ = nullptr;
+#ifdef WIN32
     LCS::ModOverlay patcher_ = {};
+#endif
     LCSState state_ = LCSState::StateUnitialized;
+    bool blacklist_ = true;
     QString status_ = "";
     void setState(LCSState state);
     void setStatus(QString status);

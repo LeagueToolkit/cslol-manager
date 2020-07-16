@@ -3,6 +3,9 @@
 #include "common.hpp"
 #include "wadmake.hpp"
 #include <miniz.h>
+#include <vector>
+#include <unordered_map>
+#include <memory>
 
 namespace LCS {
     struct ModUnZip {
@@ -32,7 +35,7 @@ namespace LCS {
         fs::path path_;
         std::vector<CopyFile> metafile_;
         std::vector<CopyFile> wadfile_;
-        std::unordered_map<std::string, WadMakeUnZip> wadfolder_;
+        std::unordered_map<std::string, std::unique_ptr<WadMakeUnZip>> wadfolder_;
         mz_zip_archive zip_archive = {};
         size_t size_ = 0;
         size_t items_ = 0;

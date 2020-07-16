@@ -3,6 +3,9 @@
 #include "common.hpp"
 #include "wadindex.hpp"
 #include "mod.hpp"
+#include <map>
+#include <unordered_map>
+#include <array>
 
 namespace LCS {
     struct WadMerge  {

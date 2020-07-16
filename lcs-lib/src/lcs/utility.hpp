@@ -1,7 +1,6 @@
 #ifndef LCS_UTILITY_HPP
 #define LCS_UTILITY_HPP
 #include "common.hpp"
-#include <optional>
 
 namespace LCS {
     struct MagicExt {

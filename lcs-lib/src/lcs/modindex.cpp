@@ -1,6 +1,8 @@
 #include "modindex.hpp"
 #include "modunzip.hpp"
 #include "wadmakequeue.hpp"
+#include "error.hpp"
+#include "progress.hpp"
 #include <miniz.h>
 #include <json.hpp>
 
@@ -9,11 +11,13 @@ using namespace LCS;
 ModIndex::ModIndex(fs::path path)
     : path_(fs::absolute(path))
 {
+    lcs_trace_func();
+    lcs_trace("path_: ", path_);
     fs::create_directories(path_);
     for (auto file : fs::directory_iterator(path)) {
         auto dirpath = file.path();
         if (file.is_directory() && dirpath.filename() != "tmp") {
-            auto mod = new Mod { std::move(dirpath) };
+            auto mod = new Mod { dirpath };
             mods_.insert_or_assign(mod->filename(),  std::unique_ptr<Mod>{mod});
         }
     }
@@ -23,6 +27,7 @@ ModIndex::ModIndex(fs::path path)
 }
 
 bool ModIndex::remove(std::string const& filename) noexcept {
+    lcs_trace_func();
     if (auto i = mods_.find(filename); i != mods_.end()) {
         mods_.erase(i);
         try {
@@ -35,13 +40,14 @@ bool ModIndex::remove(std::string const& filename) noexcept {
 }
 
 bool ModIndex::refresh() noexcept {
+    lcs_trace_func();
     bool found = false;
     for (auto file : fs::directory_iterator(path_)) {
         auto dirpath = file.path();
         if (file.is_directory()) {
             auto paths = dirpath.filename().generic_string();
             if (auto i = mods_.find(paths); i == mods_.end()) {
-                auto mod = new Mod { std::move(dirpath) };
+                auto mod = new Mod { dirpath };
                 mods_.insert_or_assign(mod->filename(),  std::unique_ptr<Mod>{mod});
                 found = true;
             }
@@ -51,30 +57,25 @@ bool ModIndex::refresh() noexcept {
 }
 
 Mod* ModIndex::install_from_zip(fs::path path, ProgressMulti& progress) {
+    lcs_trace_func();
+    lcs_trace("path: ", path);
     fs::path filename = path.filename();
     filename.replace_extension();
     fs::path dest = path_ / filename;
-    if (fs::exists(dest)) {
-        throw std::runtime_error("Mod already exists!");
-    }
-
+    lcs_assert_msg("Mod already exists!", !fs::exists(dest));
     fs::path tmp = path_ / "tmp";
     if (fs::exists(tmp)) {
         fs::remove_all(tmp);
     }
     fs::create_directories(tmp);
-
     {
         ModUnZip zip(path);
         zip.extract(tmp, progress);
     }
     fs::create_directories(dest.parent_path());
-    if (!fs::exists(tmp / "META" / "info.json")) {
-        throw std::runtime_error("Not a valid mod file!");
-    }
-
+    lcs_assert(fs::exists(tmp / "META" / "info.json"));
     fs::rename(tmp, dest);
-    auto mod = new Mod { std::move(dest) };
+    auto mod = new Mod { dest };
     mods_.insert_or_assign(mod->filename(),  std::unique_ptr<Mod>{mod});
     return mod;
 }
@@ -85,11 +86,10 @@ Mod* ModIndex::make(const std::string_view& fileName,
                     WadMakeQueue const& queue,
                     ProgressMulti& progress)
 {
+    lcs_trace_func();
     fs::path dest = path_ / fileName;
-    if (fs::exists(dest)) {
-        throw std::runtime_error("Mod already exists!");
-    }
-
+    lcs_trace("dest: ", dest);
+    lcs_assert_msg("Mod already exists!", !fs::exists(dest));
     fs::path tmp = path_ / "tmp";
     if (fs::exists(tmp)) {
         fs::remove_all(tmp);
@@ -108,63 +108,56 @@ Mod* ModIndex::make(const std::string_view& fileName,
     }
     fs::create_directories(tmp / "WAD");
     queue.write(tmp / "WAD", progress);
-
-
     fs::create_directories(dest.parent_path());
     fs::rename(tmp, dest);
-    auto mod = new Mod { std::move(dest) };
+    auto mod = new Mod { dest };
     mods_.insert_or_assign(mod->filename(),  std::unique_ptr<Mod>{mod});
     return mod;
 }
 
 void ModIndex::export_zip(const std::string& filename, std::filesystem::path path, ProgressMulti& progress) {
-    if (auto i = mods_.find(filename); i != mods_.end()) {
-        i->second->write_zip(path, progress);
-    } else {
-        throw std::runtime_error("Mod not found!");
-    }
+    lcs_trace_func();
+    lcs_trace("filename: ", filename);
+    auto i = mods_.find(filename);
+    lcs_assert(i != mods_.end());
+    i->second->write_zip(path, progress);
 }
 
 void ModIndex::remove_mod_wad(const std::string& modFileName, const std::string& wadName) {
-    if (auto i = mods_.find(modFileName); i != mods_.end()) {
-        i->second->remove_wad(wadName);
-    } else {
-        throw std::runtime_error("Mod not found!");
-    }
+    lcs_trace_func();
+    auto i = mods_.find(modFileName);
+    lcs_assert(i != mods_.end());
+    i->second->remove_wad(wadName);
 }
 
 void ModIndex::change_mod_info(const std::string& modFileName, const std::string& infoData) {
-    if (auto i = mods_.find(modFileName); i != mods_.end()) {
-        i->second->change_info(infoData);
-    } else {
-        throw std::runtime_error("Mod not found!");
-    }
+    lcs_trace_func();
+    auto i = mods_.find(modFileName);
+    lcs_assert(i != mods_.end());
+    i->second->change_info(infoData);
 }
 
 void ModIndex::change_mod_image(const std::string& modFileName, std::filesystem::path const & path) {
-    if (auto i = mods_.find(modFileName); i != mods_.end()) {
-        i->second->change_image(path);
-    } else {
-        throw std::runtime_error("Mod not found!");
-    }
+    lcs_trace_func();
+    auto i = mods_.find(modFileName);
+    lcs_assert(i != mods_.end());
+    i->second->change_image(path);
 }
 
 void ModIndex::remove_mod_image(const std::string& modFileName) {
-    if (auto i = mods_.find(modFileName); i != mods_.end()) {
-        i->second->remove_image();
-    } else {
-        throw std::runtime_error("Mod not found!");
-    }
+    lcs_trace_func();
+    auto i = mods_.find(modFileName);
+    lcs_assert(i != mods_.end());
+    i->second->remove_image();
 }
 
 std::vector<Wad const*> ModIndex::add_mod_wads(const std::string& modFileName, WadMakeQueue& wads,
                                                ProgressMulti& progress, Conflict conflict)
 {
-    if (auto i = mods_.find(modFileName); i != mods_.end()) {
-        return i->second->add_wads(wads, progress, conflict);
-    } else {
-        throw std::runtime_error("Mod not found!");
-    }
+    lcs_trace_func();
+    auto i = mods_.find(modFileName);
+    lcs_assert(i != mods_.end());
+    return i->second->add_wads(wads, progress, conflict);
 }
 
 

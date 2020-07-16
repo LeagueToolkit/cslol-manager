@@ -1,41 +1,36 @@
-#include <filesystem>
-#include <fstream>
 #include "wad.hpp"
+#include "utility.hpp"
+#include "error.hpp"
+#include "progress.hpp"
+#include <charconv>
 #include <miniz.h>
 #include <zstd.h>
-#include <charconv>
-#include "utility.hpp"
 
 using namespace LCS;
 
 Wad::Wad(const std::filesystem::path& path, const std::string& name)
     : path_(fs::absolute(path)), size_(fs::file_size(path_)), name_(name)  {
-
+    lcs_trace_func();
+    lcs_trace("path_: ", path_);
     file_.exceptions(std::ifstream::failbit | std::ifstream::badbit);
     file_.open(path_, std::ios::binary);
     file_.read((char*)&header_, sizeof(header_));
-    if (header_.version != std::array{'R', 'W', '\x3', '\x0'}) {
-        throw std::ifstream::failure("Not a wad file");
-    }
+    lcs_assert(header_.version == std::array{'R', 'W', '\x3', '\x0'});
     dataBegin_ = header_.filecount * sizeof(Entry) + sizeof(header_);
     dataEnd_ = size_;
-    if (dataBegin_ > dataEnd_) {
-        throw std::ifstream::failure("Failed to read TOC");
-    }
+    lcs_assert(dataBegin_ <= dataEnd_);
     entries_.resize(header_.filecount);
     file_.read((char*)entries_.data(), header_.filecount * sizeof(Entry));
     for(auto const& entry: entries_) {
-        if (entry.dataOffset > dataEnd_ || entry.dataOffset < dataBegin_) {
-            throw std::ifstream::failure("Entry not in data region!");
-        }
-        if (entry.dataOffset + entry.sizeCompressed > dataEnd_) {
-            throw std::ifstream::failure("Entry outside of data!");
-        }
+        lcs_assert(entry.dataOffset <= dataEnd_ && entry.dataOffset >= dataBegin_);
+        lcs_assert(entry.dataOffset + entry.sizeCompressed <= dataEnd_);
     }
 }
 
-
 void Wad::extract(fs::path const& dest, HashTable const& hashtable, Progress& progress) const {
+    lcs_trace_func();
+    lcs_trace("path_: ", path_);
+    lcs_trace("dest: ", dest);
     size_t totalSize = 0;
     uint32_t maxCompressed = 0;
     uint32_t maxUncompressed = 0;
@@ -57,9 +52,7 @@ void Wad::extract(fs::path const& dest, HashTable const& hashtable, Progress& pr
         } else if(entry.type == Entry::ZlibCompressed) {
             file_.read(compressedBuffer.data(), entry.sizeCompressed);
             mz_stream strm = {};
-            if(mz_inflateInit2(&strm, 16 + MAX_WBITS) != MZ_OK) {
-               throw std::runtime_error("Failed to initialize zlib uncompress stream!");
-            }
+            lcs_assert(mz_inflateInit2(&strm, 16 + MAX_WBITS) == MZ_OK);
             strm.next_in = (unsigned char const*)compressedBuffer.data();
             strm.avail_in = entry.sizeCompressed;
             strm.next_out = (unsigned char*)uncompressedBuffer.data();
@@ -84,6 +77,7 @@ void Wad::extract(fs::path const& dest, HashTable const& hashtable, Progress& pr
                 outpath /= std::string(hex, result.ptr);
                 outpath.replace_extension(ScanExtension(uncompressedBuffer.data(), entry.sizeUncompressed));
             }
+            lcs_trace("outpath: ", outpath);
             fs::create_directories(outpath.parent_path());
             std::ofstream outfile;
             outfile.exceptions(std::ofstream::failbit | std::ofstream::badbit);

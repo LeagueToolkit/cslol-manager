@@ -1,17 +1,34 @@
 #include "wadmerge.hpp"
-#include <picosha2.hpp>
-#include <cstdlib>
-#include <cstring>
+#include "error.hpp"
+#include "progress.hpp"
+#include "conflict.hpp"
 #include <numeric>
-#include <algorithm>
+#include <utility>
+#include <unordered_set>
+#include <picosha2.hpp>
 
 using namespace LCS;
 
+template<size_t S>
+static void copyStream(std::istream& source, std::ofstream& dest,
+                       size_t size, char (&buffer)[S],
+                       Progress& progress) {
+    for(size_t i = 0; i != size;) {
+        size_t count = std::min(S, size - i);
+        source.read(buffer, count);
+        dest.write(buffer, count);
+        // progress.consumeData(count);
+        i += count;
+    }
+    progress.consumeData(size);
+}
+
 WadMerge::WadMerge(fs::path const& path, Wad const* original)
  : path_(fs::absolute(path)), original_(original) {
-    if (!original_) {
-        throw std::runtime_error("Original Wad can't be found!");
-    }
+    lcs_trace_func();
+    lcs_trace("path_: ", path_);
+    lcs_assert(original_);
+    lcs_trace("original: ", original->name());
     fs::create_directories(path_.parent_path());
     // TODO: potentially optimize by using the fact entries are sorted
     for(auto const& entry: original->entries()) {
@@ -21,17 +38,26 @@ WadMerge::WadMerge(fs::path const& path, Wad const* original)
 }
 
 void WadMerge::addWad(const Wad* source, Conflict conflict) {
+    lcs_trace_func();
+    lcs_assert(source);
+    lcs_trace("source: ", source->path());
     for(auto const& entry: source->entries()) {
         addWadEntry(entry, source, conflict, EntryKind::Full);
     }
 }
 
 void WadMerge::addExtraEntry(const Wad::Entry& entry, const Wad* source, Conflict conflict) {
+    lcs_trace_func();
+    lcs_assert(source);
+    lcs_trace("source: ", source->path());
     addWadEntry(entry, source, conflict, EntryKind::Extra);
 }
 
 void WadMerge::addWadEntry(Wad::Entry const& entry, Wad const* source,
                            Conflict conflict, EntryKind kind) {
+    lcs_trace_func();
+    lcs_assert(source);
+    lcs_trace("source: ", source->path());
     if (auto o = orgsha256_.find(entry.xxhash); o != orgsha256_.end() && o->second == entry.sha256) {
         return;
     }
@@ -65,9 +91,10 @@ size_t WadMerge::size() const noexcept {
 }
 
 void WadMerge::write(Progress& progress) const {
+    lcs_trace_func();
+    lcs_trace("path_: ", path_);
     size_t totalSize = size();
     progress.startItem(path_, totalSize);
-
     Wad::Header newHeader = original_->header();
     newHeader.filecount = (uint32_t)(entries_.size());
     picosha2::hash256_one_by_one sha256_hasher;
@@ -78,7 +105,6 @@ void WadMerge::write(Progress& progress) const {
     }
     sha256_hasher.finish();
     sha256_hasher.get_hash_bytes(newHeader.signature.begin(), newHeader.signature.end());
-
     if (std::ifstream infile(path_, std::ios::binary); infile) {
         Wad::Header oldHeader = {};
         infile.read((char*)&oldHeader, sizeof(Wad::Header));
@@ -88,12 +114,10 @@ void WadMerge::write(Progress& progress) const {
             return;
         }
     }
-
     fs::create_directories(path_.parent_path());
     std::ofstream outfile;
     outfile.exceptions(std::ofstream::failbit | std::ofstream::badbit);
     outfile.open(path_, std::ios::binary);
-
     std::vector<Wad::Entry> newEntries;
     newEntries.resize(entries_.size());
     uint32_t dataOffset = (uint32_t)(sizeof(Wad::Header) + entries_.size() * sizeof(Wad::Entry));
@@ -105,7 +129,6 @@ void WadMerge::write(Progress& progress) const {
     });
     outfile.write((char const*)&newHeader, (std::streamsize)sizeof(Wad::Header));
     outfile.write((char const*)newEntries.data(), (std::streamsize)(newEntries.size() * sizeof(Wad::Entry)));
-
     char buffer[64 * 1024];
     for(auto const& [xxhash, entry]: entries_) {
         auto& source = entry.wad_->file();
@@ -137,9 +160,10 @@ size_t WadMerge::size_whole() const noexcept {
 }
 
 void WadMerge::write_whole(Progress& progress) const {
+    lcs_trace_func();
+    lcs_trace("path_: ", path_);
     size_t totalSize = size_whole();
     progress.startItem(path_, totalSize);
-
     Wad::Header newHeader = original_->header();
     newHeader.filecount = (uint32_t)(entries_.size());
     picosha2::hash256_one_by_one sha256_hasher;
@@ -150,7 +174,6 @@ void WadMerge::write_whole(Progress& progress) const {
     }
     sha256_hasher.finish();
     sha256_hasher.get_hash_bytes(newHeader.signature.begin(), newHeader.signature.end());
-
     if (std::ifstream infile(path_, std::ios::binary); infile) {
         Wad::Header oldHeader = {};
         infile.read((char*)&oldHeader, sizeof(Wad::Header));
@@ -160,12 +183,10 @@ void WadMerge::write_whole(Progress& progress) const {
             return;
         }
     }
-
     fs::create_directories(path_.parent_path());
     std::ofstream outfile;
     outfile.exceptions(std::ofstream::failbit | std::ofstream::badbit);
     outfile.open(path_, std::ios::binary);
-
     uint32_t dataOffset = (uint32_t)(sizeof(Wad::Header) + entries_.size() * sizeof(Wad::Entry));
     outfile.seekp((std::streamoff)dataOffset);
     std::unordered_map<Wad const*, uint32_t> fullWads;

@@ -1,17 +1,20 @@
 #include "wadmake.hpp"
-#include <cstring>
-#include <algorithm>
+#include "error.hpp"
+#include "progress.hpp"
+#include <charconv>
 #include <numeric>
-#include <fstream>
 #include <xxhash.h>
 #include <picosha2.hpp>
-#include <charconv>
 #include <zstd.h>
 #include <miniz.h>
 
 using namespace LCS;
 
-static uint64_t pathhash(fs::path const& path) {
+WadMakeBase::~WadMakeBase() noexcept {
+
+}
+
+static uint64_t pathhash(fs::path const& path) noexcept {
     uint64_t h;
     fs::path noextension = path;
     noextension.replace_extension();
@@ -30,6 +33,8 @@ WadMakeCopy::WadMakeCopy(fs::path const& path)
     : path_(fs::absolute(path)),
       name_(path_.filename().generic_string())
 {
+    lcs_trace_func();
+    lcs_trace("path_: ", path_);
     {
         Wad wad(path);
         entries_ = wad.entries();
@@ -38,6 +43,8 @@ WadMakeCopy::WadMakeCopy(fs::path const& path)
 }
 
 void WadMakeCopy::write(fs::path const& path, Progress& progress) const {
+    lcs_trace_func();
+    lcs_trace("path: ", path);
     size_t sizeData = size();
     progress.startItem(path, sizeData);
     fs::create_directories(path.parent_path());
@@ -50,9 +57,9 @@ void WadMakeCopy::write(fs::path const& path, Progress& progress) const {
 WadMake::WadMake(fs::path const& path)
     : path_(fs::absolute(path)),
       name_(path_.filename().generic_string()) {
-    if (!fs::is_directory(path_)) {
-        throw std::runtime_error("Not a directory!");
-    }
+    lcs_trace_func();
+    lcs_trace("path_: ", path_);
+    lcs_assert(fs::is_directory(path_));
     for(auto const& entry: fs::recursive_directory_iterator(path_)) {
         if(entry.is_regular_file()) {
             auto xxhash = pathhash(fs::relative(entry.path(), path_));
@@ -66,26 +73,23 @@ WadMake::WadMake(fs::path const& path)
 }
 
 void WadMake::write(fs::path const& path, Progress& progress) const {
+    lcs_trace_func();
+    lcs_trace("path: ", path);
     size_t sizeData = size();
     progress.startItem(path, sizeData);
-
     fs::create_directories(path.parent_path());
     std::ofstream outfile;
     outfile.exceptions(std::ofstream::failbit | std::ofstream::badbit);
     outfile.open(path, std::ios::binary);
     outfile.seekp((std::streamoff)(sizeof(Wad::Header) + sizeof(Wad::Entry) * entries_.size()));
-
     std::vector<Wad::Entry> entries;
     entries.reserve(entries_.size());
-
     std::vector<char> uncompressedBuffer;
     std::vector<char> compressedBuffer;
     uint32_t dataOffset = (uint32_t)(outfile.tellp());
-
     picosha2::hash256_one_by_one sha256;
     for(auto const& [xxhash, path]: entries_) {
         size_t uncompressedSize = fs::file_size(path);
-
         uncompressedBuffer.reserve(uncompressedSize);
         {
             std::ifstream infile;
@@ -130,7 +134,6 @@ void WadMake::write(fs::path const& path, Progress& progress) const {
         entries.push_back(entry);
         progress.consumeData(uncompressedSize);
     }
-
     outfile.seekp(0);
     Wad::Header header{
         { 'R', 'W', '\x03', '\x00' },
@@ -148,7 +151,10 @@ WadMakeUnZip::WadMakeUnZip(fs::path const& path, void* archive)
     : path_(path),
       name_(path_.filename().generic_string()),
       archive_(archive)
-{}
+{
+    lcs_trace_func();
+    lcs_trace("path_: ", path_);
+}
 
 size_t WadMakeUnZip::size() const noexcept {
     if (!sizeCalculated_) {
@@ -162,38 +168,35 @@ size_t WadMakeUnZip::size() const noexcept {
 }
 
 void WadMakeUnZip::add(fs::path const& path, unsigned int zipEntry, size_t size) {
+    lcs_trace_func();
+    lcs_trace("path: ", path);
     auto xxhash = pathhash(path);
     entries_.insert_or_assign(xxhash, FileEntry{ path, zipEntry, size });
     sizeCalculated_ = false;
 }
 
 void WadMakeUnZip::write(fs::path const& path, Progress& progress) const {
+    lcs_trace_func();
+    lcs_trace("path: ", path);
     auto archive = (mz_zip_archive*)archive_;
     size_t sizeData = size();
     progress.startItem(path, sizeData);
-
     fs::create_directories(path.parent_path());
     std::ofstream outfile;
     outfile.exceptions(std::ofstream::failbit | std::ifstream::badbit);
     outfile.open(path, std::ios::binary);
     outfile.seekp((std::streamoff)(sizeof(Wad::Header) + sizeof(Wad::Entry) * entries_.size()));
-
     std::vector<Wad::Entry> entries = {};
     entries.reserve(entries.size());
-
     std::vector<char> uncompressedBuffer;
     std::vector<char> compressedBuffer;
     uint32_t dataOffset = (uint32_t)(outfile.tellp());
-
     picosha2::hash256_one_by_one sha256;
     for(auto const& [xxhash, fileEntry]: entries_) {
         size_t uncompressedSize = fileEntry.size;
-
         uncompressedBuffer.reserve(uncompressedSize);
-        if (!mz_zip_reader_extract_to_mem(archive, fileEntry.index,
-                                          uncompressedBuffer.data(), fileEntry.size, 0)) {
-            throw std::ofstream::failure("Failed to uncompress the file!");
-        }
+        lcs_assert(mz_zip_reader_extract_to_mem(archive, fileEntry.index,
+                                                uncompressedBuffer.data(), fileEntry.size, 0));
         Wad::Entry entry = {
             xxhash,
             dataOffset,
@@ -231,7 +234,6 @@ void WadMakeUnZip::write(fs::path const& path, Progress& progress) const {
         entries.push_back(entry);
         progress.consumeData(uncompressedSize);
     }
-
     outfile.seekp(0);
     Wad::Header header{
         { 'R', 'W', '\x03', '\x00' },
@@ -243,3 +245,4 @@ void WadMakeUnZip::write(fs::path const& path, Progress& progress) const {
     outfile.write((char const*)entries.data(), (std::streamsize)(sizeof(Wad::Entry) * entries.size()));
     progress.finishItem();
 }
+

@@ -2,6 +2,9 @@
 #define LCS_MODINDEX_HPP
 #include "common.hpp"
 #include "mod.hpp"
+#include <vector>
+#include <unordered_map>
+#include <memory>
 
 namespace LCS {
     struct ModIndex {

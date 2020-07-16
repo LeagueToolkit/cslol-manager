@@ -3,6 +3,8 @@
 #include "common.hpp"
 #include "wadindex.hpp"
 #include "wadmerge.hpp"
+#include <unordered_map>
+#include <memory>
 
 namespace LCS {
     struct WadMergeQueue {

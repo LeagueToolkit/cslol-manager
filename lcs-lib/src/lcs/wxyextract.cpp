@@ -1,12 +1,10 @@
 #include "wxyextract.hpp"
+#include "error.hpp"
+#include "progress.hpp"
 #include "utility.hpp"
 #include <miniz.h>
-#include <type_traits>
 #include <xxhash.h>
-#include <numeric>
-#include <algorithm>
 #include <json.hpp>
-#include <cstring>
 
 using namespace LCS;
 
@@ -70,6 +68,8 @@ namespace {
 
 WxyExtract::WxyExtract(fs::path const& path)
     : path_(fs::absolute(path)) {
+    lcs_trace_func();
+    lcs_trace("path_: ", path_);
     file_.exceptions(std::ifstream::failbit | std::ifstream::badbit);
     file_.open(path_, std::ios::binary);
 
@@ -88,6 +88,7 @@ WxyExtract::WxyExtract(fs::path const& path)
 }
 
 void WxyExtract::decompressStr(std::string& str) const {
+    lcs_trace_func();
     if (str.empty()) {
         return;
     }
@@ -95,13 +96,9 @@ void WxyExtract::decompressStr(std::string& str) const {
     mz_stream strm = {};
     if (wxyVersion_ < 6) {
         str.insert(str.begin(), 0x78);
-        if (mz_inflateInit2(&strm, 15) != MZ_OK) {
-            throw std::runtime_error("Failed to init uncompress stream!");
-        }
+        lcs_assert(mz_inflateInit2(&strm, 15) == MZ_OK);
     } else {
-        if (mz_inflateInit2(&strm, -15) != MZ_OK) {
-            throw std::runtime_error("Failed to init uncompress stream!");
-        }
+        lcs_assert(mz_inflateInit2(&strm, -15) == MZ_OK);
     }
     strm.next_in = (unsigned char const*)(str.data());
     strm.avail_in = (unsigned int)(str.size());
@@ -140,6 +137,7 @@ void WxyExtract::decryptStr2(std::string& str) const {
 }
 
 void WxyExtract::read_old() {
+    lcs_trace_func();
     read(file_, name_);
     read(file_, author_);
     read(file_, version_);
@@ -233,6 +231,7 @@ void WxyExtract::read_old() {
 }
 
 void WxyExtract::read_oink() {
+    lcs_trace_func();
     std::array<char, 4> magic;
     read(file_, magic);
     if(magic != std::array{'O', 'I', 'N', 'K'}) {
@@ -340,6 +339,7 @@ void WxyExtract::read_oink() {
 }
 
 void WxyExtract::build_paths() {
+    lcs_trace_func();
     for(auto& file: filesList_) {
         fs::path path = file.fileGamePath;
         auto beg = path.begin();
@@ -365,6 +365,8 @@ void WxyExtract::build_paths() {
 }
 
 void WxyExtract::extract_files(fs::path const& dest, Progress& progress) const {
+    lcs_trace_func();
+    lcs_trace("dest: ", dest);
     size_t total = 0;
     size_t maxUncompressed = 0;
     size_t maxCompressed = 0;
@@ -397,9 +399,7 @@ void WxyExtract::extract_files(fs::path const& dest, Progress& progress) const {
                 file_.read(compressedBuffer.data(), entry.compressedSize);
             }
             mz_stream strm = {};
-            if (mz_inflateInit2(&strm, 15) != MZ_OK) {
-                throw std::runtime_error("Failed to init uncompress stream!");
-            }
+            lcs_assert(mz_inflateInit2(&strm, 15) == MZ_OK);
             strm.next_in = (unsigned char const*)compressedBuffer.data();
             strm.avail_in = (unsigned int)(entry.compressedSize);
             strm.next_out = (unsigned char*)uncompressedBuffer.data();
@@ -409,9 +409,7 @@ void WxyExtract::extract_files(fs::path const& dest, Progress& progress) const {
         } else if(entry.compressionMethod == methodDeflate) {
             file_.read(compressedBuffer.data(), entry.compressedSize);
             mz_stream strm = {};
-            if (mz_inflateInit2(&strm, -15) != MZ_OK) {
-                throw std::runtime_error("Failed to init uncompress stream!");
-            }
+            lcs_assert(mz_inflateInit2(&strm, -15) == MZ_OK);
             strm.next_in = (unsigned char const*)compressedBuffer.data();
             strm.avail_in = (unsigned int)(entry.compressedSize);
             strm.next_out = (unsigned char*)uncompressedBuffer.data();
@@ -419,7 +417,7 @@ void WxyExtract::extract_files(fs::path const& dest, Progress& progress) const {
             mz_inflate(&strm, MZ_FINISH);
             mz_inflateEnd(&strm);
         } else {
-            throw std::runtime_error("Unknow compression method!");
+            throw_error("Unknow compression method!");
         }
         fs::path outpath = dest / entry.fileGamePath;
         fs::create_directories(outpath.parent_path());
@@ -435,6 +433,8 @@ void WxyExtract::extract_files(fs::path const& dest, Progress& progress) const {
 }
 
 void WxyExtract::extract_meta(fs::path const& dest, Progress& progress) const {
+    lcs_trace_func();
+    lcs_trace("dest: ", dest);
     fs::create_directories(dest);
     {
         json j = {
@@ -472,9 +472,7 @@ void WxyExtract::extract_meta(fs::path const& dest, Progress& progress) const {
         file_.seekg((std::streamoff)preview.offset, std::ios::beg);
         file_.read(compressedBuffer.data(), (std::streamsize)preview.size);
         mz_stream strm = {};
-        if (mz_inflateInit2(&strm, -15) != MZ_OK) {
-            throw std::runtime_error("Failed to init uncompress stream!");
-        }
+        lcs_assert(mz_inflateInit2(&strm, -15) == MZ_OK);
         strm.next_in = (unsigned char const*)compressedBuffer.data();
         strm.avail_in = (unsigned int)(preview.size);
         strm.next_out = (unsigned char*)uncompressedBuffer.data();

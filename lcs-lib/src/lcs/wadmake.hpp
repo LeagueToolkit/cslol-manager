@@ -3,27 +3,46 @@
 #include "common.hpp"
 #include "wad.hpp"
 #include "wadindex.hpp"
+#include <optional>
+#include <vector>
+#include <map>
 
 namespace LCS {
-    struct WadMakeCopy {
+    struct WadMakeBase {
+        virtual ~WadMakeBase() noexcept = 0;
+        virtual void write(fs::path const& path, Progress& progress) const = 0;
+        virtual size_t size() const noexcept = 0;
+        virtual std::string const& name() const& noexcept = 0;
+        virtual fs::path const& path() const& noexcept = 0;
+        virtual std::optional<std::string> identify(WadIndex const& index) const noexcept = 0;
+    };
+
+    struct WadMakeCopy : WadMakeBase {
         WadMakeCopy(fs::path const& path);
 
-        void write(fs::path const& path, Progress& progress) const;
+        void write(fs::path const& path, Progress& progress) const override;
 
-        inline auto size() const noexcept {
+        inline size_t size() const noexcept override {
             return size_;
         }
 
-        inline auto const& name() const& noexcept {
+        inline std::string const& name() const& noexcept override {
             return name_;
         }
 
-        inline auto const& path() const& noexcept {
+        inline fs::path const& path() const& noexcept override {
             return path_;
         }
 
         inline auto const& entries() const& noexcept {
             return entries_;
+        }
+
+        inline std::optional<std::string> identify(WadIndex const& index) const noexcept override {
+            if (auto wad = index.findOriginal(name_, entries_)) {
+                return wad->name();
+            }
+            return {};
         }
     private:
         fs::path path_;
@@ -32,25 +51,32 @@ namespace LCS {
         size_t size_ = 0;
     };
 
-    struct WadMake {
+    struct WadMake : WadMakeBase {
         WadMake(fs::path const& path);
 
-        void write(fs::path const& path, Progress& progress) const;
+        void write(fs::path const& path, Progress& progress) const override;
 
-        inline auto size() const noexcept {
+        inline size_t size() const noexcept override {
             return size_;
         }
 
-        inline auto const& name() const& noexcept {
+        inline std::string const& name() const& noexcept override {
             return name_;
         }
 
-        inline auto const& path() const& noexcept {
+        inline fs::path const& path() const& noexcept override {
             return path_;
         }
 
         inline auto const& entries() const& noexcept {
             return entries_;
+        }
+
+        inline std::optional<std::string> identify(WadIndex const& index) const noexcept override {
+            if (auto wad = index.findOriginal(name_, entries_)) {
+                return wad->name();
+            }
+            return {};
         }
     private:
         fs::path path_;
@@ -59,7 +85,7 @@ namespace LCS {
         size_t size_ = 0;
     };
 
-    struct WadMakeUnZip {
+    struct WadMakeUnZip : WadMakeBase {
         struct FileEntry {
             fs::path path;
             unsigned int index;
@@ -69,20 +95,27 @@ namespace LCS {
 
         void add(fs::path const& path, unsigned int zipEntry, size_t size);
 
-        void write(fs::path const& path, Progress& progress) const;
+        void write(fs::path const& path, Progress& progress) const override;
 
-        size_t size() const noexcept;
+        inline size_t size() const noexcept override;
 
-        inline auto const& name() const& noexcept {
+        inline std::string const& name() const& noexcept override {
             return name_;
         }
 
-        inline auto const& path() const& noexcept {
+        inline fs::path const& path() const& noexcept override {
             return path_;
         }
 
         inline auto const& entries() const& noexcept {
             return entries_;
+        }
+
+        inline std::optional<std::string> identify(WadIndex const& index) const noexcept override {
+            if (auto wad = index.findOriginal(name_, entries_)) {
+                return wad->name();
+            }
+            return {};
         }
     private:
         fs::path path_;

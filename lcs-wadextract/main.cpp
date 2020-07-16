@@ -1,6 +1,9 @@
 #include <cstdio>
+#include <lcs/error.hpp>
+#include <lcs/progress.hpp>
 #include <lcs/wad.hpp>
-#include <lcs/HashTable.hpp>
+#include <lcs/hashtable.hpp>
+
 
 using namespace LCS;
 
@@ -31,7 +34,8 @@ int main(int argc, char** argv) {
         wad.extract(dest, hashtable, progress);
         printf("Finished!\n");
     } catch(std::runtime_error const& error) {
-        printf("Error: %s\r\n", error.what());
+        auto message = error_stack_trace(error.what());
+        printf("Error: %s\r\n", message.c_str());
         if (argc < 3) {
             printf("Press enter to exit...!\n");
             getc(stdin);

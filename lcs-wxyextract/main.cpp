@@ -1,4 +1,6 @@
 #include <cstdio>
+#include <lcs/error.hpp>
+#include <lcs/progress.hpp>
 #include <lcs/wxyextract.hpp>
 
 using namespace LCS;
@@ -9,9 +11,6 @@ int main(int argc, char** argv) {
             throw std::runtime_error("lolcustomskin-wxyextract.exe <wxy path> <optional: dest folder>");
         }
         fs::path source = argv[1];
-//        fs::path source = "v7 - Koi Soraka (By Sislex).wxy";
-//        fs::path source = "v5 - Beach_Rift_Day_-_Textures_pack_v6.16_By_Chewy.wxy";
-//        fs::path source = "v3 - Old_Healthbar_Season_2_v1_By_Socr4te.wxy";
         fs::path dest;
         if (argc > 2) {
             dest = argv[2];
@@ -31,7 +30,8 @@ int main(int argc, char** argv) {
         wxy.extract_meta(dest / "META", progress);
         printf("Finished!\n");
     } catch(std::runtime_error const& error) {
-        printf("Error: %s\r\n", error.what());
+        auto message = error_stack_trace(error.what());
+        printf("Error: %s\r\n", message.c_str());
         if (argc < 3) {
             printf("Press enter to exit...!\n");
             getc(stdin);

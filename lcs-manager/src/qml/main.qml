@@ -2,7 +2,6 @@ import QtQuick 2.10
 import QtQuick.Layouts 1.10
 import QtQuick.Controls 1.4
 import Qt.labs.settings 1.0
-import Qt.labs.platform 1.0
 import lolcustomskin.tools 1.0
 
 ApplicationWindow {
@@ -12,46 +11,12 @@ ApplicationWindow {
     height: 480
     title: qsTr("LolCustomSkin Manager")
 
-    SystemTrayIcon {
-        id: trayIcon
-        visible: lcsToolBar.enableTray || !window.visible
-        iconSource: "qrc:/icon.png"
-        menu: Menu {
-            MenuItem {
-                text: !window.visible ? qsTr("Show") : qsTr("Minimzie")
-                onTriggered: window.visible ? window.hide() : window.show()
-            }
-            MenuItem {
-                text: qsTr("Log")
-                onTriggered: lcsDialogLog.open()
-            }
-            MenuItem {
-                text: qsTr("Exit")
-                onTriggered: window.exit()
-            }
-        }
-        onActivated: {
-            if (reason === SystemTrayIcon.Context) {
-                menu.open()
-            } else if(reason === SystemTrayIcon.DoubleClick) {
-                window.show()
-            }
-        }
-    }
-
-    onClosing: {
-        if (trayIcon.available && (lcsToolBar.enableTray || !window.visible)) {
-            close.accepted = false
-            window.hide()
-        }
-    }
-
     Settings {
         id: settings
         property alias leaguePath: lcsTools.leaguePath
         property alias wholeMerge: lcsToolBar.wholeMerge
+        property alias blacklist: lcsToolBar.blacklist
         property alias logVisible: lcsDialogLog.visible
-        property alias enableTray: lcsToolBar.enableTray
 
         property alias lastZipDirectory: lcsDialogOpenZipFantome.folder
         property alias lastImageFolder: lcsDialogNewMod.lastImageFolder
@@ -68,27 +33,20 @@ ApplicationWindow {
 
     property bool isBussy: lcsTools.state !== LCSTools.StateIdle
 
-    function exit() {
-        if (trayIcon.available && trayIcon.visible) {
-            trayIcon.hide()
-        }
-        Qt.quit()
-    }
-
     function logInfo(name, message) {
-        lcsDialogLog.log("INFO: " + name + ": " + message + "\n")
+        lcsDialogLog.log("[INFO] " + name + ": " + message + "\n")
     }
 
     function logWarning(name, error) {
-        lcsDialogLog.log("Warning  " + name + ": " + error + "\n")
+        lcsDialogLog.log("[Warning] " + name + ": " + error + "\n")
         lcsDialogWarning.text = "Failed to" + name
         lcsDialogWarning.detailedText = error
         lcsDialogWarning.open()
     }
 
     function logError(name, error) {
-        lcsDialogLog.log("Failed to " + name + ": " + error + "\n")
-        lcsDialogError.text = "Failed to" + name
+        lcsDialogLog.log("[Error] " + name + ": " + error + "\n")
+        lcsDialogError.text = name
         lcsDialogError.detailedText = error
         lcsDialogError.open()
     }
@@ -110,9 +68,11 @@ ApplicationWindow {
 
         onChangeGamePath: lcsDialogLolPath.open()
 
+        onBlacklistChanged: lcsTools.changeBlacklist(blacklist)
+
         onShowLogs: if (!lcsDialogLog.visible) lcsDialogLog.visible = true
 
-        onExit: window.exit()
+        onExit: Qt.quit()
 
         onSaveProfileAndRun:  {
             let name = lcsToolBar.profilesCurrentName

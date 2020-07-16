@@ -11,8 +11,8 @@ ToolBar {
     property alias profilesCurrentIndex: profilesComboBox.currentIndex
     property alias profilesCurrentName: profilesComboBox.currentText
     property alias menuButtonHeight: mainMenuButton.height
-    property alias enableTray: enableTrayCheck.checked
     property alias wholeMerge: wholeMergeCheck.checked
+    property alias blacklist: blacklistCheck.checked
 
 
     signal showLogs()
@@ -60,8 +60,8 @@ ToolBar {
                     checked: false
                 }
                 MenuItem {
-                    id: enableTrayCheck
-                    text: qsTr("Close to tray")
+                    id: blacklistCheck
+                    text: qsTr("Blacklist extra gamemods")
                     checkable: true
                     checked: true
                 }

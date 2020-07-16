@@ -1,28 +1,38 @@
 #include "wadmergequeue.hpp"
+#include "error.hpp"
+#include "progress.hpp"
+#include <set>
+#include <utility>
 
 using namespace LCS;
 
 WadMergeQueue::WadMergeQueue(const std::filesystem::path& path, WadIndex const& index) :
     path_(fs::absolute(path)), index_(index) {
+    lcs_trace_func();
+    lcs_trace("path_: ", path_);
     fs::create_directories(path_);
 }
 
 void WadMergeQueue::addMod(Mod const* mod, Conflict conflict) {
+    lcs_trace_func();
+    lcs_assert(mod);
+    lcs_trace("mod: ", mod->path());
     for(auto const& [name, source]: mod->wads()) {
         addWad(source.get(), conflict);
     }
 }
 
 void WadMergeQueue::addWad(Wad const* source, Conflict conflict) {
+    lcs_trace_func();
+    lcs_assert(source);
+    lcs_trace("source: ", source->path());
     auto baseWad = index_.findOriginal(source->name(), source->entries());
-    if (baseWad == nullptr) {
-        throw std::runtime_error("No base .wad found!");
-    }
+    lcs_assert_msg("No base .wad found!", baseWad);
     auto baseItem = findOrAddItem(baseWad);
     baseItem->addWad(source, conflict);
     for(auto const& entry: source->entries()) {
-        for(auto [xxhash, extraWad]: index_.findExtra(entry.xxhash)) {
-            if (extraWad != baseWad && extraWad->name() != "Map22.wad.client") {
+        for(auto& [xxhash, extraWad]: index_.findExtra(entry.xxhash)) {
+            if (extraWad != baseWad) {
                 auto extraItem = findOrAddItem(extraWad);
                 extraItem->addExtraEntry(entry, source, conflict);
             }
@@ -31,6 +41,8 @@ void WadMergeQueue::addWad(Wad const* source, Conflict conflict) {
 }
 
 void WadMergeQueue::write(ProgressMulti& progress) const {
+    lcs_trace_func();
+    lcs_trace("path_: ", path_);
     size_t itemTotal = 0;
     size_t dataTotal = 0;
     for(auto const& [original, item]: items_) {
@@ -45,6 +57,8 @@ void WadMergeQueue::write(ProgressMulti& progress) const {
 }
 
 void WadMergeQueue::write_whole(ProgressMulti& progress) const {
+    lcs_trace_func();
+    lcs_trace("path_: ", path_);
     size_t itemTotal = 0;
     size_t dataTotal = 0;
     for(auto const& [original, item]: items_) {
@@ -59,6 +73,8 @@ void WadMergeQueue::write_whole(ProgressMulti& progress) const {
 }
 
 void WadMergeQueue::cleanup() {
+    lcs_trace_func();
+    lcs_trace("path_: ", path_);
     std::set<std::string> good = {};
     for(auto const& [wad, merge]: items_) {
         good.insert(merge.get()->path().generic_string());
@@ -74,11 +90,13 @@ void WadMergeQueue::cleanup() {
 }
 
 WadMerge* WadMergeQueue::findOrAddItem(Wad const* original) {
+    lcs_trace_func();
+    lcs_trace("path_: ", path_);
     if (auto i = items_.find(original); i != items_.end()) {
         return i->second.get();
     } else {
         auto merge = new WadMerge {path_ / fs::relative(original->path(), index_.path()), original};
-        items_.emplace(std::pair{original, std::unique_ptr<WadMerge>{merge}});
+        items_.emplace(std::make_pair(original, std::unique_ptr<WadMerge>{merge}));
         return merge;
     }
 }

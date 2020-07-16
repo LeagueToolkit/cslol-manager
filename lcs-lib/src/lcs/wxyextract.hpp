@@ -1,6 +1,9 @@
 #ifndef WXYEXTRACT_HPP
 #define WXYEXTRACT_HPP
 #include "common.hpp"
+#include <fstream>
+#include <array>
+#include <vector>
 
 namespace LCS {
     struct WxyExtract {

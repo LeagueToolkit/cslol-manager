@@ -2,6 +2,8 @@
 #define LCS_MOD_HPP
 #include "common.hpp"
 #include "wad.hpp"
+#include <map>
+#include <memory>
 
 namespace LCS {
     struct Mod {

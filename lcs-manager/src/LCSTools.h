@@ -32,6 +32,7 @@ signals:
     void stateChanged(LCSState state);
     void statusChanged(QString status);
     void leaguePathChanged(QString leaguePath);
+    void blacklistChanged(bool blacklist);
 
     void progressStart(quint32 itemsTotal, quint64 dataTotal);
     void progressItems(quint32 itemsDone);
@@ -56,6 +57,7 @@ signals:
 
 
     void changeLeaguePath(QString newLeaguePath);
+    void changeBlacklist(bool blacklist);
     void init();
     void deleteMod(QString name);
     void exportMod(QString name, QString dest);
@@ -86,6 +88,7 @@ private:
     QThread* thread_ = nullptr;
     LCSToolsImpl* worker_ = nullptr;
     QString leaguePath_;
+    bool blacklist_;
     LCSState state_ = LCSState::StateUnitialized;
     QString status_;
 };
