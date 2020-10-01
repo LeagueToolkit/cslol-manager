@@ -80,7 +80,7 @@ namespace LCS {
 
         bool WaitExit(uint32_t timeout = 2 * 60 * 60 * 1000) const;
 
-        void WaitMemoryNonZero(void *addr, uint32_t delay = 1, uint32_t timeout = 60 * 1000) const;
+        void WaitPtrEq(void *addr, PtrStorage what, uint32_t delay = 1, uint32_t timeout = 60 * 1000) const;
 
         void ReadMemory(void *address, void *dest, size_t size) const;
 
@@ -90,9 +90,9 @@ namespace LCS {
 
         void *AllocateMemory(size_t size) const;
 
-        inline void WaitNonZero(Ptr<void> address, uint32_t delay = 1,
+        inline void WaitPtrEq(Ptr<void> address, PtrStorage what, uint32_t delay = 1,
                                 uint32_t timeout = 60 * 1000) const {
-            WaitMemoryNonZero(static_cast<void *>(address), delay, timeout);
+            WaitPtrEq(static_cast<void *>(address), what, delay, timeout);
         }
 
         template<typename T>

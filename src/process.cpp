@@ -152,11 +152,11 @@ void Process::WaitInitialized(uint32_t timeout) const {
     }
 }
 
-void Process::WaitMemoryNonZero(void *address, uint32_t delay, uint32_t timeout) const {
-    PtrStorage data;
+void Process::WaitPtrEq(void *address, PtrStorage what, uint32_t delay, uint32_t timeout) const {
+    PtrStorage data = 0x33333333u;
     for (; timeout > delay;) {
         ReadProcessMemory(handle_, address, &data, sizeof(data), nullptr);
-        if (data != 0) {
+        if (data == what) {
             return;
         }
         Sleep(delay);
