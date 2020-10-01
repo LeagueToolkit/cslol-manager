@@ -125,11 +125,12 @@ uint32_t Process::Checksum() const {
     return checksum_;
 }
 
-std::vector<uint8_t> Process::Dump() const {
-    std::vector<uint8_t> buffer = {};
+std::vector<char> Process::Dump() const {
+    auto base = Base();
+    std::vector<char> buffer = {};
     buffer.resize(DUMP_SIZE);
     for (size_t p = 0; p != DUMP_SIZE; p += 0x1000) {
-        ReadProcessMemory(handle_, (void *)(base_ + p), buffer.data() + p, 0x1000, nullptr);
+        ReadProcessMemory(handle_, (void *)(base + p), buffer.data() + p, 0x1000, nullptr);
     }
     return buffer;
 }
@@ -178,7 +179,7 @@ void Process::WriteMemory(void* address, void const* src, size_t sizeBytes) cons
         throw std::runtime_error("Can not read memory from nullptr");
     }
     if (imports.NtWriteVirtualMemory(handle_, address, src, sizeBytes, nullptr)) {
-        throw std::runtime_error("Failed to read memory");
+        throw std::runtime_error("Failed to write memory");
     }
 }
 

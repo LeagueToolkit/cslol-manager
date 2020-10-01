@@ -1,13 +1,12 @@
+# TL;DR 
+ Modding is dead (for now at least).   
+ Only use this if you know what you are doing.  
+
 # Download???
  https://github.com/moonshadow565/lolcustomskin-tools/releases
 
 # What does this do?
  Patches league to load moded files. 
-
-# Supported platforms
- Only supports windows 10 and non-garena servers. 
- There will be no updates/support for other versions! 
- **DO NOT RUN LEAGUE AS ADMIN!**
 
 # How do i do use it?
  If you are looking for simple GUI:
