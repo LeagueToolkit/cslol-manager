@@ -9,11 +9,11 @@
 namespace LCS {
     struct Process;
     struct ModOverlay {
-        static inline constexpr char SCHEMA[] = "lolskinmod-overlay v0 0x%08X 0x%08X 0x%08X";
-        static inline constexpr char INFO[] = "lolskinmod-overlay v0 checksum off_fp off_pmeth";
+        static inline constexpr char SCHEMA[] = "lolskinmod-patcher v1 0x%08X 0x%08X 0x%08X";
+        static inline constexpr char INFO[] = "lolskinmod-patcher v1 checksum off_rsa_meth off_unused";
         uint32_t checksum = {};
-        PtrStorage off_fp = {};
-        PtrStorage off_pmeth = {};
+        PtrStorage off_rsa_meth = {};
+        PtrStorage off_unused = {};
 
         void save(char const *filename) const noexcept;
         void load(char const *filename) noexcept;
@@ -22,6 +22,6 @@ namespace LCS {
         bool check(Process const &process) const;
         void scan(Process const &process);
         void wait_patchable(Process const &process, uint32_t timeout = 60 * 1000);
-        void patch(Process const &process, std::string_view prefix) const;
+        void patch(Process const &process, std::string prefix) const;
     };
 }

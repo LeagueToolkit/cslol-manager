@@ -74,7 +74,7 @@ namespace LCS {
 
         uint32_t Checksum() const;
 
-        std::vector<uint8_t> Dump() const;
+        std::vector<char> Dump() const;
 
         void WaitInitialized(uint32_t timeout = 60 * 1000) const;
 
