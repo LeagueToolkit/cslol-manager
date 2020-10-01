@@ -9,11 +9,12 @@
 namespace LCS {
     struct Process;
     struct ModOverlay {
-        static inline constexpr char SCHEMA[] = "lolskinmod-patcher v1 0x%08X 0x%08X 0x%08X";
-        static inline constexpr char INFO[] = "lolskinmod-patcher v1 checksum off_rsa_meth off_unused";
+        static char const SCHEMA[];
+        static char const INFO[];
         uint32_t checksum = {};
         PtrStorage off_rsa_meth = {};
-        PtrStorage off_unused = {};
+        PtrStorage off_open = {};
+        PtrStorage off_open_ref = {};
 
         void save(char const *filename) const noexcept;
         void load(char const *filename) noexcept;
