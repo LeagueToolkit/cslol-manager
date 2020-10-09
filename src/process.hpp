@@ -82,6 +82,8 @@ namespace LCS {
 
         void WaitPtrEq(void *addr, PtrStorage what, uint32_t delay = 1, uint32_t timeout = 60 * 1000) const;
 
+        void WaitPtrNotEq(void *addr, PtrStorage what, uint32_t delay = 1, uint32_t timeout = 60 * 1000) const;
+
         void ReadMemory(void *address, void *dest, size_t size) const;
 
         void WriteMemory(void* address, void const* src, size_t size) const;
@@ -93,6 +95,11 @@ namespace LCS {
         inline void WaitPtrEq(Ptr<void> address, PtrStorage what, uint32_t delay = 1,
                                 uint32_t timeout = 60 * 1000) const {
             WaitPtrEq(static_cast<void *>(address), what, delay, timeout);
+        }
+
+        inline void WaitPtrNotEq(Ptr<void> address, PtrStorage what, uint32_t delay = 1,
+                                uint32_t timeout = 60 * 1000) const {
+            WaitPtrNotEq(static_cast<void *>(address), what, delay, timeout);
         }
 
         template<typename T>

@@ -8,13 +8,16 @@
 
 namespace LCS {
     struct Process;
+
     struct ModOverlay {
         static char const SCHEMA[];
         static char const INFO[];
         uint32_t checksum = {};
-        PtrStorage off_rsa_meth = {};
         PtrStorage off_open = {};
         PtrStorage off_open_ref = {};
+        PtrStorage off_ret = {};
+        PtrStorage off_free_ptr = {};
+        PtrStorage off_free_fn = {};
 
         void save(char const *filename) const noexcept;
         void load(char const *filename) noexcept;
