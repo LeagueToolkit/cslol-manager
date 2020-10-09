@@ -153,10 +153,23 @@ void Process::WaitInitialized(uint32_t timeout) const {
 }
 
 void Process::WaitPtrEq(void *address, PtrStorage what, uint32_t delay, uint32_t timeout) const {
-    PtrStorage data = 0x33333333u;
+    PtrStorage data = ~what;
     for (; timeout > delay;) {
         ReadProcessMemory(handle_, address, &data, sizeof(data), nullptr);
         if (data == what) {
+            return;
+        }
+        Sleep(delay);
+        timeout -= delay;
+    }
+    throw std::runtime_error("Failed to WaitMemoryNonZero!");
+}
+
+void Process::WaitPtrNotEq(void *address, PtrStorage what, uint32_t delay, uint32_t timeout) const {
+    PtrStorage data = what;
+    for (; timeout > delay;) {
+        ReadProcessMemory(handle_, address, &data, sizeof(data), nullptr);
+        if (data != what) {
             return;
         }
         Sleep(delay);
