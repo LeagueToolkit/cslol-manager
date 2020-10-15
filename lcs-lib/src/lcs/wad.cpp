@@ -15,6 +15,9 @@ Wad::Wad(const std::filesystem::path& path, const std::string& name)
     file_.exceptions(std::ifstream::failbit | std::ifstream::badbit);
     file_.open(path_, std::ios::binary);
     file_.read((char*)&header_, sizeof(header_));
+    if (header_.version == std::array<char, 4>{} && header_.signature == std::array<uint8_t, 256>{}) {
+        ::LCS::throw_error("All zero .wad");
+    }
     lcs_assert(header_.version == std::array{'R', 'W', '\x3', '\x0'});
     dataBegin_ = header_.filecount * sizeof(Entry) + sizeof(header_);
     dataEnd_ = size_;
