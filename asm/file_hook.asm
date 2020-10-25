@@ -23,13 +23,12 @@ push esi
 call back
 back:   pop ebx
         and ebx, 0xFFFFF000
-        add ebx, data_skip_size
 
 ; prepare buffer for writing
 lea edi, DWORD local_buffer[ebp]
 
 ; write prefix
-lea esi, DWORD data_prefix[ebx]
+mov esi, DWORD payload_prefix_open_ptr[ebx]
 write_prefix:   lodsb
                 stosb
                 test al, al
@@ -46,16 +45,15 @@ write_path: lodsb
             jne write_path
 
 ; call original with modified buffer
+lea eax, DWORD local_buffer[ebp]
 push DWORD arg_hTemplateFile[ebp]
 push DWORD arg_dwFlagsAndAttributes[ebp]
 push DWORD arg_dwCreationDisposition[ebp]
 push DWORD arg_lpSecurityAttributes[ebp]
 push DWORD arg_dwShareMode[ebp]
 push DWORD arg_dwDesiredAccess[ebp]
-lea eax, DWORD local_buffer[ebp]
 push eax
-lea eax, DWORD data_org_open_shellcode[ebx]
-call eax
+call DWORD payload_org_open_ptr[ebx]
 
 ; check for success
 cmp eax, -1
@@ -69,10 +67,9 @@ push DWORD arg_lpSecurityAttributes[ebp]
 push DWORD arg_dwShareMode[ebp]
 push DWORD arg_dwDesiredAccess[ebp]
 push DWORD arg_lpFileName[ebp]
-lea eax, DWORD data_org_open_shellcode[ebx]
-call eax
+call DWORD payload_org_open_ptr[ebx]
 
-;epilogue 
+; epilogue 
 done: pop esi
       pop edi
       pop ebx
