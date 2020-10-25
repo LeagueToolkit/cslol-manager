@@ -1,9 +1,8 @@
 ; define offsets for payload data structure
 [bits 32]
-%define data_skip_size 256
 
-%define data_org_open_shellcode 0
-%define data_org_free_addr 64
-%define data_ret_addr 68
-%define data_prefix 72
-
+%define payload_org_open_ptr 0
+%define payload_prefix_open_ptr 4
+%define payload_org_free_ptr 8
+%define payload_find_ret_addr 12
+%define payload_hook_ret_addr 16
