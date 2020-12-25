@@ -2,8 +2,8 @@
 #define LCS_WAD_HPP
 #include "common.hpp"
 #include "hashtable.hpp"
+#include "iofile.hpp"
 #include <array>
-#include <fstream>
 
 namespace LCS {
     struct Wad {
@@ -82,13 +82,13 @@ namespace LCS {
         void extract(fs::path const& dest, HashTable const& hashtable, Progress& progress) const;
     private:
         fs::path path_;
-        size_t size_;
+        std::uint64_t size_;
         std::string name_;
         Header header_;
         std::vector<Entry> entries_;
-        mutable std::ifstream file_;
-        size_t dataBegin_ = 0;
-        size_t dataEnd_ = 0;
+        mutable InFile file_;
+        std::int64_t dataBegin_ = 0;
+        std::int64_t dataEnd_ = 0;
     };
 }
 

@@ -17,13 +17,15 @@
         }                                                 \
     } while(false)
 #define lcs_rethrow(...)                                  \
-    [&, func = __func__]() -> decltype(auto) {            \
+    [&]() {                                               \
         try {                                             \
             return __VA_ARGS__;                           \
-        } catch (std::exception const &) {                \
-            ::LCS::throw_error(func, ": " #__VA_ARGS__);  \
+        } catch (...) {                                   \
+            ::LCS::push_error_msg(__VA_ARGS__);           \
+            throw;                                        \
         }                                                 \
     }()
+
 #define lcs_trace(...) ::LCS::ErrorTrace lcs_paste(trace_,__LINE__) {   \
         [&] () { ::LCS::push_error_msg(__VA_ARGS__); }                  \
     }

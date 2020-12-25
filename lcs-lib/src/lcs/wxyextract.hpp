@@ -1,6 +1,7 @@
 #ifndef WXYEXTRACT_HPP
 #define WXYEXTRACT_HPP
 #include "common.hpp"
+#include "iofile.hpp"
 #include <fstream>
 #include <array>
 #include <vector>
@@ -38,7 +39,7 @@ namespace LCS {
         }
     private:
         fs::path path_;
-        mutable std::ifstream file_;
+        mutable InFile file_;
 
         struct SkinFile {
             fs::path path;

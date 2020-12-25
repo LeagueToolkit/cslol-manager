@@ -9,12 +9,13 @@
 
 using namespace LCS;
 
-template<size_t S>
-static void copyStream(std::istream& source, std::ofstream& dest,
-                       size_t size, char (&buffer)[S],
+template<std::size_t S>
+static void copyStream(InFile& source, std::int64_t offset, OutFile& dest,
+                       std::size_t size, char (&buffer)[S],
                        Progress& progress) {
-    for(size_t i = 0; i != size;) {
-        size_t count = std::min(S, size - i);
+    source.seek(offset, SEEK_SET);
+    for (std::size_t i = 0; i != size;) {
+        std::size_t count = std::min(S, size - i);
         source.read(buffer, count);
         dest.write(buffer, count);
         // progress.consumeData(count);
@@ -71,18 +72,16 @@ void WadMerge::addWadEntry(Wad::Entry const& entry, Wad const* source,
         }
         i->second = Entry { entry, source, kind };
         sizeCalculated_ = false;
-        sizeFastCalculated_ = false;
     } else {
         entries_.insert(i, std::pair {entry.xxhash, Entry { entry, source, kind } });
         sizeCalculated_ = false;
-        sizeFastCalculated_ = false;
     }
 }
 
-size_t WadMerge::size() const noexcept {
+std::uint64_t WadMerge::size() const noexcept {
     if(!sizeCalculated_) {
-        size_ = std::accumulate(entries_.begin(), entries_.end(), size_t{0},
-                    [](size_t old, auto const& kvp) -> size_t {
+        size_ = std::accumulate(entries_.begin(), entries_.end(), std::uint64_t{0},
+                    [](std::uint64_t old, auto const& kvp) -> std::uint64_t {
             return old + kvp.second.sizeCompressed;
         });
         sizeCalculated_ = true;
@@ -93,139 +92,52 @@ size_t WadMerge::size() const noexcept {
 void WadMerge::write(Progress& progress) const {
     lcs_trace_func();
     lcs_trace("path_: ", path_);
-    size_t totalSize = size();
+    auto const totalSize = size();
     progress.startItem(path_, totalSize);
-    Wad::Header newHeader = original_->header();
-    newHeader.filecount = (uint32_t)(entries_.size());
-    picosha2::hash256_one_by_one sha256_hasher;
-    for(auto const& [xxhash, entry]: entries_) {
-        auto const beg = (char const*)(&entry);
-        auto const end = beg + sizeof(Wad::Entry);
-        sha256_hasher.process(beg, end);
-    }
-    sha256_hasher.finish();
-    sha256_hasher.get_hash_bytes(newHeader.signature.begin(), newHeader.signature.end());
-    if (std::ifstream infile(path_, std::ios::binary); infile) {
-        Wad::Header oldHeader = {};
-        infile.read((char*)&oldHeader, sizeof(Wad::Header));
-        if (memcmp((char const*)&oldHeader, (char const*)&newHeader, sizeof(Wad::Header)) == 0) {
-            progress.consumeData(totalSize);
-            progress.finishItem();
-            return;
+    auto newHeader = original_->header();
+    newHeader.filecount = static_cast<std::uint32_t>(entries_.size());
+    {
+        auto sha256_hasher = picosha2::hash256_one_by_one{};
+        for(auto const& [xxhash, entry]: entries_) {
+            auto const beg = (char const*)(&entry);
+            auto const end = beg + sizeof(Wad::Entry);
+            sha256_hasher.process(beg, end);
         }
+        sha256_hasher.finish();
+        sha256_hasher.get_hash_bytes(newHeader.signature.begin(), newHeader.signature.end());
     }
-    fs::create_directories(path_.parent_path());
-    std::ofstream outfile;
-    outfile.exceptions(std::ofstream::failbit | std::ofstream::badbit);
-    outfile.open(path_, std::ios::binary);
-    std::vector<Wad::Entry> newEntries;
-    newEntries.resize(entries_.size());
-    uint32_t dataOffset = (uint32_t)(sizeof(Wad::Header) + entries_.size() * sizeof(Wad::Entry));
+    if (fs::exists(path_)) {
+        try {
+            auto oldHeader = Wad::Header{};
+            auto infile = InFile(path_);
+            infile.read((char*)&oldHeader, sizeof(Wad::Header));
+            if (std::memcmp((char const*)&oldHeader, (char const*)&newHeader, sizeof(Wad::Header)) == 0) {
+                progress.consumeData(totalSize);
+                progress.finishItem();
+                return;
+            }
+        } catch(std::runtime_error const&) {
+            // we don't care...
+        }
+    } else {
+        fs::create_directories(path_.parent_path());
+    }
+    auto outfile = OutFile(path_);
+    auto newEntries = std::vector<Wad::Entry>(entries_.size());
+    auto dataOffset = (std::uint64_t)(sizeof(Wad::Header) + entries_.size() * sizeof(Wad::Entry));
     std::transform(entries_.begin(), entries_.end(), newEntries.begin(),
                    [&dataOffset](std::pair<uint64_t,Wad::Entry> kvp) {
-        kvp.second.dataOffset = dataOffset;
+        kvp.second.dataOffset = static_cast<uint32_t>(dataOffset);
         dataOffset += kvp.second.sizeCompressed;
+        constexpr auto GB = static_cast<std::uint64_t>(1024 * 1024 * 1024);
+        lcs_assert(dataOffset <= 2 * GB);
         return kvp.second;
     });
-    outfile.write((char const*)&newHeader, (std::streamsize)sizeof(Wad::Header));
-    outfile.write((char const*)newEntries.data(), (std::streamsize)(newEntries.size() * sizeof(Wad::Entry)));
-    char buffer[64 * 1024];
-    for(auto const& [xxhash, entry]: entries_) {
-        auto& source = entry.wad_->file();
-        auto sourceOffset = entry.dataOffset;
-        auto& dest = outfile;
-        auto size = entry.sizeCompressed;
-        source.seekg((std::streamoff)sourceOffset, std::ifstream::beg);
-        copyStream(source, dest, size, buffer, progress);
-    }
-    progress.finishItem();
-}
-
-size_t WadMerge::size_whole() const noexcept {
-    if(!sizeFastCalculated_) {
-        size_t sum = 0;
-        std::unordered_set<Wad const*> fullWads;
-        for(auto const& [xxhash, entry]: entries_) {
-            if (entry.kind_ == EntryKind::Extra) {
-                sum += entry.sizeCompressed;
-            } else if (auto full = fullWads.find(entry.wad_); full == fullWads.end()) {
-                sum += (uint32_t)(entry.wad_->dataSize());
-                fullWads.insert(full, entry.wad_);
-            }
-        }
-        sizeFast_ = sum;
-        sizeFastCalculated_ = true;
-    }
-    return sizeFast_;
-}
-
-void WadMerge::write_whole(Progress& progress) const {
-    lcs_trace_func();
-    lcs_trace("path_: ", path_);
-    size_t totalSize = size_whole();
-    progress.startItem(path_, totalSize);
-    Wad::Header newHeader = original_->header();
-    newHeader.filecount = (uint32_t)(entries_.size());
-    picosha2::hash256_one_by_one sha256_hasher;
-    for(auto const& [xxhash, entry]: entries_) {
-        auto const beg = (char const*)(&entry);
-        auto const end = beg + sizeof(Wad::Entry);
-        sha256_hasher.process(beg, end);
-    }
-    sha256_hasher.finish();
-    sha256_hasher.get_hash_bytes(newHeader.signature.begin(), newHeader.signature.end());
-    if (std::ifstream infile(path_, std::ios::binary); infile) {
-        Wad::Header oldHeader = {};
-        infile.read((char*)&oldHeader, sizeof(Wad::Header));
-        if (memcmp((char const*)&oldHeader, (char const*)&newHeader, sizeof(Wad::Header)) == 0) {
-            progress.consumeData(totalSize);
-            progress.finishItem();
-            return;
-        }
-    }
-    fs::create_directories(path_.parent_path());
-    std::ofstream outfile;
-    outfile.exceptions(std::ofstream::failbit | std::ofstream::badbit);
-    outfile.open(path_, std::ios::binary);
-    uint32_t dataOffset = (uint32_t)(sizeof(Wad::Header) + entries_.size() * sizeof(Wad::Entry));
-    outfile.seekp((std::streamoff)dataOffset);
-    std::unordered_map<Wad const*, uint32_t> fullWads;
-    std::vector<Wad::Entry> newEntries;
-    char buffer[64 * 1024];
-    for(auto const& [xxhash, entry]: entries_) {
-        auto wad = entry.wad_;
-        if (entry.kind_ == EntryKind::Extra) {
-            auto& source = wad->file();
-            auto sourceOffset = entry.dataOffset;
-            auto& dest = outfile;
-            auto size = entry.sizeCompressed;
-            source.seekg((std::streamoff)sourceOffset, std::ifstream::beg);
-            copyStream(source, dest, size, buffer, progress);
-            auto& copy = newEntries.emplace_back(entry);
-            copy.dataOffset = dataOffset;
-            dataOffset += size;
-        } else {
-            uint32_t offAdd;
-            if (auto full = fullWads.find(wad); full != fullWads.end()) {
-                offAdd = full->second;
-            } else {
-                fullWads.insert(full, std::pair{ wad, dataOffset });
-                auto& source = wad->file();
-                auto sourceOffset = wad->dataBegin();
-                auto& dest = outfile;
-                auto size = wad->dataSize();
-                source.seekg((std::streamoff)sourceOffset, std::ifstream::beg);
-                copyStream(source, dest, size, buffer, progress);
-                offAdd = dataOffset;
-                dataOffset += (uint32_t)size;
-            }
-            auto& copy = newEntries.emplace_back(entry);
-            copy.dataOffset -= (uint32_t)(wad->dataBegin());
-            copy.dataOffset += offAdd;
-        }
-    }
-    outfile.seekp(0);
     outfile.write((char const*)&newHeader, sizeof(Wad::Header));
-    outfile.write((char const*)newEntries.data(), (std::streamsize)(newEntries.size() * sizeof(Wad::Entry)));
+    outfile.write((char const*)newEntries.data(), newEntries.size() * sizeof(Wad::Entry));
+    char buffer[64 * 1024];
+    for(auto const& [xxhash, entry]: entries_) {
+        copyStream(entry.wad_->file(), entry.dataOffset, outfile, entry.sizeCompressed, buffer, progress);
+    }
     progress.finishItem();
 }

@@ -24,9 +24,6 @@ namespace LCS {
         // Throws std::runtime_error
         void write(ProgressMulti& progress) const;
 
-        // Throws std::runtime_error
-        void write_whole(ProgressMulti& progress) const;
-
         // Throws fs::filesystem_error
         void cleanup();
     private:

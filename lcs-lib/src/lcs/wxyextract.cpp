@@ -2,9 +2,11 @@
 #include "error.hpp"
 #include "progress.hpp"
 #include "utility.hpp"
+#include "iofile.hpp"
 #include <miniz.h>
 #include <xxhash.h>
 #include <json.hpp>
+
 
 using namespace LCS;
 
@@ -32,24 +34,24 @@ namespace {
     }
 
     template<typename T>
-    static inline void read(std::ifstream& file, T& value) {
+    static inline void read(InFile& file, T& value) {
         static_assert(std::is_arithmetic_v<T> || std::is_enum_v<T>);
         file.read((char*)&value, sizeof(T));
     }
 
     template<typename T, size_t S>
-    static inline void read(std::ifstream& file, std::array<T, S>& value) {
+    static inline void read(InFile& file, std::array<T, S>& value) {
         static_assert(std::is_arithmetic_v<T> || std::is_enum_v<T>);
         file.read((char*)&value, sizeof(T) * S);
     }
 
-    static inline void read(std::ifstream& file, std::string& value, int32_t length) {
+    static inline void read(InFile& file, std::string& value, int32_t length) {
         value.clear();
         if(length > 0) {
-            auto const start = file.tellg();
-            file.seekg(0, std::ios::end);
-            auto const end =file.tellg();
-            file.seekg(start, std::ios::beg);
+            auto const start = file.tell();
+            file.seek(0, SEEK_END);
+            auto const end = file.tell();
+            file.seek(start, SEEK_SET);
             if(length > (end - start)) {
                 throw std::runtime_error("Sized string to big!");
             }
@@ -58,7 +60,7 @@ namespace {
         }
     }
 
-    static inline void read(std::ifstream& file, std::string& value) {
+    static inline void read(InFile& file, std::string& value) {
         value.clear();
         int32_t length;
         read(file, length);
@@ -67,11 +69,9 @@ namespace {
 }
 
 WxyExtract::WxyExtract(fs::path const& path)
-    : path_(fs::absolute(path)) {
+    : path_(fs::absolute(path)), file_(path) {
     lcs_trace_func();
     lcs_trace("path_: ", path_);
-    file_.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-    file_.open(path_, std::ios::binary);
 
     std::array<char, 4> magic;
     read(file_, magic);
@@ -157,16 +157,16 @@ void WxyExtract::read_old() {
             bool main = false;
             read(file_, size);
             read(file_, main);
-            uint32_t offset = (uint32_t)file_.tellg();
-            file_.seekg((std::streamoff)size, std::ios::cur);
+            uint32_t offset = (uint32_t)file_.tell();
+            file_.seek(size, SEEK_CUR);
             previews_.push_back(Preview { Preview::Image, main, offset + 1, size - 5 });
         }
     } else {
         uint32_t size = 0;
         read(file_, size);
         if (size != 0) {
-            uint32_t offset = (uint32_t)file_.tellg();
-            file_.seekg((std::streamoff)size, std::ios::cur);
+            uint32_t offset = (uint32_t)file_.tell();
+            file_.seek(size, SEEK_CUR);
             previews_.push_back(Preview { Preview::Image, true, offset + 1, size - 5 });
         }
     }
@@ -217,7 +217,7 @@ void WxyExtract::read_old() {
         decompressStr(skn.fileGamePath);
     }
 
-    int32_t offset = (int32_t)file_.tellg();
+    int32_t offset = (int32_t)file_.tell();
     for(int32_t i = 0; i < fileCount; i++) {
         auto& skn = filesList_[static_cast<size_t>(i)];
         skn.offset = offset;
@@ -276,8 +276,8 @@ void WxyExtract::read_oink() {
         read(file_, type);
         uint32_t size = 0;
         read(file_, size);
-        uint32_t offset = (uint32_t)file_.tellg();
-        file_.seekg((std::streamoff)size, std::ios::cur);
+        uint32_t offset = (uint32_t)file_.tell();
+        file_.seek(size, SEEK_CUR);
         previews_.push_back(Preview { (Preview::Type)type, true, offset, size });
     }
 
@@ -331,7 +331,7 @@ void WxyExtract::read_oink() {
             skn.fileGamePath = fileNames[static_cast<size_t>(f)].second;
         }
     }
-    int32_t offset = (int32_t)file_.tellg();
+    int32_t offset = (int32_t)file_.tell();
     for(auto& skn: filesList_) {
         skn.offset = offset;
         offset += skn.compressedSize;
@@ -383,13 +383,13 @@ void WxyExtract::extract_files(fs::path const& dest, Progress& progress) const {
     compressedBuffer.resize(maxCompressed+6);
 
     for(auto const& entry: filesList_) {
-        file_.seekg((std::streamoff)entry.offset, std::ios::beg);
+        file_.seek(entry.offset, SEEK_SET);
         if(entry.compressionMethod == methodNone) {
-            file_.read(uncompressedBuffer.data(), (std::streamsize)entry.uncompresedSize);
+            file_.read(uncompressedBuffer.data(), entry.uncompresedSize);
         } else if(entry.compressionMethod == methodZlib) {
             if(wxyVersion_ < 6) {
                 uint16_t extra = wxyVersion_ <= 4 ? 1 : 2;
-                file_.seekg((std::streamoff)-extra, std::ios::cur);
+                file_.seek(-extra, SEEK_CUR);
                 file_.read(compressedBuffer.data(), entry.compressedSize);
                 compressedBuffer[0] = 0x78;
                 if(extra > 1) {
@@ -422,11 +422,9 @@ void WxyExtract::extract_files(fs::path const& dest, Progress& progress) const {
         fs::path outpath = dest / entry.fileGamePath;
         fs::create_directories(outpath.parent_path());
 
-        std::ofstream outfile;
-        outfile.exceptions(std::ofstream::failbit | std::ofstream::badbit);
-        outfile.open(outpath, std::ios::binary);
+        auto outfile = OutFile(outpath);
         outfile.write(uncompressedBuffer.data(), entry.uncompresedSize);
-        progress.consumeData((size_t)(entry.compressedSize));
+        progress.consumeData((std::size_t)(entry.compressedSize));
     }
 
     progress.finishItem();
@@ -443,10 +441,9 @@ void WxyExtract::extract_meta(fs::path const& dest, Progress& progress) const {
             { "Version", version_ },
             { "Description", "Converted from .wxy" },
         };
-        std::ofstream outfile;
-        outfile.exceptions(std::ofstream::failbit | std::ofstream::badbit);
-        outfile.open(dest / "info.json", std::ios::binary);
-        outfile << j;
+        auto jstr = j.dump(2);
+        auto outfile = OutFile(dest / "info.json");
+        outfile.write(jstr.data(), jstr.size());
     }
     size_t total = 0;
     size_t maxCompressed = 0;
@@ -469,8 +466,8 @@ void WxyExtract::extract_meta(fs::path const& dest, Progress& progress) const {
         if (preview.type != Preview::Image) {
             continue;
         }
-        file_.seekg((std::streamoff)preview.offset, std::ios::beg);
-        file_.read(compressedBuffer.data(), (std::streamsize)preview.size);
+        file_.seek(preview.offset, SEEK_SET);
+        file_.read(compressedBuffer.data(), preview.size);
         mz_stream strm = {};
         lcs_assert(mz_inflateInit2(&strm, -15) == MZ_OK);
         strm.next_in = (unsigned char const*)compressedBuffer.data();
@@ -490,10 +487,8 @@ void WxyExtract::extract_meta(fs::path const& dest, Progress& progress) const {
                 outpath /= "image" + std::to_string(i) + "." + extension;
                 i++;
             }
-            std::ofstream outfile;
-            outfile.exceptions(std::ofstream::failbit | std::ofstream::badbit);
-            outfile.open(outpath, std::ios::binary);
-            outfile.write(uncompressedBuffer.data(), (std::streamsize)(strm.total_out));
+            auto outfile = OutFile(outpath);
+            outfile.write(uncompressedBuffer.data(), strm.total_out);
         }
 
         progress.consumeData((size_t)preview.size);

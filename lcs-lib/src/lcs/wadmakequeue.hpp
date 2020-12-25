@@ -16,7 +16,7 @@ namespace LCS {
 
         void write(fs::path const& path, ProgressMulti& progress) const;
 
-        size_t size() const noexcept;
+        std::uint64_t size() const noexcept;
 
         inline auto const& items() const& noexcept {
             return items_;
@@ -28,7 +28,7 @@ namespace LCS {
     private:
         WadIndex const& index_;
         std::unordered_map<std::string, std::unique_ptr<WadMakeBase>> items_;
-        mutable size_t size_ = 0;
+        mutable std::uint64_t size_ = 0;
         mutable bool sizeCalculated_ = false;
     };
 }

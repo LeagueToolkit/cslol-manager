@@ -21,15 +21,10 @@ namespace LCS {
 
         void addExtraEntry(Wad::Entry const& entry, Wad const* source, Conflict conflict);
 
-        size_t size() const noexcept;
-
-        size_t size_whole() const noexcept;
+        std::uint64_t size() const noexcept;
 
         // Throws std::runtime_error
         void write(Progress& progress) const;
-
-        // Throws std::runtime_error
-        void write_whole(Progress& progress) const;
 
         inline auto const& path() const& noexcept {
             return path_;
@@ -52,10 +47,8 @@ namespace LCS {
         Wad const* original_;
         std::map<uint64_t, Entry> entries_;
         std::unordered_map<uint64_t, std::array<uint8_t, 8>> orgsha256_;
-        mutable size_t size_ = 0;
-        mutable bool sizeCalculated_ = false;
-        mutable size_t sizeFast_ = 0;
-        mutable bool sizeFastCalculated_ = false;
+        mutable std::uint64_t size_ = 0;
+        mutable bool sizeCalculated_ = false;;
     };
 }
 

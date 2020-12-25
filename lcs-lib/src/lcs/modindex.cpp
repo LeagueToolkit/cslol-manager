@@ -97,10 +97,8 @@ Mod* ModIndex::make(const std::string_view& fileName,
     fs::create_directories(tmp);
     fs::create_directories(tmp / "META");
     {
-        std::ofstream outfile;
-        outfile.exceptions(std::ofstream::failbit | std::ofstream::badbit);
-        outfile.open(tmp / "META" / "info.json", std::ios::binary);
-        outfile.write(info.data(), (std::streamsize)info.size());
+        auto outfile = OutFile(tmp / "META" / "info.json");
+        outfile.write(info.data(), info.size());
     }
     if (!image.empty() && fs::exists(image)) {
         std::error_code error;

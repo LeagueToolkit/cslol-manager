@@ -11,6 +11,9 @@ namespace LCS {
     class ConflictError;
     class Progress;
     class ProgressMulti;
+    struct File;
+    struct InFile;
+    struct OutFile;
     struct Mod;
     struct ModIndex;
     struct ModUnZip;

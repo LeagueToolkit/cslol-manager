@@ -4,6 +4,7 @@
 #include <QJsonDocument>
 #include <QMetaEnum>
 #include <QThread>
+#include <fstream>
 
 static QString get_stack_trace(std::runtime_error const& err) noexcept {
     return QString::fromStdString(LCS::error_stack_trace(err.what()));
@@ -297,13 +298,13 @@ void LCSToolsImpl::exportMod(QString name, QString dest) {
 void LCSToolsImpl::installFantomeZip(QString path) {
     if (state_ == LCSState::StateIdle) {
         setState(LCSState::StateBussy);
-        setStatus("Install Fantome .zip");
+        setStatus("Install Fantome Mod");
         try {
             auto mod = modIndex_->install_from_zip(path.toStdString(), *dynamic_cast<LCS::ProgressMulti*>(this));
             emit installedMod(QString::fromStdString(mod->filename()),
                               parseInfoData(mod->filename(), mod->info()));
         } catch(std::runtime_error const& error) {
-            emit reportError("Install Fantome .zip", get_stack_trace(error));
+            emit reportError("Install Fantome Mod", get_stack_trace(error));
         }
         setState(LCSState::StateIdle);
     }
@@ -333,7 +334,7 @@ void LCSToolsImpl::makeMod(QString fileName, QString image, QJsonObject infoData
     }
 }
 
-void LCSToolsImpl::saveProfile(QString name, QJsonObject mods, bool run, bool whole) {
+void LCSToolsImpl::saveProfile(QString name, QJsonObject mods, bool run) {
     if (state_ == LCSState::StateIdle) {
         setState(LCSState::StateBussy);
         setStatus("Save profile");
@@ -349,11 +350,7 @@ void LCSToolsImpl::saveProfile(QString name, QJsonObject mods, bool run, bool wh
                     queue.addMod(i->second.get(), LCS::Conflict::Abort);
                 }
             }
-            if (whole) {
-                queue.write_whole(*dynamic_cast<LCS::ProgressMulti*>(this));
-            } else {
-                queue.write(*dynamic_cast<LCS::ProgressMulti*>(this));
-            }
+            queue.write(*dynamic_cast<LCS::ProgressMulti*>(this));
             queue.cleanup();
             writeCurrentProfile(name);
             writeProfile(name, mods);
@@ -407,7 +404,7 @@ void LCSToolsImpl::runProfile(QString name) {
         auto profilePath = (progDirPath_ / "profiles" / name.toStdString()).generic_string() + "/";
         std::thread thread([this, profilePath = std::move(profilePath)] {
             try {
-                setStatus("Wait for League");
+                setStatus("Running");
                 setState(LCSState::StateRunning);
                 while (state_ == LCSState::StateRunning) {
 #ifdef WIN32
@@ -419,7 +416,7 @@ void LCSToolsImpl::runProfile(QString name) {
                     setState(LCSState::StatePatching);
                     setStatus("Found league");
                     if (!patcher_.check(*process)) {
-                        setStatus("Wait initialized");
+                        setStatus("Game is starting");
                         process->WaitInitialized();
                         setStatus("Scan offsets");
                         patcher_.scan(*process);
@@ -431,7 +428,7 @@ void LCSToolsImpl::runProfile(QString name) {
                     patcher_.patch(*process, profilePath);
                     setStatus("Wait for league to exit");
                     process->WaitExit();
-                    setStatus("Wait for League");
+                    setStatus("Running");
                     setState(LCSState::StateRunning);
 #else
                   QThread::msleep(250);
@@ -565,13 +562,13 @@ void LCSToolsImpl::addModWads(QString fileName, QJsonArray wads) {
 }
 
 /// Interface implementations
-void LCSToolsImpl::startItem(LCS::fs::path const& path, size_t bytes) noexcept {
+void LCSToolsImpl::startItem(LCS::fs::path const& path, std::uint64_t bytes) noexcept {
     auto name = QString::fromStdString(path.filename().generic_string());
     auto size = QString::number(bytes / 1024.0 / 1024.0, 'f', 2);
     setStatus("Processing " + name + "(" + size + "MB)");
 }
 
-void LCSToolsImpl::consumeData(size_t ammount) noexcept {
+void LCSToolsImpl::consumeData(std::uint64_t ammount) noexcept {
     progressDataDone_ += ammount;
     emit progressData((quint64)progressDataDone_);
 }
@@ -581,7 +578,7 @@ void LCSToolsImpl::finishItem() noexcept {
     emit progressItems((quint32)progressItemDone_);
 }
 
-void LCSToolsImpl::startMulti(size_t itemCount, size_t dataTotal) noexcept {
+void LCSToolsImpl::startMulti(size_t itemCount, std::uint64_t dataTotal) noexcept {
     progressItemDone_ = 0;
     progressDataDone_ = 0;
     emit progressStart((quint32)itemCount, (quint64)dataTotal);

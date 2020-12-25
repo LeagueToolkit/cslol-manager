@@ -8,12 +8,10 @@
 
 using namespace LCS;
 
-Wad::Wad(const std::filesystem::path& path, const std::string& name)
-    : path_(fs::absolute(path)), size_(fs::file_size(path_)), name_(name)  {
+Wad::Wad(fs::path const& path, std::string const& name)
+    : path_(fs::absolute(path)), size_(fs::file_size(path_)), name_(name), file_(path_) {
     lcs_trace_func();
     lcs_trace("path_: ", path_);
-    file_.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-    file_.open(path_, std::ios::binary);
     file_.read((char*)&header_, sizeof(header_));
     if (header_.version == std::array<char, 4>{} && header_.signature == std::array<uint8_t, 256>{}) {
         ::LCS::throw_error("All zero .wad");
@@ -49,7 +47,7 @@ void Wad::extract(fs::path const& dest, HashTable const& hashtable, Progress& pr
     uncompressedBuffer.reserve((size_t)(maxUncompressed));
 
     for(auto const& entry: entries_) {
-        file_.seekg((std::streampos)entry.dataOffset, std::ios::beg);
+        file_.seek(entry.dataOffset, SEEK_SET);
         if (entry.type == Entry::Uncompressed) {
             file_.read(uncompressedBuffer.data(), entry.sizeUncompressed);
         } else if(entry.type == Entry::ZlibCompressed) {
@@ -82,9 +80,7 @@ void Wad::extract(fs::path const& dest, HashTable const& hashtable, Progress& pr
             }
             lcs_trace("outpath: ", outpath);
             fs::create_directories(outpath.parent_path());
-            std::ofstream outfile;
-            outfile.exceptions(std::ofstream::failbit | std::ofstream::badbit);
-            outfile.open(outpath, std::ios::binary);
+            OutFile outfile(outpath);
             outfile.write(uncompressedBuffer.data(), entry.sizeUncompressed);
         }
         progress.consumeData(entry.sizeUncompressed);

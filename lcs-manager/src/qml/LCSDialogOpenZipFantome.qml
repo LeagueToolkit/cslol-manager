@@ -6,7 +6,7 @@ import Qt.labs.platform 1.0
 FileDialog {
     id: lcsDialogOpenZipFantome
     visible: false
-    title: "Select Fantome .zip mod"
+    title: "Select Fantome Mod"
     fileMode: FileDialog.OpenFile
-    nameFilters: "Fantome Zip files (*.zip)"
+    nameFilters: "Fantome Mod files (*.fantome *.zip)"
 }

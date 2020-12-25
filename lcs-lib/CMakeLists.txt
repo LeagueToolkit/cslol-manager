@@ -19,6 +19,8 @@ add_library(lcs-lib STATIC
     src/lcs/error.hpp
     src/lcs/hashtable.cpp
     src/lcs/hashtable.hpp
+    src/lcs/iofile.cpp
+    src/lcs/iofile.hpp
     src/lcs/mod.cpp
     src/lcs/mod.hpp
     src/lcs/modindex.cpp

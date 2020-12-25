@@ -53,10 +53,10 @@ void WadMakeQueue::write(fs::path const& path, ProgressMulti& progress) const {
     progress.finishMulti();
 }
 
-size_t WadMakeQueue::size() const noexcept {
+std::uint64_t WadMakeQueue::size() const noexcept {
     if (!sizeCalculated_) {
-        size_ = std::accumulate(items_.begin(), items_.end(), size_t{0},
-                                [](size_t old, auto const& item) -> size_t {
+        size_ = std::accumulate(items_.begin(), items_.end(), std::uint64_t{0},
+                                [](std::uint64_t old, auto const& item) -> std::uint64_t {
                 return old + item.second->size();
         });
         sizeCalculated_ = true;

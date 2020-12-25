@@ -3,8 +3,8 @@
 #include "error.hpp"
 #include "progress.hpp"
 #include "conflict.hpp"
+#include "iofile.hpp"
 #include <miniz.h>
-#include <fstream>
 #include <numeric>
 
 using namespace LCS;
@@ -14,15 +14,9 @@ Mod::Mod(fs::path path) : path_(fs::absolute(path)) {
     lcs_trace_func();
     lcs_trace("path_: ", path_);
     lcs_assert(fs::exists(path_ / "META" / "info.json"));
-    std::ifstream infile;
-    infile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-    infile.open(path_ / "META" / "info.json", std::ifstream::binary);
-    auto beg = infile.tellg();
-    infile.seekg(0, std::ios::end);
-    auto end = infile.tellg();
-    infile.seekg(0, std::ios::beg);
-    info_.resize((size_t)(end - beg));
-    infile.read(info_.data(), (std::streamsize)info_.size());
+    InFile infile(path_ / "META" / "info.json");
+    info_.resize((std::size_t)(infile.size()));
+    infile.read(info_.data(), info_.size());
 
     if (fs::exists(path_ / "META" / "image.png")) {
         image_ = path_ / "META" / "image.png";
@@ -43,8 +37,8 @@ Mod::Mod(fs::path path) : path_(fs::absolute(path)) {
 void Mod::write_zip(std::filesystem::path path, ProgressMulti& progress) const {
     lcs_trace_func();
     lcs_trace("path: ", path);
-    size_t sizeTotal = std::accumulate(wads_.begin(), wads_.end(), size_t{0},
-                                       [](size_t old, auto const& kvp) -> size_t {
+    std::uint64_t sizeTotal = std::accumulate(wads_.begin(), wads_.end(), std::uint64_t{0},
+                                       [](std::uint64_t old, auto const& kvp) -> std::uint64_t {
         return old + kvp.second->size();
     });
     progress.startMulti(wads_.size(), sizeTotal);
@@ -94,10 +88,8 @@ void Mod::remove_wad(std::string const& name) {
 
 void Mod::change_info(std::string const& infoData) {
     lcs_trace_func();
-    std::ofstream outfile;
-    outfile.exceptions(std::ofstream::failbit | std::ofstream::badbit);
-    outfile.open(path_ / "META" / "info.json", std::ofstream::binary);
-    outfile.write(infoData.data(), (std::streamsize)infoData.size());
+    auto outfile = OutFile(path_ / "META" / "info.json");
+    outfile.write(infoData.data(), infoData.size());
     info_ = infoData;
 }
 
@@ -118,7 +110,7 @@ std::vector<Wad const*> Mod::add_wads(WadMakeQueue& wads, ProgressMulti& progres
     std::vector<std::string> removeExisting;
     std::vector<std::string> skipNew;
     std::vector<Wad const*> added;
-    added.reserve(wads.size());
+    added.reserve(wads.items().size());
     // Handle conflicts
     for (auto const& [name, item]: wads.items()) {
         if (auto w = wads_.find(name); w != wads_.end()) {

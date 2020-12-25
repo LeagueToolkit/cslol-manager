@@ -73,7 +73,7 @@ public slots:
     void deleteMod(QString name);
     void exportMod(QString name, QString dest);
     void installFantomeZip(QString path);
-    void saveProfile(QString name, QJsonObject mods, bool run, bool whole);
+    void saveProfile(QString name, QJsonObject mods, bool run);
     void loadProfile(QString name);
     void deleteProfile(QString name);
     void runProfile(QString name);
@@ -115,15 +115,15 @@ private:
 
 /// ProgressMulti impl
 public:
-    void startItem(std::filesystem::path const& path, size_t) noexcept override;
-    void consumeData(size_t ammount) noexcept override;
+    void startItem(std::filesystem::path const& path, std::uint64_t) noexcept override;
+    void consumeData(std::uint64_t ammount) noexcept override;
     void finishItem() noexcept override;
-    void startMulti(size_t itemCount, size_t dataTotal) noexcept override;
+    void startMulti(size_t itemCount, std::uint64_t dataTotal) noexcept override;
     void finishMulti() noexcept override;
 
 private:
-    size_t progressItemDone_;
-    size_t progressDataDone_;
+    std::uint64_t progressItemDone_;
+    std::uint64_t progressDataDone_;
 };
 
 

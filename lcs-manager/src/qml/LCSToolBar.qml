@@ -11,7 +11,6 @@ ToolBar {
     property alias profilesCurrentIndex: profilesComboBox.currentIndex
     property alias profilesCurrentName: profilesComboBox.currentText
     property alias menuButtonHeight: mainMenuButton.height
-    property alias wholeMerge: wholeMergeCheck.checked
     property alias blacklist: blacklistCheck.checked
 
 
@@ -38,7 +37,7 @@ ToolBar {
               Menu {
                 id: mainMenu
                 MenuItem {
-                    text: qsTr("Install Fantome .zip mod")
+                    text: qsTr("Install Fantome Mod")
                     enabled: !isBussy
                     onTriggered: lcsToolBar.installFantomeZip()
                 }
@@ -52,12 +51,6 @@ ToolBar {
                     text: qsTr("Change Game Folder")
                     enabled: !isBussy
                     onTriggered: lcsToolBar.changeGamePath()
-                }
-                MenuItem {
-                    id: wholeMergeCheck
-                    text: qsTr("Merge whole")
-                    checkable: true
-                    checked: false
                 }
                 MenuItem {
                     id: blacklistCheck

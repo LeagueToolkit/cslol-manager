@@ -43,8 +43,8 @@ void WadMergeQueue::addWad(Wad const* source, Conflict conflict) {
 void WadMergeQueue::write(ProgressMulti& progress) const {
     lcs_trace_func();
     lcs_trace("path_: ", path_);
-    size_t itemTotal = 0;
-    size_t dataTotal = 0;
+    std::size_t itemTotal = 0;
+    std::uint64_t dataTotal = 0;
     for(auto const& [original, item]: items_) {
         itemTotal++;
         dataTotal += item->size();
@@ -56,21 +56,6 @@ void WadMergeQueue::write(ProgressMulti& progress) const {
     progress.finishMulti();
 }
 
-void WadMergeQueue::write_whole(ProgressMulti& progress) const {
-    lcs_trace_func();
-    lcs_trace("path_: ", path_);
-    size_t itemTotal = 0;
-    size_t dataTotal = 0;
-    for(auto const& [original, item]: items_) {
-        itemTotal++;
-        dataTotal += item->size_whole();
-    }
-    progress.startMulti(itemTotal, dataTotal);
-    for(auto const& kvp: items_) {
-        kvp.second->write_whole(progress);
-    }
-    progress.finishMulti();
-}
 
 void WadMergeQueue::cleanup() {
     lcs_trace_func();

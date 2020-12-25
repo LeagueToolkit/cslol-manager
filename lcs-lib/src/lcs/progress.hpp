@@ -7,8 +7,8 @@ namespace LCS {
     public:
         Progress() noexcept;
         virtual ~Progress() noexcept;
-        virtual void startItem(fs::path const& path, size_t dataSize) noexcept;
-        virtual void consumeData(size_t ammount) noexcept;
+        virtual void startItem(fs::path const& path, std::uint64_t dataSize) noexcept;
+        virtual void consumeData(std::uint64_t ammount) noexcept;
         virtual void finishItem() noexcept;
     };
 
@@ -16,7 +16,7 @@ namespace LCS {
     public:
         ProgressMulti() noexcept;
         virtual ~ProgressMulti() noexcept;
-        virtual void startMulti(size_t itemCount, size_t dataTotal) noexcept;
+        virtual void startMulti(size_t itemCount, std::uint64_t dataTotal) noexcept;
         virtual void finishMulti() noexcept;
     };
 }

@@ -11,7 +11,7 @@ namespace LCS {
     struct WadMakeBase {
         virtual ~WadMakeBase() noexcept = 0;
         virtual void write(fs::path const& path, Progress& progress) const = 0;
-        virtual size_t size() const noexcept = 0;
+        virtual std::uint64_t size() const noexcept = 0;
         virtual std::string const& name() const& noexcept = 0;
         virtual fs::path const& path() const& noexcept = 0;
         virtual std::optional<std::string> identify(WadIndex const& index) const noexcept = 0;
@@ -22,7 +22,7 @@ namespace LCS {
 
         void write(fs::path const& path, Progress& progress) const override;
 
-        inline size_t size() const noexcept override {
+        inline std::uint64_t size() const noexcept override {
             return size_;
         }
 
@@ -48,7 +48,7 @@ namespace LCS {
         fs::path path_;
         std::string name_;
         std::vector<Wad::Entry> entries_;
-        size_t size_ = 0;
+        std::uint64_t size_ = 0;
     };
 
     struct WadMake : WadMakeBase {
@@ -56,7 +56,7 @@ namespace LCS {
 
         void write(fs::path const& path, Progress& progress) const override;
 
-        inline size_t size() const noexcept override {
+        inline std::uint64_t size() const noexcept override {
             return size_;
         }
 
@@ -82,22 +82,22 @@ namespace LCS {
         fs::path path_;
         std::string name_;
         std::map<uint64_t, fs::path> entries_;
-        size_t size_ = 0;
+        std::uint64_t size_ = 0;
     };
 
     struct WadMakeUnZip : WadMakeBase {
         struct FileEntry {
             fs::path path;
             unsigned int index;
-            size_t size;
+            std::uint64_t size;
         };
         WadMakeUnZip(fs::path const& source, void* archive);
 
-        void add(fs::path const& path, unsigned int zipEntry, size_t size);
+        void add(fs::path const& path, unsigned int zipEntry, std::uint64_t size);
 
         void write(fs::path const& path, Progress& progress) const override;
 
-        inline size_t size() const noexcept override;
+        inline std::uint64_t size() const noexcept override;
 
         inline std::string const& name() const& noexcept override {
             return name_;
@@ -122,7 +122,7 @@ namespace LCS {
         std::string name_;
         void* archive_;
         std::map<uint64_t, FileEntry> entries_;
-        mutable size_t size_ = 0;
+        mutable std::uint64_t size_ = 0;
         mutable bool sizeCalculated_;
     };
 }

@@ -27,7 +27,7 @@ namespace LCS {
         struct CopyFile {
             fs::path path;
             mz_uint index;
-            size_t size;
+            std::uint64_t size;
         };
         WadMakeUnZip& addFolder(std::string name);
         void extractFile(fs::path const& dest, CopyFile const& file, Progress& progress);
@@ -37,8 +37,8 @@ namespace LCS {
         std::vector<CopyFile> wadfile_;
         std::unordered_map<std::string, std::unique_ptr<WadMakeUnZip>> wadfolder_;
         mz_zip_archive zip_archive = {};
-        size_t size_ = 0;
-        size_t items_ = 0;
+        std::uint64_t size_ = 0;
+        std::size_t items_ = 0;
     };
 }
 

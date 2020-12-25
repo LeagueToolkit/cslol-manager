@@ -45,7 +45,7 @@ WadMakeCopy::WadMakeCopy(fs::path const& path)
 void WadMakeCopy::write(fs::path const& path, Progress& progress) const {
     lcs_trace_func();
     lcs_trace("path: ", path);
-    size_t sizeData = size();
+    std::uint64_t sizeData = size();
     progress.startItem(path, sizeData);
     fs::create_directories(path.parent_path());
     fs::copy_file(path_, path);
@@ -66,8 +66,8 @@ WadMake::WadMake(fs::path const& path)
             entries_.insert_or_assign(xxhash, entry.path());
         }
     }
-    size_ = std::accumulate(entries_.begin(), entries_.end(), size_t{0},
-                            [](size_t old, auto const& kvp) -> size_t {
+    size_ = std::accumulate(entries_.begin(), entries_.end(), std::uint64_t{0},
+                            [](std::uint64_t old, auto const& kvp) -> std::uint64_t {
         return old + fs::file_size(kvp.second);
     });
 }
@@ -75,31 +75,27 @@ WadMake::WadMake(fs::path const& path)
 void WadMake::write(fs::path const& path, Progress& progress) const {
     lcs_trace_func();
     lcs_trace("path: ", path);
-    size_t sizeData = size();
+    std::uint64_t sizeData = size();
     progress.startItem(path, sizeData);
     fs::create_directories(path.parent_path());
-    std::ofstream outfile;
-    outfile.exceptions(std::ofstream::failbit | std::ofstream::badbit);
-    outfile.open(path, std::ios::binary);
-    outfile.seekp((std::streamoff)(sizeof(Wad::Header) + sizeof(Wad::Entry) * entries_.size()));
+    OutFile outfile(path);
+    outfile.seek(sizeof(Wad::Header) + sizeof(Wad::Entry) * entries_.size(), SEEK_SET);
     std::vector<Wad::Entry> entries;
     entries.reserve(entries_.size());
     std::vector<char> uncompressedBuffer;
     std::vector<char> compressedBuffer;
-    uint32_t dataOffset = (uint32_t)(outfile.tellp());
+    uint64_t dataOffset = (uint64_t)(outfile.tell());
     picosha2::hash256_one_by_one sha256;
     for(auto const& [xxhash, path]: entries_) {
-        size_t uncompressedSize = fs::file_size(path);
+        std::uint64_t uncompressedSize = fs::file_size(path);
         uncompressedBuffer.reserve(uncompressedSize);
         {
-            std::ifstream infile;
-            infile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-            infile.open(path, std::ios::binary);
-            infile.read(uncompressedBuffer.data(), (std::streamsize)uncompressedSize);
+            InFile infile(path);
+            infile.read(uncompressedBuffer.data(), uncompressedSize);
         }
         Wad::Entry entry = {
             xxhash,
-            dataOffset,
+            static_cast<uint32_t>(dataOffset),
             {},
             (uint32_t)uncompressedSize,
             {},
@@ -114,7 +110,7 @@ void WadMake::write(fs::path const& path, Progress& progress) const {
             sha256.process(uncompressedBuffer.data(), uncompressedBuffer.data() + uncompressedSize);
             sha256.finish();
             sha256.get_hash_bytes(entry.sha256.data(), entry.sha256.data() + entry.sha256.size());
-            outfile.write((char const*)uncompressedBuffer.data(), (std::streamsize)uncompressedSize);
+            outfile.write((char const*)uncompressedBuffer.data(), uncompressedSize);
         } else {
             size_t estimate = ZSTD_compressBound(uncompressedSize);
             compressedBuffer.reserve(estimate);
@@ -127,22 +123,24 @@ void WadMake::write(fs::path const& path, Progress& progress) const {
             sha256.process(compressedBuffer.data(), compressedBuffer.data() + compressedSize);
             sha256.finish();
             sha256.get_hash_bytes(entry.sha256.data(), entry.sha256.data() + entry.sha256.size());
-            outfile.write((char const*)compressedBuffer.data(), (std::streamsize)compressedSize);
+            outfile.write((char const*)compressedBuffer.data(), compressedSize);
         }
-        entry.dataOffset = dataOffset;
+        entry.dataOffset = static_cast<uint32_t>(dataOffset);
         dataOffset += entry.sizeCompressed;
+        constexpr auto GB = static_cast<std::uint64_t>(1024 * 1024 * 1024);
+        lcs_assert(dataOffset <= 2 * GB);
         entries.push_back(entry);
         progress.consumeData(uncompressedSize);
     }
-    outfile.seekp(0);
+    outfile.seek(0, SEEK_SET);
     Wad::Header header{
         { 'R', 'W', '\x03', '\x00' },
         {},
         {},
         static_cast<uint32_t>(entries.size())
     };
-    outfile.write((char const*)&header, (std::streamsize)(sizeof(Wad::Header)));
-    outfile.write((char const*)entries.data(), (std::streamsize)(sizeof(Wad::Entry) * entries.size()));
+    outfile.write((char const*)&header, sizeof(Wad::Header));
+    outfile.write((char const*)entries.data(), sizeof(Wad::Entry) * entries.size());
     progress.finishItem();
 }
 
@@ -156,10 +154,10 @@ WadMakeUnZip::WadMakeUnZip(fs::path const& path, void* archive)
     lcs_trace("path_: ", path_);
 }
 
-size_t WadMakeUnZip::size() const noexcept {
+std::uint64_t WadMakeUnZip::size() const noexcept {
     if (!sizeCalculated_) {
-        size_ = std::accumulate(entries_.begin(), entries_.end(), size_t{0},
-                                [](size_t old, auto const& kvp) -> size_t{
+        size_ = std::accumulate(entries_.begin(), entries_.end(), std::uint64_t{0},
+                                [](std::uint64_t old, auto const& kvp) -> std::uint64_t{
             return old + kvp.second.size;
         });
         sizeCalculated_ = true;
@@ -167,7 +165,7 @@ size_t WadMakeUnZip::size() const noexcept {
     return true;
 }
 
-void WadMakeUnZip::add(fs::path const& path, unsigned int zipEntry, size_t size) {
+void WadMakeUnZip::add(fs::path const& path, unsigned int zipEntry, std::uint64_t size) {
     lcs_trace_func();
     lcs_trace("path: ", path);
     auto xxhash = pathhash(path);
@@ -179,27 +177,25 @@ void WadMakeUnZip::write(fs::path const& path, Progress& progress) const {
     lcs_trace_func();
     lcs_trace("path: ", path);
     auto archive = (mz_zip_archive*)archive_;
-    size_t sizeData = size();
+    std::uint64_t sizeData = size();
     progress.startItem(path, sizeData);
     fs::create_directories(path.parent_path());
-    std::ofstream outfile;
-    outfile.exceptions(std::ofstream::failbit | std::ifstream::badbit);
-    outfile.open(path, std::ios::binary);
-    outfile.seekp((std::streamoff)(sizeof(Wad::Header) + sizeof(Wad::Entry) * entries_.size()));
+    auto outfile = OutFile(path);
+    outfile.seek(sizeof(Wad::Header) + sizeof(Wad::Entry) * entries_.size(), SEEK_SET);
     std::vector<Wad::Entry> entries = {};
     entries.reserve(entries.size());
     std::vector<char> uncompressedBuffer;
     std::vector<char> compressedBuffer;
-    uint32_t dataOffset = (uint32_t)(outfile.tellp());
+    auto dataOffset = (std::uint64_t)(outfile.tell());
     picosha2::hash256_one_by_one sha256;
     for(auto const& [xxhash, fileEntry]: entries_) {
-        size_t uncompressedSize = fileEntry.size;
+        std::uint64_t uncompressedSize = fileEntry.size;
         uncompressedBuffer.reserve(uncompressedSize);
         lcs_assert(mz_zip_reader_extract_to_mem(archive, fileEntry.index,
                                                 uncompressedBuffer.data(), fileEntry.size, 0));
         Wad::Entry entry = {
             xxhash,
-            dataOffset,
+            static_cast<std::uint32_t>(dataOffset),
             {},
             (uint32_t)uncompressedSize,
             {},
@@ -214,7 +210,7 @@ void WadMakeUnZip::write(fs::path const& path, Progress& progress) const {
             sha256.process(uncompressedBuffer.data(), uncompressedBuffer.data() + uncompressedSize);
             sha256.finish();
             sha256.get_hash_bytes(entry.sha256.data(), entry.sha256.data() + entry.sha256.size());
-            outfile.write((char const*)uncompressedBuffer.data(), (std::streamsize)uncompressedSize);
+            outfile.write((char const*)uncompressedBuffer.data(), uncompressedSize);
         } else {
             size_t estimate = ZSTD_compressBound(uncompressedSize);
             compressedBuffer.reserve(estimate);
@@ -227,22 +223,24 @@ void WadMakeUnZip::write(fs::path const& path, Progress& progress) const {
             sha256.process(compressedBuffer.data(), compressedBuffer.data() + compressedSize);
             sha256.finish();
             sha256.get_hash_bytes(entry.sha256.data(), entry.sha256.data() + entry.sha256.size());
-            outfile.write((char const*)compressedBuffer.data(), (std::streamsize)compressedSize);
+            outfile.write((char const*)compressedBuffer.data(), compressedSize);
         }
-        entry.dataOffset = dataOffset;
+        entry.dataOffset = static_cast<uint32_t>(dataOffset);
         dataOffset += entry.sizeCompressed;
+        constexpr auto GB = static_cast<std::uint64_t>(1024 * 1024 * 1024);
+        lcs_assert(dataOffset <= 2 * GB);
         entries.push_back(entry);
         progress.consumeData(uncompressedSize);
     }
-    outfile.seekp(0);
+    outfile.seek(0, SEEK_SET);
     Wad::Header header{
         { 'R', 'W', '\x03', '\x00' },
         {},
         {},
         static_cast<uint32_t>(entries.size())
     };
-    outfile.write((char const*)&header, (std::streamsize)(sizeof(Wad::Header)));
-    outfile.write((char const*)entries.data(), (std::streamsize)(sizeof(Wad::Entry) * entries.size()));
+    outfile.write((char const*)&header, sizeof(Wad::Header));
+    outfile.write((char const*)entries.data(), sizeof(Wad::Entry) * entries.size());
     progress.finishItem();
 }
 

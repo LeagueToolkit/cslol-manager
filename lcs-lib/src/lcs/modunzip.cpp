@@ -67,16 +67,16 @@ ModUnZip::ModUnZip(fs::path path)
     items_ += metafile_.size();
     items_ += wadfile_.size();
     items_ += wadfolder_.size();
-    size_ += std::accumulate(metafile_.begin(), metafile_.end(), size_t{0},
-                            [](size_t old, auto const& copy) -> size_t {
+    size_ += std::accumulate(metafile_.begin(), metafile_.end(), std::uint64_t{0},
+                            [](std::uint64_t old, auto const& copy) -> std::uint64_t {
                                 return old + copy.size;
                             });
-    size_ += std::accumulate(wadfile_.begin(), wadfile_.end(), size_t{0},
-                            [](size_t old, auto const& copy) -> size_t {
+    size_ += std::accumulate(wadfile_.begin(), wadfile_.end(), std::uint64_t{0},
+                            [](std::uint64_t old, auto const& copy) -> std::uint64_t {
                                 return old + copy.size;
                             });
-    size_ += std::accumulate(wadfolder_.begin(), wadfolder_.end(), size_t{0},
-                            [](size_t old, auto const& kvp) -> size_t {
+    size_ += std::accumulate(wadfolder_.begin(), wadfolder_.end(), std::uint64_t{0},
+                            [](std::uint64_t old, auto const& kvp) -> std::uint64_t {
                                 return old + kvp.second->size();
                             });
 }

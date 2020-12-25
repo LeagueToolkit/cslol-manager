@@ -14,7 +14,6 @@ ApplicationWindow {
     Settings {
         id: settings
         property alias leaguePath: lcsTools.leaguePath
-        property alias wholeMerge: lcsToolBar.wholeMerge
         property alias blacklist: lcsToolBar.blacklist
         property alias logVisible: lcsDialogLog.visible
 
@@ -77,7 +76,7 @@ ApplicationWindow {
         onSaveProfileAndRun:  {
             let name = lcsToolBar.profilesCurrentName
             let mods = lcsModsView.saveProfile()
-            lcsTools.saveProfile(name, mods, run, lcsToolBar.wholeMerge)
+            lcsTools.saveProfile(name, mods, run)
         }
 
         onStopProfile: lcsTools.stopProfile()
@@ -101,7 +100,7 @@ ApplicationWindow {
         onModExport: {
             lcsDialogSaveZipFantome.modName = fileName
             lcsDialogSaveZipFantome.open()
-            lcsDialogSaveZipFantome.currentFile = lcsDialogSaveZipFantome.folder + "/" + fileName + ".zip"
+            lcsDialogSaveZipFantome.currentFile = lcsDialogSaveZipFantome.folder + "/" + fileName + ".fantome"
         }
 
         onModEdit: lcsTools.startEditMod(fileName)
