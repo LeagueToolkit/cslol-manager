@@ -7,7 +7,9 @@
 using namespace LCS;
 
 WadMakeQueue::WadMakeQueue(WadIndex const& index) : index_(index) {
-    lcs_trace_func();
+    lcs_trace_func(
+                lcs_trace_var(this->index_.path())
+                );
 }
 
 void WadMakeQueue::addItem(fs::path const& srcpath, Conflict conflict) {

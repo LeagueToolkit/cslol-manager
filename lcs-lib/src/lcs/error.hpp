@@ -33,7 +33,7 @@
 #define lcs_trace_var(name) "\n\t" #name " = ", name
 #define lcs_trace_func(...) ::LCS::ErrorTrace lcs_paste(trace_,__LINE__) {      \
     [&, func = __PRETTY_FUNCTION__, line = __LINE__] () {                       \
-        ::LCS::push_error_msg(func, ':', line, ':' __VA_OPT__(,) __VA_ARGS__);  \
+        ::LCS::push_error_msg(func, ':', line, ':' , __VA_ARGS__);              \
     }                                                                           \
 }
 
