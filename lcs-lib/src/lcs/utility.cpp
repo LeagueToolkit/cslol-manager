@@ -1,4 +1,5 @@
 #include "utility.hpp"
+#include <cstring>
 
 using namespace LCS;
 

@@ -33,22 +33,22 @@ WadMakeCopy::WadMakeCopy(fs::path const& path)
     : path_(fs::absolute(path)),
       name_(path_.filename().generic_string())
 {
-    lcs_trace_func();
-    lcs_trace("path_: ", path_);
-    {
-        Wad wad(path);
-        entries_ = wad.entries();
-    }
+    lcs_trace_func(
+                lcs_trace_var(this->path_)
+                );
+    entries_ = Wad(path_).entries();
     size_ = (size_t)fs::file_size(path_);
 }
 
-void WadMakeCopy::write(fs::path const& path, Progress& progress) const {
-    lcs_trace_func();
-    lcs_trace("path: ", path);
+void WadMakeCopy::write(fs::path const& dstpath, Progress& progress) const {
+    lcs_trace_func(
+                lcs_trace_var(this->path_),
+                lcs_trace_var(dstpath)
+                );
     std::uint64_t sizeData = size();
-    progress.startItem(path, sizeData);
-    fs::create_directories(path.parent_path());
-    fs::copy_file(path_, path);
+    progress.startItem(dstpath, sizeData);
+    fs::create_directories(dstpath.parent_path());
+    fs::copy_file(path_, dstpath);
     progress.consumeData(sizeData);
     progress.finishItem();
 }
@@ -57,8 +57,9 @@ void WadMakeCopy::write(fs::path const& path, Progress& progress) const {
 WadMake::WadMake(fs::path const& path)
     : path_(fs::absolute(path)),
       name_(path_.filename().generic_string()) {
-    lcs_trace_func();
-    lcs_trace("path_: ", path_);
+    lcs_trace_func(
+                lcs_trace_var(this->path_)
+                );
     lcs_assert(fs::is_directory(path_));
     for(auto const& entry: fs::recursive_directory_iterator(path_)) {
         if(entry.is_regular_file()) {
@@ -72,13 +73,15 @@ WadMake::WadMake(fs::path const& path)
     });
 }
 
-void WadMake::write(fs::path const& path, Progress& progress) const {
-    lcs_trace_func();
-    lcs_trace("path: ", path);
+void WadMake::write(fs::path const& dstpath, Progress& progress) const {
+    lcs_trace_func(
+                lcs_trace_var(this->path_),
+                lcs_trace_var(dstpath)
+                );
     std::uint64_t sizeData = size();
-    progress.startItem(path, sizeData);
-    fs::create_directories(path.parent_path());
-    OutFile outfile(path);
+    progress.startItem(dstpath, sizeData);
+    fs::create_directories(dstpath.parent_path());
+    OutFile outfile(dstpath);
     outfile.seek(sizeof(Wad::Header) + sizeof(Wad::Entry) * entries_.size(), SEEK_SET);
     std::vector<Wad::Entry> entries;
     entries.reserve(entries_.size());
@@ -150,8 +153,9 @@ WadMakeUnZip::WadMakeUnZip(fs::path const& path, void* archive)
       name_(path_.filename().generic_string()),
       archive_(archive)
 {
-    lcs_trace_func();
-    lcs_trace("path_: ", path_);
+    lcs_trace_func(
+                lcs_trace_var(this->path_)
+                );
 }
 
 std::uint64_t WadMakeUnZip::size() const noexcept {
@@ -165,22 +169,26 @@ std::uint64_t WadMakeUnZip::size() const noexcept {
     return true;
 }
 
-void WadMakeUnZip::add(fs::path const& path, unsigned int zipEntry, std::uint64_t size) {
-    lcs_trace_func();
-    lcs_trace("path: ", path);
-    auto xxhash = pathhash(path);
-    entries_.insert_or_assign(xxhash, FileEntry{ path, zipEntry, size });
+void WadMakeUnZip::add(fs::path const& srcpath, unsigned int zipEntry, std::uint64_t size) {
+    lcs_trace_func(
+                lcs_trace_var(this->path_),
+                lcs_trace_var(srcpath)
+                );
+    auto xxhash = pathhash(srcpath);
+    entries_.insert_or_assign(xxhash, FileEntry{ srcpath, zipEntry, size });
     sizeCalculated_ = false;
 }
 
-void WadMakeUnZip::write(fs::path const& path, Progress& progress) const {
-    lcs_trace_func();
-    lcs_trace("path: ", path);
+void WadMakeUnZip::write(fs::path const& dstpath, Progress& progress) const {
+    lcs_trace_func(
+                lcs_trace_var(this->path_),
+                lcs_trace_var(dstpath)
+                );
     auto archive = (mz_zip_archive*)archive_;
     std::uint64_t sizeData = size();
-    progress.startItem(path, sizeData);
-    fs::create_directories(path.parent_path());
-    auto outfile = OutFile(path);
+    progress.startItem(dstpath, sizeData);
+    fs::create_directories(dstpath.parent_path());
+    auto outfile = OutFile(dstpath);
     outfile.seek(sizeof(Wad::Header) + sizeof(Wad::Entry) * entries_.size(), SEEK_SET);
     std::vector<Wad::Entry> entries = {};
     entries.reserve(entries.size());

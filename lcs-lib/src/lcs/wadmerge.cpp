@@ -6,6 +6,7 @@
 #include <utility>
 #include <unordered_set>
 #include <picosha2.hpp>
+#include <cstring>
 
 using namespace LCS;
 
@@ -26,10 +27,10 @@ static void copyStream(InFile& source, std::int64_t offset, OutFile& dest,
 
 WadMerge::WadMerge(fs::path const& path, Wad const* original)
  : path_(fs::absolute(path)), original_(original) {
-    lcs_trace_func();
-    lcs_trace("path_: ", path_);
-    lcs_assert(original_);
-    lcs_trace("original: ", original->name());
+    lcs_trace_func(
+                lcs_trace_var(this->path_),
+                lcs_trace_var(this->original_->name())
+                );
     fs::create_directories(path_.parent_path());
     // TODO: potentially optimize by using the fact entries are sorted
     for(auto const& entry: original->entries()) {
@@ -39,26 +40,32 @@ WadMerge::WadMerge(fs::path const& path, Wad const* original)
 }
 
 void WadMerge::addWad(const Wad* source, Conflict conflict) {
-    lcs_trace_func();
-    lcs_assert(source);
-    lcs_trace("source: ", source->path());
+    lcs_trace_func(
+                lcs_trace_var(this->path_),
+                lcs_trace_var(this->original_->name()),
+                lcs_trace_var(source->path())
+                );
     for(auto const& entry: source->entries()) {
         addWadEntry(entry, source, conflict, EntryKind::Full);
     }
 }
 
 void WadMerge::addExtraEntry(const Wad::Entry& entry, const Wad* source, Conflict conflict) {
-    lcs_trace_func();
-    lcs_assert(source);
-    lcs_trace("source: ", source->path());
+    lcs_trace_func(
+                lcs_trace_var(this->path_),
+                lcs_trace_var(this->original_->name()),
+                lcs_trace_var(source->path())
+                );
     addWadEntry(entry, source, conflict, EntryKind::Extra);
 }
 
 void WadMerge::addWadEntry(Wad::Entry const& entry, Wad const* source,
                            Conflict conflict, EntryKind kind) {
-    lcs_trace_func();
-    lcs_assert(source);
-    lcs_trace("source: ", source->path());
+    lcs_trace_func(
+                lcs_trace_var(this->path_),
+                lcs_trace_var(this->original_->name()),
+                lcs_trace_var(source->path())
+                );
     if (auto o = orgsha256_.find(entry.xxhash); o != orgsha256_.end() && o->second == entry.sha256) {
         return;
     }
@@ -90,8 +97,10 @@ std::uint64_t WadMerge::size() const noexcept {
 }
 
 void WadMerge::write(Progress& progress) const {
-    lcs_trace_func();
-    lcs_trace("path_: ", path_);
+    lcs_trace_func(
+                lcs_trace_var(this->path_),
+                lcs_trace_var(this->original_->name())
+                );
     auto const totalSize = size();
     progress.startItem(path_, totalSize);
     auto newHeader = original_->header();

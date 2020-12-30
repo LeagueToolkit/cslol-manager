@@ -15,11 +15,11 @@ constexpr auto pathmerge = [](auto beg, auto end) -> fs::path {
 };
 
 ModUnZip::ModUnZip(fs::path path)
-    : path_(fs::absolute(path)),
-      zip_archive{}
+    : path_(fs::absolute(path)), zip_archive{}
 {
-    lcs_trace_func();
-    lcs_trace("path_: ", path_);
+    lcs_trace_func(
+                lcs_trace_var(this->path_)
+                );
     auto paths = path_.generic_string();
     lcs_assert(mz_zip_reader_init_file(&zip_archive, paths.c_str(), 0));
     mz_uint numFiles = mz_zip_reader_get_num_files(&zip_archive);
@@ -29,7 +29,13 @@ ModUnZip::ModUnZip(fs::path path)
         if (stat.m_is_directory || !stat.m_is_supported) {
             continue;
         }
-        auto fpath = fs::path(stat.m_filename).lexically_normal();
+        std::string spath = stat.m_filename;
+        for (auto& c: spath) {
+            if (c == '\\') {
+                c = '/';
+            }
+        }
+        auto fpath = fs::path(spath).lexically_normal();
         auto piter = fpath.begin();
         auto pend = fpath.end();
         if (piter == pend) {
@@ -85,28 +91,32 @@ ModUnZip::~ModUnZip() {
     mz_zip_reader_end(&zip_archive);
 }
 
-void ModUnZip::extract(fs::path const& dest, ProgressMulti& progress) {
-    lcs_trace_func();
-    lcs_trace("dest: ", dest);
+void ModUnZip::extract(fs::path const& dstpath, ProgressMulti& progress) {
+    lcs_trace_func(
+                lcs_trace_var(this->path_),
+                lcs_trace_var(dstpath)
+                );
     progress.startMulti(items_, size_);
     for (auto const& file: metafile_) {
-        auto outpath = dest / "META" / file.path;
+        auto outpath = dstpath / "META" / file.path;
         extractFile(outpath, file, progress);
     }
     for (auto const& file: wadfile_) {
-        auto outpath = dest / "WAD" / file.path;
+        auto outpath = dstpath / "WAD" / file.path;
         extractFile(outpath, file, progress);
     }
     for (auto const& [name, wadfolder]: wadfolder_) {
-        auto outpath = dest / "WAD" / name;
+        auto outpath = dstpath / "WAD" / name;
         wadfolder->write(outpath, progress);
     }
     progress.finishMulti();
 }
 
 WadMakeUnZip& ModUnZip::addFolder(std::string name) {
-    lcs_trace_func();
-    lcs_trace("name: ", name);
+    lcs_trace_func(
+                lcs_trace_var(this->path_),
+                lcs_trace_var(name)
+                );
     auto wad = wadfolder_.find(name);
     if (wad == wadfolder_.end()) {
         auto result = wadfolder_.emplace_hint(wad, name, std::make_unique<WadMakeUnZip>(name, &zip_archive));
@@ -117,8 +127,11 @@ WadMakeUnZip& ModUnZip::addFolder(std::string name) {
 }
 
 void ModUnZip::extractFile(fs::path const& outpath, CopyFile const& file, Progress& progress) {
-    lcs_trace_func();
-    lcs_trace("outpath: ", outpath);
+    lcs_trace_func(
+                lcs_trace_var(this->path_),
+                lcs_trace_var(outpath),
+                lcs_trace_var(file.path)
+                );
     progress.startItem(outpath, file.size);
     fs::create_directories(outpath.parent_path());
     auto strpath = outpath.generic_string();

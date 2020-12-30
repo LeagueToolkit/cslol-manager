@@ -5,13 +5,16 @@
 #include <charconv>
 #include <miniz.h>
 #include <zstd.h>
+#include <vector>
 
 using namespace LCS;
 
 Wad::Wad(fs::path const& path, std::string const& name)
     : path_(fs::absolute(path)), size_(fs::file_size(path_)), name_(name), file_(path_) {
-    lcs_trace_func();
-    lcs_trace("path_: ", path_);
+    lcs_trace_func(
+                lcs_trace_var(this->path_),
+                lcs_trace_var(this->name_)
+                );
     file_.read((char*)&header_, sizeof(header_));
     if (header_.version == std::array<char, 4>{} && header_.signature == std::array<uint8_t, 256>{}) {
         ::LCS::throw_error("All zero .wad");
@@ -28,10 +31,11 @@ Wad::Wad(fs::path const& path, std::string const& name)
     }
 }
 
-void Wad::extract(fs::path const& dest, HashTable const& hashtable, Progress& progress) const {
-    lcs_trace_func();
-    lcs_trace("path_: ", path_);
-    lcs_trace("dest: ", dest);
+void Wad::extract(fs::path const& dstpath, HashTable const& hashtable, Progress& progress) const {
+    lcs_trace_func(
+                lcs_trace_var(this->path_),
+                lcs_trace_var(dstpath)
+                );
     size_t totalSize = 0;
     uint32_t maxCompressed = 0;
     uint32_t maxUncompressed = 0;
@@ -69,7 +73,7 @@ void Wad::extract(fs::path const& dest, HashTable const& hashtable, Progress& pr
         }
 
         if (entry.type != Entry::FileRedirection) {
-            fs::path outpath = dest;
+            fs::path outpath = dstpath;
             if (auto p = hashtable.find(entry.xxhash); p) {
                 outpath /= *p;
             } else {
@@ -78,7 +82,9 @@ void Wad::extract(fs::path const& dest, HashTable const& hashtable, Progress& pr
                 outpath /= std::string(hex, result.ptr);
                 outpath.replace_extension(ScanExtension(uncompressedBuffer.data(), entry.sizeUncompressed));
             }
-            lcs_trace("outpath: ", outpath);
+            lcs_trace_func(
+                        lcs_trace_var(outpath)
+                        );
             fs::create_directories(outpath.parent_path());
             OutFile outfile(outpath);
             outfile.write(uncompressedBuffer.data(), entry.sizeUncompressed);

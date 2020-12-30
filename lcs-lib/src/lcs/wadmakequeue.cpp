@@ -8,23 +8,24 @@ using namespace LCS;
 
 WadMakeQueue::WadMakeQueue(WadIndex const& index) : index_(index) {
     lcs_trace_func();
-    lcs_trace("path: ", index_.path());
 }
 
-void WadMakeQueue::addItem(fs::path const& path, Conflict conflict) {
-    lcs_trace_func();
-    lcs_trace("path: ", path);
-    if (fs::is_directory(path)) {
-        addItem(std::make_unique<WadMake>(path), conflict);
+void WadMakeQueue::addItem(fs::path const& srcpath, Conflict conflict) {
+    lcs_trace_func(
+                lcs_trace_var(srcpath)
+                );
+    if (fs::is_directory(srcpath)) {
+        addItem(std::make_unique<WadMake>(srcpath), conflict);
     } else {
-        addItem(std::make_unique<WadMakeCopy>(path), conflict);
+        addItem(std::make_unique<WadMakeCopy>(srcpath), conflict);
     }
 }
 
 void WadMakeQueue::addItem(std::unique_ptr<WadMakeBase> item, Conflict conflict) {
-    lcs_trace_func();
+    lcs_trace_func(
+                lcs_trace_var(item->path())
+                );
     auto orgpath = item->path();
-    lcs_trace("path: ", orgpath);
     auto name = item->identify(index_).value_or("RAW.wad.client");
     if (auto i = items_.find(name); i != items_.end()) {
         auto const& orgpath = i->second->path();
@@ -41,14 +42,15 @@ void WadMakeQueue::addItem(std::unique_ptr<WadMakeBase> item, Conflict conflict)
     }
 }
 
-void WadMakeQueue::write(fs::path const& path, ProgressMulti& progress) const {
-    lcs_trace_func();
-    lcs_trace("path: ", path);
+void WadMakeQueue::write(fs::path const& dstpath, ProgressMulti& progress) const {
+    lcs_trace_func(
+                lcs_trace_var(dstpath)
+                );
     progress.startMulti(items_.size(), size());
     for(auto const& kvp: items_) {
         auto const& name = kvp.first;
         auto const& item = kvp.second;
-        item->write(path / name, progress);
+        item->write(dstpath / name, progress);
     }
     progress.finishMulti();
 }

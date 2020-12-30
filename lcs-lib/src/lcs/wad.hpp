@@ -4,6 +4,7 @@
 #include "hashtable.hpp"
 #include "iofile.hpp"
 #include <array>
+#include <vector>
 
 namespace LCS {
     struct Wad {
@@ -79,7 +80,7 @@ namespace LCS {
             return size_;
         }
 
-        void extract(fs::path const& dest, HashTable const& hashtable, Progress& progress) const;
+        void extract(fs::path const& dstpath, HashTable const& hashtable, Progress& progress) const;
     private:
         fs::path path_;
         std::uint64_t size_;

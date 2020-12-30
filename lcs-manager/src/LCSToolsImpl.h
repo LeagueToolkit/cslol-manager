@@ -42,6 +42,7 @@ public:
 signals:
     void stateChanged(LCSState state);
     void blacklistChanged(bool blacklist);
+    void ignorebadChanged(bool ignorebad);
     void statusChanged(QString message);
     void leaguePathChanged(QString leaguePath);
 
@@ -69,6 +70,7 @@ signals:
 public slots:
     void changeLeaguePath(QString newLeaguePath);
     void changeBlacklist(bool blacklist);
+    void changeIgnorebad(bool blacklist);
     void init();
     void deleteMod(QString name);
     void exportMod(QString name, QString dest);
@@ -102,6 +104,7 @@ private:
 #endif
     LCSState state_ = LCSState::StateUnitialized;
     bool blacklist_ = true;
+    bool ignorebad_ = false;
     QString status_ = "";
     void setState(LCSState state);
     void setStatus(QString status);
@@ -115,7 +118,7 @@ private:
 
 /// ProgressMulti impl
 public:
-    void startItem(std::filesystem::path const& path, std::uint64_t) noexcept override;
+    void startItem(LCS::fs::path const& path, std::uint64_t) noexcept override;
     void consumeData(std::uint64_t ammount) noexcept override;
     void finishItem() noexcept override;
     void startMulti(size_t itemCount, std::uint64_t dataTotal) noexcept override;

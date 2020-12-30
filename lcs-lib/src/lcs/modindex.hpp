@@ -28,7 +28,7 @@ namespace LCS {
         bool refresh() noexcept;
 
         // Throws std::runtime_error
-        Mod* install_from_zip(fs::path path, ProgressMulti& progress);
+        Mod* install_from_zip(fs::path srcpath, ProgressMulti& progress);
 
         Mod* make(std::string_view const& fileName,
                   std::string_view const& info,
@@ -36,13 +36,13 @@ namespace LCS {
                   WadMakeQueue const& mergequeue,
                   ProgressMulti& progress);
 
-        void export_zip(std::string const& name, fs::path path, ProgressMulti& progress);
+        void export_zip(std::string const& name, fs::path dstpath, ProgressMulti& progress);
 
         void remove_mod_wad(std::string const& modFileName, std::string const& wadName);
 
         void change_mod_info(std::string const& modFileName, std::string const& infoData);
 
-        void change_mod_image(std::string const& modFileName, fs::path const& path);
+        void change_mod_image(std::string const& modFileName, fs::path const& dstpath);
 
         void remove_mod_image(std::string const& modFileName);
 

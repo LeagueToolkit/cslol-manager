@@ -20,7 +20,7 @@ namespace LCS {
     struct WadMakeCopy : WadMakeBase {
         WadMakeCopy(fs::path const& path);
 
-        void write(fs::path const& path, Progress& progress) const override;
+        void write(fs::path const& dstpath, Progress& progress) const override;
 
         inline std::uint64_t size() const noexcept override {
             return size_;
@@ -54,7 +54,7 @@ namespace LCS {
     struct WadMake : WadMakeBase {
         WadMake(fs::path const& path);
 
-        void write(fs::path const& path, Progress& progress) const override;
+        void write(fs::path const& dstpath, Progress& progress) const override;
 
         inline std::uint64_t size() const noexcept override {
             return size_;
@@ -93,11 +93,11 @@ namespace LCS {
         };
         WadMakeUnZip(fs::path const& source, void* archive);
 
-        void add(fs::path const& path, unsigned int zipEntry, std::uint64_t size);
+        void add(fs::path const& srcpath, unsigned int zipEntry, std::uint64_t size);
 
-        void write(fs::path const& path, Progress& progress) const override;
+        void write(fs::path const& dstpath, Progress& progress) const override;
 
-        inline std::uint64_t size() const noexcept override;
+        std::uint64_t size() const noexcept override;
 
         inline std::string const& name() const& noexcept override {
             return name_;

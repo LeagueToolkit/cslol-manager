@@ -17,6 +17,7 @@ LCSTools::LCSTools(QObject *parent) : QObject(parent)
     connect(worker_, &LCSToolsImpl::reportError, this, &LCSTools::reportError);
 
     connect(worker_, &LCSToolsImpl::blacklistChanged, this, &LCSTools::blacklistChanged);
+    connect(worker_, &LCSToolsImpl::ignorebadChanged, this, &LCSTools::ignorebadChanged);
     connect(worker_, &LCSToolsImpl::progressStart, this, &LCSTools::progressStart);
     connect(worker_, &LCSToolsImpl::progressItems, this, &LCSTools::progressItems);
     connect(worker_, &LCSToolsImpl::progressData, this, &LCSTools::progressData);
@@ -37,6 +38,7 @@ LCSTools::LCSTools(QObject *parent) : QObject(parent)
 
     connect(this, &LCSTools::changeLeaguePath, worker_, &LCSToolsImpl::changeLeaguePath);
     connect(this, &LCSTools::changeBlacklist, worker_, &LCSToolsImpl::changeBlacklist);
+    connect(this, &LCSTools::changeIgnorebad, worker_, &LCSToolsImpl::changeIgnorebad);
     connect(this, &LCSTools::init, worker_, &LCSToolsImpl::init);
     connect(this, &LCSTools::deleteMod, worker_, &LCSToolsImpl::deleteMod);
     connect(this, &LCSTools::exportMod, worker_, &LCSToolsImpl::exportMod);
@@ -107,7 +109,7 @@ QString LCSTools::getLeaguePath() {
 void LCSTools::setLeaguePath(QString value) {
     if (leaguePath_ != value) {
         leaguePath_ = value;
-        leaguePathChanged(value);
+        emit leaguePathChanged(value);
     }
 }
 

@@ -33,13 +33,13 @@ namespace LCS {
             return wads_;
         }
 
-        void write_zip(fs::path path, ProgressMulti& progress) const;
+        void write_zip(fs::path dstpath, ProgressMulti& progress) const;
 
         void remove_wad(std::string const& name);
 
         void change_info(std::string const& infoData);
 
-        void change_image(fs::path const& path);
+        void change_image(fs::path const& srcpath);
 
         void remove_image();
 

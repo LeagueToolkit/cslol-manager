@@ -19,7 +19,6 @@ namespace LCS {
     struct ModUnZip;
     struct Wad;
     struct WadIndex;
-    struct WadIndexCache;
     struct WadMake;
     struct WadMakeQueue;
     struct WadMerge;

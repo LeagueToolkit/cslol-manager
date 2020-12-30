@@ -12,9 +12,9 @@ namespace LCS {
 
         void addItem(std::unique_ptr<WadMakeBase> item, Conflict conflict);
 
-        void addItem(fs::path const& path, Conflict conflict);
+        void addItem(fs::path const& srcpath, Conflict conflict);
 
-        void write(fs::path const& path, ProgressMulti& progress) const;
+        void write(fs::path const& dstpath, ProgressMulti& progress) const;
 
         std::uint64_t size() const noexcept;
 

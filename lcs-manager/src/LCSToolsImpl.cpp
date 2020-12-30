@@ -109,9 +109,12 @@ LCS::WadIndex const& LCSToolsImpl::wadIndex() {
     if (leaguepath_.isNull() || leaguepath_.isEmpty()) {
         throw std::runtime_error("League path not set!");
     }
-    if (wadIndex_ == nullptr) {
-        wadIndex_ = std::make_unique<LCS::WadIndex>(leaguePathStd_, blacklist_);
+
+    while (wadIndex_ == nullptr || !wadIndex_->is_uptodate()) {
+        wadIndex_ = std::make_unique<LCS::WadIndex>(leaguePathStd_, blacklist_, ignorebad_);
+        QThread::msleep(250);
     }
+
     return *wadIndex_;
 }
 
@@ -208,6 +211,24 @@ void LCSToolsImpl::changeBlacklist(bool blacklist) {
         }
     }
 }
+
+void LCSToolsImpl::changeIgnorebad(bool ignorebad) {
+    if (state_ == LCSState::StateIdle || state_ == LCSState::StateUnitialized) {
+        if (ignorebad_ != ignorebad) {
+            if (state_ != LCSState::StateUnitialized) {
+                setState(LCSState::StateBussy);
+                setStatus("Toggle ignorebad");
+            }
+            ignorebad_ = ignorebad;
+            wadIndex_ = nullptr;
+            emit ignorebadChanged(ignorebad);
+            if (state_ != LCSState::StateUnitialized) {
+                setState(LCSState::StateIdle);
+            }
+        }
+    }
+}
+
 
 void LCSToolsImpl::init() {
     if (state_ == LCSState::StateUnitialized) {
@@ -404,7 +425,7 @@ void LCSToolsImpl::runProfile(QString name) {
         auto profilePath = (progDirPath_ / "profiles" / name.toStdString()).generic_string() + "/";
         std::thread thread([this, profilePath = std::move(profilePath)] {
             try {
-                setStatus("Running");
+                setStatus("Waiting for league match to start...");
                 setState(LCSState::StateRunning);
                 while (state_ == LCSState::StateRunning) {
 #ifdef WIN32
@@ -428,7 +449,7 @@ void LCSToolsImpl::runProfile(QString name) {
                     patcher_.patch(*process, profilePath);
                     setStatus("Wait for league to exit");
                     process->WaitExit();
-                    setStatus("Running");
+                    setStatus("Waiting for league match to start...");
                     setState(LCSState::StateRunning);
 #else
                   QThread::msleep(250);

@@ -6,8 +6,9 @@
 using namespace LCS;
 
 void HashTable::add_from_file(fs::path const& path) {
-    lcs_trace_func();
-    lcs_trace("log_file: ", path);
+    lcs_trace_func(
+                lcs_trace_var(path)
+                );
     std::ifstream file(path);
     std::string line;
     while(std::getline(file, line) && !line.empty()) {

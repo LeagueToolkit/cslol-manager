@@ -26,17 +26,15 @@
         }                                                 \
     }()
 
-#define lcs_trace(...) ::LCS::ErrorTrace lcs_paste(trace_,__LINE__) {   \
-        [&] () { ::LCS::push_error_msg(__VA_ARGS__); }                  \
-    }
-
 #ifdef _MSC_VER
-#define __PRETTY_FUNCTION__ __FUNCSIG__
+#define __PRETTY_FUNCTION__ __FUNCTION__
 #endif
 
-#define lcs_trace_func() ::LCS::ErrorTrace lcs_paste(trace_,__LINE__) {   \
-    [func = __PRETTY_FUNCTION__, line = __LINE__] () {                    \
-        ::LCS::push_error_msg(func, ':', line); }                         \
+#define lcs_trace_var(name) "\n\t" #name " = ", name
+#define lcs_trace_func(...) ::LCS::ErrorTrace lcs_paste(trace_,__LINE__) {      \
+    [&, func = __PRETTY_FUNCTION__, line = __LINE__] () {                       \
+        ::LCS::push_error_msg(func, ':', line, ':' __VA_OPT__(,) __VA_ARGS__);  \
+    }                                                                           \
 }
 
 namespace LCS {

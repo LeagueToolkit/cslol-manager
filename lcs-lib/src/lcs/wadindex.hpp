@@ -20,11 +20,13 @@ namespace LCS{
         };
 
         // Throws std::runtime_error
-        WadIndex(fs::path const& path, bool blacklist = true);
+        WadIndex(fs::path const& path, bool blacklist = true, bool ignorebad = false);
         WadIndex(WadIndex const&) = delete;
         WadIndex(WadIndex&&) = default;
         WadIndex& operator=(WadIndex const&) = delete;
         WadIndex& operator=(WadIndex&&) = delete;
+
+        bool is_uptodate() const;
 
         inline auto const& path() const& noexcept {
             return path_;
@@ -99,6 +101,8 @@ namespace LCS{
         fs::path path_;
         std::unordered_map<std::string, std::unique_ptr<Wad const>> wads_;
         std::unordered_multimap<uint64_t, Wad const*> lookup_;
+        bool blacklist_;
+        fs::file_time_type last_write_time_ = {};
     };
 }
 

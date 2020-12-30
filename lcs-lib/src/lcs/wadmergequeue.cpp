@@ -6,26 +6,29 @@
 
 using namespace LCS;
 
-WadMergeQueue::WadMergeQueue(const std::filesystem::path& path, WadIndex const& index) :
+WadMergeQueue::WadMergeQueue(fs::path const& path, WadIndex const& index) :
     path_(fs::absolute(path)), index_(index) {
-    lcs_trace_func();
-    lcs_trace("path_: ", path_);
+    lcs_trace_func(
+                lcs_trace_var(this->path_)
+                );
     fs::create_directories(path_);
 }
 
 void WadMergeQueue::addMod(Mod const* mod, Conflict conflict) {
-    lcs_trace_func();
-    lcs_assert(mod);
-    lcs_trace("mod: ", mod->path());
+    lcs_trace_func(
+                lcs_trace_var(this->path_),
+                lcs_trace_var(mod->path())
+                );
     for(auto const& [name, source]: mod->wads()) {
         addWad(source.get(), conflict);
     }
 }
 
 void WadMergeQueue::addWad(Wad const* source, Conflict conflict) {
-    lcs_trace_func();
-    lcs_assert(source);
-    lcs_trace("source: ", source->path());
+    lcs_trace_func(
+                lcs_trace_var(this->path_),
+                lcs_trace_var(source->path())
+                );
     auto baseWad = index_.findOriginal(source->name(), source->entries());
     lcs_assert_msg("No base .wad found!", baseWad);
     auto baseItem = findOrAddItem(baseWad);
@@ -41,8 +44,9 @@ void WadMergeQueue::addWad(Wad const* source, Conflict conflict) {
 }
 
 void WadMergeQueue::write(ProgressMulti& progress) const {
-    lcs_trace_func();
-    lcs_trace("path_: ", path_);
+    lcs_trace_func(
+                lcs_trace_var(this->path_)
+                );
     std::size_t itemTotal = 0;
     std::uint64_t dataTotal = 0;
     for(auto const& [original, item]: items_) {
@@ -58,8 +62,9 @@ void WadMergeQueue::write(ProgressMulti& progress) const {
 
 
 void WadMergeQueue::cleanup() {
-    lcs_trace_func();
-    lcs_trace("path_: ", path_);
+    lcs_trace_func(
+                lcs_trace_var(this->path_)
+                );
     std::set<std::string> good = {};
     for(auto const& [wad, merge]: items_) {
         good.insert(merge.get()->path().generic_string());
@@ -75,8 +80,10 @@ void WadMergeQueue::cleanup() {
 }
 
 WadMerge* WadMergeQueue::findOrAddItem(Wad const* original) {
-    lcs_trace_func();
-    lcs_trace("path_: ", path_);
+    lcs_trace_func(
+                lcs_trace_var(this->path_),
+                lcs_trace_var(original->name())
+                );
     if (auto i = items_.find(original); i != items_.end()) {
         return i->second.get();
     } else {

@@ -15,6 +15,7 @@ ApplicationWindow {
         id: settings
         property alias leaguePath: lcsTools.leaguePath
         property alias blacklist: lcsToolBar.blacklist
+        property alias ignorebad: lcsToolBar.ignorebad
         property alias logVisible: lcsDialogLog.visible
 
         property alias lastZipDirectory: lcsDialogOpenZipFantome.folder
@@ -68,6 +69,8 @@ ApplicationWindow {
         onChangeGamePath: lcsDialogLolPath.open()
 
         onBlacklistChanged: lcsTools.changeBlacklist(blacklist)
+
+        onIgnorebadChanged: lcsTools.changeIgnorebad(ignorebad)
 
         onShowLogs: if (!lcsDialogLog.visible) lcsDialogLog.visible = true
 

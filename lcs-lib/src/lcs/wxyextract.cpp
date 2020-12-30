@@ -70,9 +70,9 @@ namespace {
 
 WxyExtract::WxyExtract(fs::path const& path)
     : path_(fs::absolute(path)), file_(path) {
-    lcs_trace_func();
-    lcs_trace("path_: ", path_);
-
+    lcs_trace_func(
+                lcs_trace_var(this->path_)
+                );
     std::array<char, 4> magic;
     read(file_, magic);
     if(magic != std::array{'W', 'X', 'Y', 'S'}) {
@@ -88,7 +88,9 @@ WxyExtract::WxyExtract(fs::path const& path)
 }
 
 void WxyExtract::decompressStr(std::string& str) const {
-    lcs_trace_func();
+    lcs_trace_func(
+                lcs_trace_var(this->path_)
+                );
     if (str.empty()) {
         return;
     }
@@ -137,7 +139,9 @@ void WxyExtract::decryptStr2(std::string& str) const {
 }
 
 void WxyExtract::read_old() {
-    lcs_trace_func();
+    lcs_trace_func(
+                lcs_trace_var(this->path_)
+                );
     read(file_, name_);
     read(file_, author_);
     read(file_, version_);
@@ -231,7 +235,9 @@ void WxyExtract::read_old() {
 }
 
 void WxyExtract::read_oink() {
-    lcs_trace_func();
+    lcs_trace_func(
+                lcs_trace_var(this->path_)
+                );
     std::array<char, 4> magic;
     read(file_, magic);
     if(magic != std::array{'O', 'I', 'N', 'K'}) {
@@ -339,7 +345,9 @@ void WxyExtract::read_oink() {
 }
 
 void WxyExtract::build_paths() {
-    lcs_trace_func();
+    lcs_trace_func(
+                lcs_trace_var(this->path_)
+                );
     for(auto& file: filesList_) {
         fs::path path = file.fileGamePath;
         auto beg = path.begin();
@@ -365,8 +373,10 @@ void WxyExtract::build_paths() {
 }
 
 void WxyExtract::extract_files(fs::path const& dest, Progress& progress) const {
-    lcs_trace_func();
-    lcs_trace("dest: ", dest);
+    lcs_trace_func(
+                lcs_trace_var(this->path_),
+                lcs_trace_var(dest)
+                );
     size_t total = 0;
     size_t maxUncompressed = 0;
     size_t maxCompressed = 0;
@@ -431,8 +441,10 @@ void WxyExtract::extract_files(fs::path const& dest, Progress& progress) const {
 }
 
 void WxyExtract::extract_meta(fs::path const& dest, Progress& progress) const {
-    lcs_trace_func();
-    lcs_trace("dest: ", dest);
+    lcs_trace_func(
+                lcs_trace_var(this->path_),
+                lcs_trace_var(dest)
+                );
     fs::create_directories(dest);
     {
         json j = {

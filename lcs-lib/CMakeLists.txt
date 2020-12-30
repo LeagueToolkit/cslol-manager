@@ -35,8 +35,6 @@ add_library(lcs-lib STATIC
     src/lcs/wad.hpp
     src/lcs/wadindex.cpp
     src/lcs/wadindex.hpp
-    src/lcs/wadindexcache.cpp
-    src/lcs/wadindexcache.hpp
     src/lcs/wadmake.cpp
     src/lcs/wadmake.hpp
     src/lcs/wadmakequeue.cpp

@@ -11,10 +11,11 @@ using namespace LCS;
 ModIndex::ModIndex(fs::path path)
     : path_(fs::absolute(path))
 {
-    lcs_trace_func();
-    lcs_trace("path_: ", path_);
+    lcs_trace_func(
+                lcs_trace_var(this->path_)
+                );
     fs::create_directories(path_);
-    for (auto file : fs::directory_iterator(path)) {
+    for (auto const& file : fs::directory_iterator(path)) {
         auto dirpath = file.path();
         if (file.is_directory() && dirpath.filename() != "tmp") {
             auto mod = new Mod { dirpath };
@@ -27,7 +28,10 @@ ModIndex::ModIndex(fs::path path)
 }
 
 bool ModIndex::remove(std::string const& filename) noexcept {
-    lcs_trace_func();
+    lcs_trace_func(
+                lcs_trace_var(this->path_),
+                lcs_trace_var(filename)
+                );
     if (auto i = mods_.find(filename); i != mods_.end()) {
         mods_.erase(i);
         try {
@@ -40,9 +44,11 @@ bool ModIndex::remove(std::string const& filename) noexcept {
 }
 
 bool ModIndex::refresh() noexcept {
-    lcs_trace_func();
+    lcs_trace_func(
+                lcs_trace_var(this->path_)
+                );
     bool found = false;
-    for (auto file : fs::directory_iterator(path_)) {
+    for (auto const& file : fs::directory_iterator(path_)) {
         auto dirpath = file.path();
         if (file.is_directory()) {
             auto paths = dirpath.filename().generic_string();
@@ -56,10 +62,12 @@ bool ModIndex::refresh() noexcept {
     return found;
 }
 
-Mod* ModIndex::install_from_zip(fs::path path, ProgressMulti& progress) {
-    lcs_trace_func();
-    lcs_trace("path: ", path);
-    fs::path filename = path.filename();
+Mod* ModIndex::install_from_zip(fs::path srcpath, ProgressMulti& progress) {
+    lcs_trace_func(
+                lcs_trace_var(this->path_),
+                lcs_trace_var(srcpath)
+                );
+    fs::path filename = srcpath.filename();
     filename.replace_extension();
     fs::path dest = path_ / filename;
     lcs_assert_msg("Mod already exists!", !fs::exists(dest));
@@ -69,7 +77,7 @@ Mod* ModIndex::install_from_zip(fs::path path, ProgressMulti& progress) {
     }
     fs::create_directories(tmp);
     {
-        ModUnZip zip(path);
+        ModUnZip zip(srcpath);
         zip.extract(tmp, progress);
     }
     fs::create_directories(dest.parent_path());
@@ -80,15 +88,18 @@ Mod* ModIndex::install_from_zip(fs::path path, ProgressMulti& progress) {
     return mod;
 }
 
-Mod* ModIndex::make(const std::string_view& fileName,
-                    const std::string_view& info,
-                    const std::string_view& image,
+Mod* ModIndex::make(std::string_view const& fileName,
+                    std::string_view const& info,
+                    std::string_view const& image,
                     WadMakeQueue const& queue,
                     ProgressMulti& progress)
 {
-    lcs_trace_func();
+    lcs_trace_func(
+                lcs_trace_var(this->path_),
+                lcs_trace_var(fileName),
+                lcs_trace_var(image)
+                );
     fs::path dest = path_ / fileName;
-    lcs_trace("dest: ", dest);
     lcs_assert_msg("Mod already exists!", !fs::exists(dest));
     fs::path tmp = path_ / "tmp";
     if (fs::exists(tmp)) {
@@ -113,46 +124,66 @@ Mod* ModIndex::make(const std::string_view& fileName,
     return mod;
 }
 
-void ModIndex::export_zip(const std::string& filename, std::filesystem::path path, ProgressMulti& progress) {
-    lcs_trace_func();
-    lcs_trace("filename: ", filename);
+void ModIndex::export_zip(std::string const& filename, fs::path dstpath, ProgressMulti& progress) {
+    lcs_trace_func(
+                lcs_trace_var(this->path_),
+                lcs_trace_var(filename),
+                lcs_trace_var(dstpath)
+                );
     auto i = mods_.find(filename);
     lcs_assert(i != mods_.end());
-    i->second->write_zip(path, progress);
+    i->second->write_zip(dstpath, progress);
 }
 
-void ModIndex::remove_mod_wad(const std::string& modFileName, const std::string& wadName) {
-    lcs_trace_func();
+void ModIndex::remove_mod_wad(std::string const& modFileName, std::string const& wadName) {
+    lcs_trace_func(
+                lcs_trace_var(this->path_),
+                lcs_trace_var(modFileName),
+                lcs_trace_var(wadName)
+                );
     auto i = mods_.find(modFileName);
     lcs_assert(i != mods_.end());
     i->second->remove_wad(wadName);
 }
 
-void ModIndex::change_mod_info(const std::string& modFileName, const std::string& infoData) {
-    lcs_trace_func();
+void ModIndex::change_mod_info(std::string const& modFileName, std::string const& infoData) {
+    lcs_trace_func(
+                lcs_trace_var(this->path_),
+                lcs_trace_var(modFileName)
+                );
     auto i = mods_.find(modFileName);
     lcs_assert(i != mods_.end());
     i->second->change_info(infoData);
 }
 
-void ModIndex::change_mod_image(const std::string& modFileName, std::filesystem::path const & path) {
-    lcs_trace_func();
+void ModIndex::change_mod_image(std::string const& modFileName, fs::path const& dstpath) {
+    lcs_trace_func(
+                lcs_trace_var(this->path_),
+                lcs_trace_var(modFileName),
+                lcs_trace_var(dstpath)
+                );
     auto i = mods_.find(modFileName);
     lcs_assert(i != mods_.end());
-    i->second->change_image(path);
+    i->second->change_image(dstpath);
 }
 
-void ModIndex::remove_mod_image(const std::string& modFileName) {
-    lcs_trace_func();
+void ModIndex::remove_mod_image(std::string const& modFileName) {
+    lcs_trace_func(
+                lcs_trace_var(this->path_),
+                lcs_trace_var(modFileName)
+                );
     auto i = mods_.find(modFileName);
     lcs_assert(i != mods_.end());
     i->second->remove_image();
 }
 
-std::vector<Wad const*> ModIndex::add_mod_wads(const std::string& modFileName, WadMakeQueue& wads,
+std::vector<Wad const*> ModIndex::add_mod_wads(std::string const& modFileName, WadMakeQueue& wads,
                                                ProgressMulti& progress, Conflict conflict)
 {
-    lcs_trace_func();
+    lcs_trace_func(
+                lcs_trace_var(this->path_),
+                lcs_trace_var(modFileName)
+                );
     auto i = mods_.find(modFileName);
     lcs_assert(i != mods_.end());
     return i->second->add_wads(wads, progress, conflict);

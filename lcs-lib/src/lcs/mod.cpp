@@ -9,10 +9,11 @@
 
 using namespace LCS;
 
-Mod::Mod(fs::path path) : path_(fs::absolute(path)) {
-    filename_ = path_.filename().generic_string();
-    lcs_trace_func();
-    lcs_trace("path_: ", path_);
+Mod::Mod(fs::path path) : path_(fs::absolute(path)), filename_(path_.filename().generic_string()) {
+    lcs_trace_func(
+                lcs_trace_var(this->path_)
+                );
+
     lcs_assert(fs::exists(path_ / "META" / "info.json"));
     InFile infile(path_ / "META" / "info.json");
     info_.resize((std::size_t)(infile.size()));
@@ -24,7 +25,7 @@ Mod::Mod(fs::path path) : path_(fs::absolute(path)) {
         image_ = "";
     }
 
-    for (auto file : fs::directory_iterator(path_ / "WAD")) {
+    for (auto const& file : fs::directory_iterator(path_ / "WAD")) {
         if (file.is_regular_file()) {
             if (auto filepath = file.path(); filepath.extension() == ".client") {
                 auto wad = new Wad { filepath };
@@ -34,27 +35,31 @@ Mod::Mod(fs::path path) : path_(fs::absolute(path)) {
     }
 }
 
-void Mod::write_zip(std::filesystem::path path, ProgressMulti& progress) const {
-    lcs_trace_func();
-    lcs_trace("path: ", path);
+void Mod::write_zip(fs::path dstpath, ProgressMulti& progress) const {
+    lcs_trace_func(
+                lcs_trace_var(this->path_),
+                lcs_trace_var(dstpath)
+                );
     std::uint64_t sizeTotal = std::accumulate(wads_.begin(), wads_.end(), std::uint64_t{0},
                                        [](std::uint64_t old, auto const& kvp) -> std::uint64_t {
         return old + kvp.second->size();
     });
     progress.startMulti(wads_.size(), sizeTotal);
-    if (fs::exists(path)) {
-        fs::remove(path);
+    if (fs::exists(dstpath)) {
+        fs::remove(dstpath);
     }
-    auto pathString = path.generic_string();
+    auto pathString = dstpath.generic_string();
     mz_zip_archive zip = {};
     lcs_assert(mz_zip_writer_init_file(&zip, pathString.c_str(), 0));
-    for(auto const& [name, wad]: wads_) {
+    for (auto const& [name, wad]: wads_) {
         std::string dstPath = "WAD\\" + name;
         fs::path const& wadPath = wad->path();
         std::string srcPath = wadPath.generic_string();
-        lcs_trace("item dstPath: ", dstPath);
-        lcs_trace("item wadPath: ", wadPath);
-        lcs_trace("item srcPath: ", srcPath);
+        lcs_trace_func(
+                    lcs_trace_var(dstPath),
+                    lcs_trace_var(wadPath),
+                    lcs_trace_var(srcPath)
+                    );
         progress.startItem(wadPath, wad->size());
         lcs_assert(mz_zip_writer_add_file(&zip, dstPath.c_str(), srcPath.c_str(),
                                           nullptr, 0, (mz_uint)MZ_DEFAULT_COMPRESSION));
@@ -77,8 +82,10 @@ void Mod::write_zip(std::filesystem::path path, ProgressMulti& progress) const {
 }
 
 void Mod::remove_wad(std::string const& name) {
-    lcs_trace_func();
-    lcs_trace("name: ", name);
+    lcs_trace_func(
+                lcs_trace_var(this->path_),
+                lcs_trace_var(name)
+                );
     auto i = wads_.find(name);
     lcs_assert(i != wads_.end());
     auto path = i->second->path();
@@ -87,26 +94,35 @@ void Mod::remove_wad(std::string const& name) {
 }
 
 void Mod::change_info(std::string const& infoData) {
-    lcs_trace_func();
+    lcs_trace_func(
+                lcs_trace_var(this->path_)
+                );
     auto outfile = OutFile(path_ / "META" / "info.json");
     outfile.write(infoData.data(), infoData.size());
     info_ = infoData;
 }
 
-void Mod::change_image(fs::path const& path) {
-    lcs_trace_func();
-    fs::copy_file(path, path_ / "META" / "image.png", fs::copy_options::overwrite_existing);
+void Mod::change_image(fs::path const& srcpath) {
+    lcs_trace_func(
+                lcs_trace_var(this->path_),
+                lcs_trace_var(srcpath)
+                );
+    fs::copy_file(srcpath, path_ / "META" / "image.png", fs::copy_options::overwrite_existing);
     image_ = path_ / "META" / "image.png";
 }
 
 void Mod::remove_image() {
-    lcs_trace_func();
+    lcs_trace_func(
+                lcs_trace_var(this->path_)
+                );
     fs::remove(path_ / "META" / "image.png");
     image_ = "";
 }
 
 std::vector<Wad const*> Mod::add_wads(WadMakeQueue& wads, ProgressMulti& progress, Conflict conflict) {
-    lcs_trace_func();
+    lcs_trace_func(
+                lcs_trace_var(this->path_)
+                );
     std::vector<std::string> removeExisting;
     std::vector<std::string> skipNew;
     std::vector<Wad const*> added;

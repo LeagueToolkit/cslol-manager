@@ -12,6 +12,7 @@ ToolBar {
     property alias profilesCurrentName: profilesComboBox.currentText
     property alias menuButtonHeight: mainMenuButton.height
     property alias blacklist: blacklistCheck.checked
+    property alias ignorebad: ignorebadCheck.checked
 
 
     signal showLogs()
@@ -57,6 +58,12 @@ ToolBar {
                     text: qsTr("Blacklist extra gamemods")
                     checkable: true
                     checked: true
+                }
+                MenuItem {
+                    id: ignorebadCheck
+                    text: qsTr("Ignore faulty .wad's")
+                    checkable: true
+                    checked: false
                 }
                 MenuItem {
                     text: qsTr("Log Window")
