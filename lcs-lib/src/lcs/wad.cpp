@@ -10,12 +10,13 @@
 using namespace LCS;
 
 Wad::Wad(fs::path const& path, std::string const& name)
-    : path_(fs::absolute(path)), size_(fs::file_size(path_)), name_(name), file_(path_) {
+    : path_(fs::absolute(path)), size_(fs::file_size(path_)), name_(name) {
     lcs_trace_func(
                 lcs_trace_var(this->path_),
                 lcs_trace_var(this->name_)
                 );
-    file_.read((char*)&header_, sizeof(header_));
+    InFile infile(path_);
+    infile.read((char*)&header_, sizeof(header_));
     if (header_.version == std::array<char, 4>{} && header_.signature == std::array<uint8_t, 256>{}) {
         ::LCS::throw_error("All zero .wad");
     }
@@ -24,7 +25,7 @@ Wad::Wad(fs::path const& path, std::string const& name)
     dataEnd_ = size_;
     lcs_assert(dataBegin_ <= dataEnd_);
     entries_.resize(header_.filecount);
-    file_.read((char*)entries_.data(), header_.filecount * sizeof(Entry));
+    infile.read((char*)entries_.data(), header_.filecount * sizeof(Entry));
     for(auto const& entry: entries_) {
         lcs_assert(entry.dataOffset <= dataEnd_ && entry.dataOffset >= dataBegin_);
         lcs_assert(entry.dataOffset + entry.sizeCompressed <= dataEnd_);
@@ -36,6 +37,8 @@ void Wad::extract(fs::path const& dstpath, HashTable const& hashtable, Progress&
                 lcs_trace_var(this->path_),
                 lcs_trace_var(dstpath)
                 );
+    InFile infile(path_);
+
     size_t totalSize = 0;
     uint32_t maxCompressed = 0;
     uint32_t maxUncompressed = 0;
@@ -51,11 +54,11 @@ void Wad::extract(fs::path const& dstpath, HashTable const& hashtable, Progress&
     uncompressedBuffer.reserve((size_t)(maxUncompressed));
 
     for(auto const& entry: entries_) {
-        file_.seek(entry.dataOffset, SEEK_SET);
+        infile.seek(entry.dataOffset, SEEK_SET);
         if (entry.type == Entry::Uncompressed) {
-            file_.read(uncompressedBuffer.data(), entry.sizeUncompressed);
+            infile.read(uncompressedBuffer.data(), entry.sizeUncompressed);
         } else if(entry.type == Entry::ZlibCompressed) {
-            file_.read(compressedBuffer.data(), entry.sizeCompressed);
+            infile.read(compressedBuffer.data(), entry.sizeCompressed);
             mz_stream strm = {};
             lcs_assert(mz_inflateInit2(&strm, 16 + MAX_WBITS) == MZ_OK);
             strm.next_in = (unsigned char const*)compressedBuffer.data();
@@ -65,7 +68,7 @@ void Wad::extract(fs::path const& dstpath, HashTable const& hashtable, Progress&
             mz_inflate(&strm, MZ_FINISH);
             mz_inflateEnd(&strm);
         } else if(entry.type == Entry::ZStandardCompressed) {
-            file_.read(compressedBuffer.data(), entry.sizeCompressed);
+            infile.read(compressedBuffer.data(), entry.sizeCompressed);
             ZSTD_decompress(uncompressedBuffer.data(), entry.sizeUncompressed,
                             compressedBuffer.data(), entry.sizeCompressed);
         } else if(entry.type == Entry::FileRedirection) {

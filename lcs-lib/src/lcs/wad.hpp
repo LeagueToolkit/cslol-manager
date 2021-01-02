@@ -60,10 +60,6 @@ namespace LCS {
             return path_;
         }
 
-        inline auto& file() const& noexcept {
-            return file_;
-        }
-
         inline auto dataBegin() const noexcept {
             return dataBegin_;
         }
@@ -87,7 +83,6 @@ namespace LCS {
         std::string name_;
         Header header_;
         std::vector<Entry> entries_;
-        mutable InFile file_;
         std::int64_t dataBegin_ = 0;
         std::int64_t dataEnd_ = 0;
     };

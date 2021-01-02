@@ -146,7 +146,8 @@ void WadMerge::write(Progress& progress) const {
     outfile.write((char const*)newEntries.data(), newEntries.size() * sizeof(Wad::Entry));
     char buffer[64 * 1024];
     for(auto const& [xxhash, entry]: entries_) {
-        copyStream(entry.wad_->file(), entry.dataOffset, outfile, entry.sizeCompressed, buffer, progress);
+        InFile infile(entry.wad_->path());
+        copyStream(infile, entry.dataOffset, outfile, entry.sizeCompressed, buffer, progress);
     }
     progress.finishItem();
 }
