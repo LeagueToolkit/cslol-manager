@@ -25,8 +25,8 @@ WadIndex::WadIndex(fs::path const& path, bool blacklist, bool ignorebad) :
                 lcs_trace_var(blacklist_),
                 lcs_trace_var(ignorebad)
                 );
-    last_write_time_ = fs::last_write_time(path_ / "DATA");
-    for (auto const& file : fs::recursive_directory_iterator(path_ / "DATA")) {
+    last_write_time_ = fs::last_write_time(path_ / "DATA" / "FINAL");
+    for (auto const& file : fs::recursive_directory_iterator(path_ / "DATA" / "FINAL")) {
         if (file.is_regular_file()) {
             if (auto filepath = file.path(); filepath.extension() == ".client") {
                 if (blacklist_ && is_blacklisted(filepath.filename().generic_string())) {
@@ -55,8 +55,8 @@ bool WadIndex::is_uptodate() const {
                 lcs_trace_var(this->path_),
                 lcs_trace_var(blacklist_)
                 );
-    auto new_last_write_time = fs::last_write_time(path_ / "DATA");
-    for (auto const& file : fs::recursive_directory_iterator(path_ / "DATA")) {
+    auto new_last_write_time = fs::last_write_time(path_ / "DATA" / "FINAL");
+    for (auto const& file : fs::recursive_directory_iterator(path_ / "DATA" / "FINAL")) {
         if (file.is_regular_file()) {
             if (auto filepath = file.path(); filepath.extension() == ".client") {
                 if (blacklist_ && is_blacklisted(filepath.filename().generic_string())) {

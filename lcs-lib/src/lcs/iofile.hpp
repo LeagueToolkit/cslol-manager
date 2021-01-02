@@ -8,18 +8,16 @@
 namespace LCS {
     struct File {
     private:
-        struct FileHandleClose {
-            inline void operator()(FILE* file) noexcept {
-                ::fclose(file);
-            }
-        };
-        using FileHandle = std::unique_ptr<FILE, FileHandleClose>;
-
         fs::path path_;
         bool readonly_;
-        FileHandle handle_;
+        void* handle_;
     public:
         File(fs::path const& path, bool write);
+        File(File const&) = delete;
+        File(File&&) = delete;
+        File& operator=(File const&) = delete;
+        File& operator=(File&&) = delete;
+        ~File();
 
         void write(void const* data, std::size_t size);
         void read(void* data, std::size_t size);

@@ -26,15 +26,30 @@ File::File(fs::path const& path, bool readonly)
         }
     }
 #ifdef WIN32
-    handle_ = FileHandle { _wfopen(path.c_str(), readonly_ ? L"rb" : L"wb") };
+    auto error = _wfopen_s((FILE**)&handle_, path.c_str(), readonly_ ? L"rb" : L"wb");
 #else
-    handle_ =  FileHandle { fopen(path.c_str(), readonly_ ? "rb" : "wb") };
+    auto error = fopen_s((FILE**)&handle_, path.c_str(), readonly_ ? "rb" : "wb");
 #endif
-    lcs_assert_msg("Failed to open file, MAKE SURE:\n"
-                   "\t1. its not opened by something else already (for example: another modding tool)!\n"
-                   "\t2. league is NOT patching (restart both league and LCS)!\n"
-                   "\t3. you have sufficient priviliges (for example: run as Administrator)", !!handle_);
+    if (error != 0 || !handle_) {
+        std::string msg = "Failed to open file: ";
+        if (auto error_details = std::strerror(error)) {
+            msg += error_details;
+        }
+        msg += "\nMAKE SURE:\n"
+               "\t1. its not opened by something else already (for example: another modding tool)!\n"
+               "\t2. league is NOT patching (restart both league and LCS)!\n"
+               "\t3. you have sufficient priviliges (for example: run as Administrator)";
+        throw_error(msg.c_str());
+    }
 }
+
+File::~File() {
+    if (handle_) {
+        lcs_assert_msg("Failed to close a file?!?", fclose((FILE*)handle_) == 0);
+        handle_ = nullptr;
+    }
+}
+
 
 void File::write(void const* data, std::size_t size) {
     lcs_trace_func(
@@ -42,7 +57,7 @@ void File::write(void const* data, std::size_t size) {
                 lcs_trace_var(this->readonly_),
                 lcs_trace_var(size)
                 );
-    lcs_assert(fwrite(data, 1, size, handle_.get()) == size);
+    lcs_assert(fwrite(data, 1, size, (FILE*)handle_) == size);
 }
 
 void File::read(void* data, std::size_t size) {
@@ -52,7 +67,7 @@ void File::read(void* data, std::size_t size) {
                 lcs_trace_var(size),
                 lcs_trace_var(tell())
                 );
-    lcs_assert(fread(data, 1, size, handle_.get()) == size);
+    lcs_assert(fread(data, 1, size, (FILE*)handle_) == size);
 }
 
 void File::seek(std::int64_t pos, int origin) {
@@ -64,10 +79,10 @@ void File::seek(std::int64_t pos, int origin) {
                 lcs_trace_var(tell())
                 );
 #ifdef WIN32
-    lcs_assert(_fseeki64(handle_.get(), pos, origin) == 0);
+    lcs_assert(_fseeki64((FILE*)handle_, pos, origin) == 0);
 #else
     static_assert(sizeof(void*) == 8, "Non-windows platforms must be 64bit!");
-    lcs_assert(fseek(handle_.get(), pos, origin) == 0);
+    lcs_assert(fseek((FILE*)handle_, pos, origin) == 0);
 #endif
 }
 
@@ -77,10 +92,10 @@ std::int64_t File::tell() const {
                 lcs_trace_var(this->readonly_)
                 );
 #ifdef WIN32
-    auto const result = _ftelli64(handle_.get());
+    auto const result = _ftelli64((FILE*)handle_);
 #else
     static_assert(sizeof(void*) == 8, "Non-windows platforms must be 64bit!");
-    auto const result = ftell(handle_.get());
+    auto const result = ftell((FILE*)handle_);
 #endif
     lcs_assert(result >= 0);
     return result;

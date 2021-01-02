@@ -235,7 +235,7 @@ void LCSToolsImpl::init() {
         setState(LCSState::StateBussy);
         auto progDir = progDirPath_.generic_string();
         setStatus("Verify path");
-        if (progDir.size() > 80) {
+        if (progDir.size() > 100) {
             emit reportError("Program path too long", QString::fromStdString(progDir));
             setState(LCSState::StateCriticalError);
             return;
