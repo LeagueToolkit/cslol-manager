@@ -47,8 +47,8 @@ namespace {
             >();
 
     constexpr auto FindRet = Pattern<
-            0x56,
-            0x8B, 0xCF,
+            0x57,
+            0x8B, 0xCB,
             0xE8, Any, Any, Any, Any,
             Cap<0x84>, 0xC0,
             0x75, 0x12
