@@ -1,9 +1,9 @@
 #define WIN32_LEAN_AND_MEAN
 /// Basic windows header
-#include <Windows.h>
+#include <windows.h>
 /// Extra windows header
-#include <Psapi.h>
-#include <TlHelp32.h>
+#include <psapi.h>
+#include <tlhelp32.h>
 /// End windows headers
 #include "process.hpp"
 #include <chrono>

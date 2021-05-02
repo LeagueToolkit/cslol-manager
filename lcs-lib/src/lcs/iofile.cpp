@@ -3,6 +3,7 @@
 #endif
 #include "iofile.hpp"
 #include "error.hpp"
+#include <string.h>
 
 using namespace LCS;
 
@@ -32,7 +33,7 @@ File::File(fs::path const& path, bool readonly)
 #endif
     if (error != 0 || !handle_) {
         std::string msg = "Failed to open file: ";
-        if (auto error_details = std::strerror(error)) {
+        if (auto error_details = strerror(error)) {
             msg += error_details;
         }
         msg += "\nMAKE SURE:\n"

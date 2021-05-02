@@ -67,7 +67,7 @@ namespace {
 
     inline PtrStorage bytes2ptr(char const* bytes) {
         PtrStorage result;
-        std::memcpy(&result, bytes, sizeof(result));
+        memcpy(&result, bytes, sizeof(result));
         return result;
     }
 }
@@ -154,7 +154,7 @@ namespace {
             ImportTrampoline result = {
                 { 0xB8u, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xE0, }
             };
-            std::memcpy(result.data + 1, &where.storage, sizeof(where.storage));
+            memcpy(result.data + 1, &where.storage, sizeof(where.storage));
             return result;
         }
     };
