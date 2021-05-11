@@ -4,7 +4,7 @@ import QtQuick.Layouts 1.10
 import QtQuick.Controls 1.4
 //import QtQuick.Dialogs 1.2
 
-Window {
+ApplicationWindow {
     id: lcsDialogLog
     modality: Qt.NonModal
     // standardButtons: StandardButton.NoButton    
@@ -33,9 +33,20 @@ Window {
             Layout.fillWidth: true
             Layout.fillHeight: true
         }
-        Button {
-            text: qsTr("Clear")
-            onClicked: lcsDialogLog.text = ""
+        RowLayout {
+            width: parent.width
+            Button {
+                text: "Copy To Clipboard"
+                onClicked:  {
+                    logTextArea.selectAll()
+                    logTextArea.copy()
+                    logTextArea.deselect()
+                }
+            }
+            Button {
+                text: qsTr("Clear")
+                onClicked: lcsDialogLog.text = ""
+            }
         }
     }
 }

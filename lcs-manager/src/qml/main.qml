@@ -40,14 +40,15 @@ ApplicationWindow {
     function logWarning(name, error) {
         lcsDialogLog.log("[Warning] " + name + ": " + error + "\n")
         lcsDialogWarning.text = "Failed to" + name
-        lcsDialogWarning.detailedText = error
+        lcsDialogWarning.detailedText = "Check logs for more details!"
         lcsDialogWarning.open()
     }
 
     function logError(name, error) {
         lcsDialogLog.log("[Error] " + name + ": " + error + "\n")
         lcsDialogError.text = name
-        lcsDialogError.detailedText = error
+        lcsDialogError.detailedText = "Check logs for more details!"
+        lcsDialogLog.open()
         lcsDialogError.open()
     }
 

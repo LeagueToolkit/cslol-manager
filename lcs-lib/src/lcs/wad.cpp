@@ -20,7 +20,8 @@ Wad::Wad(fs::path const& path, std::string const& name)
     if (header_.version == std::array<char, 4>{} && header_.signature == std::array<uint8_t, 256>{}) {
         ::LCS::throw_error("All zero .wad");
     }
-    lcs_assert(header_.version == std::array{'R', 'W', '\x3', '\x0'});
+    lcs_assert(header_.version == std::array{'R', 'W', '\x3', '\x0'}
+               || header_.version == std::array{'R', 'W', '\x3', '\x1'});
     dataBegin_ = header_.filecount * sizeof(Entry) + sizeof(header_);
     dataEnd_ = size_;
     lcs_assert(dataBegin_ <= dataEnd_);

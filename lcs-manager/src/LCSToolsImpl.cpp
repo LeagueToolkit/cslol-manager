@@ -321,7 +321,10 @@ void LCSToolsImpl::installFantomeZip(QString path) {
         setState(LCSState::StateBussy);
         setStatus("Install Fantome Mod");
         try {
-            auto mod = modIndex_->install_from_zip(path.toStdString(), *dynamic_cast<LCS::ProgressMulti*>(this));
+            auto const& index = wadIndex();
+            auto mod = modIndex_->install_from_zip(path.toStdString(),
+                                                   index,
+                                                   *dynamic_cast<LCS::ProgressMulti*>(this));
             emit installedMod(QString::fromStdString(mod->filename()),
                               parseInfoData(mod->filename(), mod->info()));
         } catch(std::runtime_error const& error) {

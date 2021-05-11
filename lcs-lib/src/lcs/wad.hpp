@@ -23,7 +23,7 @@ namespace LCS {
             uint8_t type;
             uint8_t isDuplicate;
             std::array<uint8_t, 2> pad;
-            std::array<uint8_t, 8> sha256;
+            uint64_t checksum;
         };
         static_assert (sizeof(Entry) == 32);
 
@@ -74,6 +74,10 @@ namespace LCS {
 
         inline auto size() const noexcept {
             return size_;
+        }
+
+        inline auto is_oldchecksum() const noexcept {
+            return header_.version[3] == 0;
         }
 
         void extract(fs::path const& dstpath, HashTable const& hashtable, Progress& progress) const;

@@ -31,11 +31,12 @@ WadMerge::WadMerge(fs::path const& path, Wad const* original)
                 lcs_trace_var(this->path_),
                 lcs_trace_var(this->original_->name())
                 );
+    lcs_assert_msg("Using league installation with 3.0 wads!", !original->is_oldchecksum());
     fs::create_directories(path_.parent_path());
     // TODO: potentially optimize by using the fact entries are sorted
     for(auto const& entry: original->entries()) {
         entries_.insert_or_assign(entry.xxhash, Entry { entry, original, EntryKind::Original });
-        orgsha256_.insert_or_assign(entry.xxhash, entry.sha256);
+        orgchecksum_.insert_or_assign(entry.xxhash, entry.checksum);
     }
 }
 
@@ -45,6 +46,7 @@ void WadMerge::addWad(const Wad* source, Conflict conflict) {
                 lcs_trace_var(this->original_->name()),
                 lcs_trace_var(source->path())
                 );
+    lcs_assert_msg("Mods using 3.0 wads need to be re-installed!", !source->is_oldchecksum());
     for(auto const& entry: source->entries()) {
         addWadEntry(entry, source, conflict, EntryKind::Full);
     }
@@ -56,21 +58,23 @@ void WadMerge::addExtraEntry(const Wad::Entry& entry, const Wad* source, Conflic
                 lcs_trace_var(this->original_->name()),
                 lcs_trace_var(source->path())
                 );
+    lcs_assert_msg("Mods using 3.0 wads need to be re-installed!", !source->is_oldchecksum());
     addWadEntry(entry, source, conflict, EntryKind::Extra);
 }
 
 void WadMerge::addWadEntry(Wad::Entry const& entry, Wad const* source,
                            Conflict conflict, EntryKind kind) {
+    lcs_assert_msg("Mods using 3.0 wads need to be re-installed!", !source->is_oldchecksum());
     lcs_trace_func(
                 lcs_trace_var(this->path_),
                 lcs_trace_var(this->original_->name()),
                 lcs_trace_var(source->path())
                 );
-    if (auto o = orgsha256_.find(entry.xxhash); o != orgsha256_.end() && o->second == entry.sha256) {
+    if (auto o = orgchecksum_.find(entry.xxhash); o != orgchecksum_.end() && o->second == entry.checksum) {
         return;
     }
     if (auto i = entries_.find(entry.xxhash); i != entries_.end()) {
-        if (i->second.sha256 != entry.sha256 && i->second.kind_ != EntryKind::Original) {
+        if (i->second.checksum != entry.checksum && i->second.kind_ != EntryKind::Original) {
             if (conflict == Conflict::Skip) {
                 return;
             } else if(conflict == Conflict::Abort) {

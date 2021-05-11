@@ -28,7 +28,7 @@ namespace LCS {
         bool refresh() noexcept;
 
         // Throws std::runtime_error
-        Mod* install_from_zip(fs::path srcpath, ProgressMulti& progress);
+        Mod* install_from_zip(fs::path srcpath, WadIndex const& index, ProgressMulti& progress);
 
         Mod* make(std::string_view const& fileName,
                   std::string_view const& info,
@@ -51,6 +51,10 @@ namespace LCS {
     private:
         fs::path path_;
         std::unordered_map<std::string, std::unique_ptr<Mod>> mods_;
+        void clean_tmp_make();
+        fs::path create_tmp_make();
+        void clean_tmp_extract();
+        fs::path create_tmp_extract();
     };
 }
 

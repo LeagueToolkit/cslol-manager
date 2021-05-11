@@ -49,6 +49,7 @@ namespace LCS {
         std::string name_;
         std::vector<Wad::Entry> entries_;
         std::uint64_t size_ = 0;
+        bool is_oldchecksum_ = false;
     };
 
     struct WadMake : WadMakeBase {

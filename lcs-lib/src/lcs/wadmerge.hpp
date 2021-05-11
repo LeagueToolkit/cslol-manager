@@ -46,7 +46,7 @@ namespace LCS {
         fs::path path_;
         Wad const* original_;
         std::map<uint64_t, Entry> entries_;
-        std::unordered_map<uint64_t, std::array<uint8_t, 8>> orgsha256_;
+        std::unordered_map<uint64_t, uint64_t> orgchecksum_;
         mutable std::uint64_t size_ = 0;
         mutable bool sizeCalculated_ = false;;
     };

@@ -29,7 +29,8 @@ File::File(fs::path const& path, bool readonly)
 #ifdef WIN32
     auto error = _wfopen_s((FILE**)&handle_, path.c_str(), readonly_ ? L"rb" : L"wb");
 #else
-    auto error = fopen_s((FILE**)&handle_, path.c_str(), readonly_ ? "rb" : "wb");
+    handle_ = fopen(path_.c_str(), readonly_ ? "rb" : "wb");
+    auto error = handle_ ? 0 : errno;
 #endif
     if (error != 0 || !handle_) {
         std::string msg = "Failed to open file: ";
