@@ -2,6 +2,7 @@
 #include "utility.hpp"
 #include "error.hpp"
 #include "progress.hpp"
+#include "xxhash.h"
 #include <charconv>
 #include <miniz.h>
 #include <zstd.h>
@@ -54,6 +55,7 @@ void Wad::extract(fs::path const& dstpath, HashTable const& hashtable, Progress&
     compressedBuffer.reserve((size_t)(maxCompressed));
     uncompressedBuffer.reserve((size_t)(maxUncompressed));
 
+    printf("Is old: %d\n", is_oldchecksum());
     for(auto const& entry: entries_) {
         infile.seek(entry.dataOffset, SEEK_SET);
         if (entry.type == Entry::Uncompressed) {
