@@ -26,6 +26,7 @@ if (WIN32)
         src/qml/qml.qrc
         src/qml/rc.rc
     )
+    target_link_libraries(lcs-manager PRIVATE lcs-lib psapi)
 else()
     add_executable(lcs-manager 
         src/LCSTools.h
@@ -39,6 +40,5 @@ else()
 endif()
 target_compile_definitions(lcs-manager PRIVATE $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>)
 target_link_libraries(lcs-manager PRIVATE lcs-lib Qt5::Core Qt5::Gui Qt5::Quick Qt5::Widgets Threads::Threads)
-target_link_libraries(lcs-manager PRIVATE lcs-lib psapi)
 target_include_directories(lcs-manager PRIVATE lolcustomskin/src)
 qt5_import_qml_plugins(lcs-manager)
