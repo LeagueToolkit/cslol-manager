@@ -22,6 +22,8 @@ namespace LCS {
     struct WadMake;
     struct WadMakeQueue;
     struct WadMerge;
+
+    extern char const* VERSION;
 }
 
 #endif // LCS_COMMON_HPP

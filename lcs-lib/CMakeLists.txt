@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.10)
 project(lcs-tools LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 find_package(Git QUIET REQUIRED)
 
 add_subdirectory(dep/picosha2)
@@ -12,7 +11,20 @@ add_subdirectory(dep/xxhash)
 add_subdirectory(dep/miniz)
 add_subdirectory(dep/zstd)
 
+add_custom_command(
+    OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/version.cpp"
+    COMMAND "${GIT_EXECUTABLE}"
+            "-C" "${CMAKE_SOURCE_DIR}"
+            "log"
+            "-1"
+            "--output" "${CMAKE_CURRENT_BINARY_DIR}/version.cpp"
+            "--format=namespace LCS { extern char const* VERSION; } char const* LCS::VERSION=\"%as-%h\";"
+    DEPENDS "${CMAKE_SOURCE_DIR}/.git/index"
+    VERBATIM
+    )
+
 add_library(lcs-lib STATIC
+    "${CMAKE_CURRENT_BINARY_DIR}/version.cpp"
     src/lcs/common.cpp
     src/lcs/common.hpp
     src/lcs/conflict.cpp
