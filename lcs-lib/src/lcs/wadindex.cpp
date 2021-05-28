@@ -34,14 +34,25 @@ WadIndex::WadIndex(fs::path const& path, bool blacklist, bool ignorebad) :
                 }
                 last_write_time_ = std::max(last_write_time_, fs::last_write_time(filepath));
                 try {
-                    auto wad = new Wad { filepath };
-                    wads_.insert_or_assign(wad->name(),  std::unique_ptr<Wad const>{wad});
-                    for(auto const& entry: wad->entries()) {
-                        lookup_.insert(std::make_pair(entry.xxhash, wad));
+                    auto filename = filepath.filename().generic_string();
+                    if (auto old = wads_.find(filename); old != wads_.end()) {
+                        lcs_trace_func(
+                            lcs_trace_var(filename),
+                            lcs_trace_var(filepath),
+                            lcs_trace_var(old->second->path())
+                            );
+                        throw_error("Game contains duplicated wads!");
                     }
+                    auto wad = std::make_unique<Wad>(filepath, filename);
+                    for(auto const& entry: wad->entries()) {
+                        lookup_.insert(std::make_pair(entry.xxhash, wad.get()));
+                    }
+                    wads_.insert_or_assign(wad->name(), std::move(wad));
                 } catch(std::runtime_error const& err) {
                     if (err.what() != std::string_view("All zero .wad") && !ignorebad) {
                         throw;
+                    } else {
+                        error_stack().clear();
                     }
                 }
             }
