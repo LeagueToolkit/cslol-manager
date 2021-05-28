@@ -4,6 +4,7 @@
 #include <QQmlContext>
 #include <QSettings>
 #include "LCSTools.h"
+#include "lcs/common.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -21,7 +22,7 @@ int main(int argc, char *argv[])
     QSettings::setDefaultFormat(QSettings::Format::IniFormat);
 
     QQmlApplicationEngine engine;
-    engine.rootContext()->setContextProperty("LCS_VERSION", QVariant(LCS_VERSION));
+    engine.rootContext()->setContextProperty("LCS_VERSION", QVariant(LCS::VERSION));
     const QUrl url(QStringLiteral("qrc:/main.qml"));
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
                      &app, [url](QObject *obj, const QUrl &objUrl) {
