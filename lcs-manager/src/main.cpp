@@ -22,7 +22,9 @@ int main(int argc, char *argv[])
     QSettings::setDefaultFormat(QSettings::Format::IniFormat);
 
     QQmlApplicationEngine engine;
-    engine.rootContext()->setContextProperty("LCS_VERSION", QVariant(LCS::VERSION));
+    engine.rootContext()->setContextProperty("LCS_VERSION", LCS::VERSION);
+    engine.rootContext()->setContextProperty("LCS_COMMIT", LCS::COMMIT);
+    engine.rootContext()->setContextProperty("LCS_DATE", LCS::DATE);
     const QUrl url(QStringLiteral("qrc:/main.qml"));
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
                      &app, [url](QObject *obj, const QUrl &objUrl) {

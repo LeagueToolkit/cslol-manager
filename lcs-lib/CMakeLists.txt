@@ -11,6 +11,7 @@ add_subdirectory(dep/xxhash)
 add_subdirectory(dep/miniz)
 add_subdirectory(dep/zstd)
 
+
 add_custom_command(
     OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/version.cpp"
     COMMAND "${GIT_EXECUTABLE}"
@@ -18,7 +19,11 @@ add_custom_command(
             "log"
             "-1"
             "--output" "${CMAKE_CURRENT_BINARY_DIR}/version.cpp"
-            "--format=namespace LCS { extern char const* VERSION; } char const* LCS::VERSION=\"%as-%h\";"
+            "--format=\
+            #include <lcs/common.hpp>%n\
+            char const* LCS::VERSION=\"%as-%h\";%n\
+            char const* LCS::COMMIT=\"%H\";%n\
+            char const* LCS::DATE=\"%aI\";%n"
     DEPENDS "${CMAKE_SOURCE_DIR}/.git/index"
     VERBATIM
     )

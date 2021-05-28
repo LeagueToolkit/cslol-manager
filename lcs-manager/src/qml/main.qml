@@ -16,6 +16,7 @@ ApplicationWindow {
         property alias leaguePath: lcsTools.leaguePath
         property alias blacklist: lcsToolBar.blacklist
         property alias ignorebad: lcsToolBar.ignorebad
+        property alias disableUpdates: lcsToolBar.disableUpdates
         property alias logVisible: lcsDialogLog.visible
 
         property alias lastZipDirectory: lcsDialogOpenZipFantome.folder
@@ -183,6 +184,11 @@ ApplicationWindow {
         id: lcsDialogWarning
     }
 
+    LCSDialogUpdate {
+        id: lcsDialogUpdate
+        disableUpdates: settings.disableUpdates
+    }
+
     LCSTools {
         id: lcsTools
 
@@ -252,5 +258,6 @@ ApplicationWindow {
 
     Component.onCompleted: {
         lcsTools.init()
+        lcsDialogUpdate.checkForUpdates()
     }
 }

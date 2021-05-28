@@ -24,6 +24,8 @@ namespace LCS {
     struct WadMerge;
 
     extern char const* VERSION;
+    extern char const* COMMIT;
+    extern char const* DATE;
 }
 
 #endif // LCS_COMMON_HPP

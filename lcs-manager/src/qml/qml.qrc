@@ -17,5 +17,6 @@
         <file>LCSDialogSaveZipFantome.qml</file>
         <file>LCSDialogEditMod.qml</file>
         <file>icon.png</file>
+        <file>LCSDialogUpdate.qml</file>
     </qresource>
 </RCC>
