@@ -320,11 +320,24 @@ void LCSToolsImpl::installFantomeZip(QString path) {
     if (state_ == LCSState::StateIdle) {
         setState(LCSState::StateBussy);
         setStatus("Install Fantome Mod");
+        path = path.replace('\\', '/');
         try {
             auto const& index = wadIndex();
-            auto mod = modIndex_->install_from_zip(path.toStdString(),
-                                                   index,
-                                                   *dynamic_cast<LCS::ProgressMulti*>(this));
+            auto& progress = *dynamic_cast<LCS::ProgressMulti*>(this);
+            LCS::Mod* mod = nullptr;
+            // TODO: gezi skin
+            if (path.endsWith(".wad.client")
+                || path.endsWith(".wad.client/")
+                || path.endsWith(".wad")
+                || path.endsWith(".wad/")) {
+                mod = modIndex_->install_from_wad(path.toStdString(), index, progress);
+            } else if (path.endsWith(".fantome") || path.endsWith(".zip")) {
+                mod = modIndex_->install_from_fantome(path.toStdString(), index, progress);
+            } else if (path.endsWith(".wxy")) {
+                mod = modIndex_->install_from_wxy(path.toStdString(), index, progress);
+            } else {
+                mod = modIndex_->install_from_folder(path.toStdString(), index, progress);
+            }
             emit installedMod(QString::fromStdString(mod->filename()),
                               parseInfoData(mod->filename(), mod->info()));
         } catch(std::runtime_error const& error) {
