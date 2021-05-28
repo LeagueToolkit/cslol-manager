@@ -4,6 +4,8 @@ project(lcs-tools LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+find_package(Git QUIET REQUIRED)
+
 add_subdirectory(dep/picosha2)
 add_subdirectory(dep/json)
 add_subdirectory(dep/xxhash)

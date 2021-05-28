@@ -9,7 +9,7 @@ ApplicationWindow {
     visible: true
     width: 640
     height: 480
-    title: qsTr("LolCustomSkin Manager")
+    title: qsTr("LolCustomSkin Manager - " + LCS_VERSION)
 
     Settings {
         id: settings
@@ -39,7 +39,7 @@ ApplicationWindow {
 
     function logWarning(name, error) {
         lcsDialogLog.log("[Warning] " + name + ": " + error + "\n")
-        lcsDialogWarning.text = "Failed to" + name
+        lcsDialogWarning.text = name
         lcsDialogWarning.detailedText = "Check logs for more details!"
         lcsDialogWarning.open()
     }

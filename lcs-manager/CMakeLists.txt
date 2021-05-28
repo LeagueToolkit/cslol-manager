@@ -10,6 +10,18 @@ set(CMAKE_AUTORCC ON)
 
 find_package(Qt5 COMPONENTS Core Quick Gui Widgets QmlImportScanner REQUIRED)
 find_package(Threads REQUIRED)
+execute_process(
+    COMMAND "${GIT_EXECUTABLE}" describe --always HEAD
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    RESULT_VARIABLE res
+    OUTPUT_VARIABLE GIT_COMMIT
+    ERROR_QUIET
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+set_property(GLOBAL APPEND
+    PROPERTY CMAKE_CONFIGURE_DEPENDS
+    "${CMAKE_SOURCE_DIR}/.git/index")
+message(STATUS "GIT_COMMIT: ${GIT_COMMIT}")
 
 if (WIN32)
     add_subdirectory(lolcustomskin)
@@ -38,6 +50,7 @@ else()
         src/qml/rc.rc
     )
 endif()
+target_compile_definitions(lcs-manager PRIVATE -DLCS_VERSION="${GIT_COMMIT}")
 target_compile_definitions(lcs-manager PRIVATE $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>)
 target_link_libraries(lcs-manager PRIVATE lcs-lib Qt5::Core Qt5::Gui Qt5::Quick Qt5::Widgets Threads::Threads)
 target_include_directories(lcs-manager PRIVATE lolcustomskin/src)
