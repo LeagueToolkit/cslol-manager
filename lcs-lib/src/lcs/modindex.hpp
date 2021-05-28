@@ -28,7 +28,16 @@ namespace LCS {
         bool refresh() noexcept;
 
         // Throws std::runtime_error
-        Mod* install_from_zip(fs::path srcpath, WadIndex const& index, ProgressMulti& progress);
+        Mod* install_from_folder(fs::path srcpath, WadIndex const& index, ProgressMulti& progress);
+
+        // Throws std::runtime_error
+        Mod* install_from_fantome(fs::path srcpath, WadIndex const& index, ProgressMulti& progress);
+
+        // Throws std::runtime_error
+        Mod* install_from_wxy(fs::path srcpath, WadIndex const& index, ProgressMulti& progress);
+
+        // Throws std::runtime_error
+        Mod* install_from_wad(fs::path srcpath, WadIndex const& index, ProgressMulti& progress);
 
         Mod* make(std::string_view const& fileName,
                   std::string_view const& info,
@@ -55,6 +64,8 @@ namespace LCS {
         fs::path create_tmp_make();
         void clean_tmp_extract();
         fs::path create_tmp_extract();
+
+        Mod* install_from_folder_impl(fs::path srcpath, WadIndex const& index, ProgressMulti& progress, std::string const& filename);
     };
 }
 
