@@ -16,7 +16,7 @@ ApplicationWindow {
         close.accepted = false
         hide()
     }
-    title: "Log"
+    title: "Log - " + LCS_VERSION
 
     property alias text: logTextArea.text
 
@@ -32,6 +32,7 @@ ApplicationWindow {
             readOnly: true
             Layout.fillWidth: true
             Layout.fillHeight: true
+            text: "[INFO] Version: " + LCS_VERSION + "\n"
         }
         RowLayout {
             width: parent.width
@@ -45,7 +46,7 @@ ApplicationWindow {
             }
             Button {
                 text: qsTr("Clear")
-                onClicked: lcsDialogLog.text = ""
+                onClicked: lcsDialogLog.text = "[INFO] Version: " + LCS_VERSION + "\n"
             }
         }
     }

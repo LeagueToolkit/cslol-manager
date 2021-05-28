@@ -9,7 +9,7 @@ MessageDialog {
     height: 480
     modality: Qt.ApplicationModal
     standardButtons: StandardButton.Ok
-    title: "Error"
+    title: "Error - " + LCS_VERSION
     icon: StandardIcon.Critical
     onAccepted: {
         close()

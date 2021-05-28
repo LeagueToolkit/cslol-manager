@@ -9,7 +9,7 @@ MessageDialog {
     height: 480
     modality: Qt.ApplicationModal
     standardButtons: StandardButton.Ok
-    title: "Warning"
+    title: "Warning - " + LCS_VERSION
     icon: StandardIcon.Warning
     onAccepted: {
         close()
