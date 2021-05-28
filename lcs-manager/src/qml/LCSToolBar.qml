@@ -13,6 +13,7 @@ ToolBar {
     property alias menuButtonHeight: mainMenuButton.height
     property alias blacklist: blacklistCheck.checked
     property alias ignorebad: ignorebadCheck.checked
+    property alias disableUpdates: disableUpdatesCheck.checked
 
 
     signal showLogs()
@@ -66,10 +67,16 @@ ToolBar {
                     checked: false
                 }
                 MenuItem {
+                    id: disableUpdatesCheck
+                    text: qsTr("Disable updates")
+                    checkable: true
+                    checked: false
+                }
+                MenuSeparator {}
+                MenuItem {
                     text: qsTr("Log Window")
                     onTriggered: lcsToolBar.showLogs()
                 }
-                MenuSeparator {}
                 MenuItem {
                     text: qsTr("Exit")
                     onTriggered: lcsToolBar.exit()
