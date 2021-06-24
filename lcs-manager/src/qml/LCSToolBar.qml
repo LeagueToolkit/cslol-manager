@@ -39,7 +39,7 @@ ToolBar {
               Menu {
                 id: mainMenu
                 MenuItem {
-                    text: qsTr("Install Fantome Mod")
+                    text: qsTr("Install Mod")
                     enabled: !isBussy
                     onTriggered: lcsToolBar.installFantomeZip()
                 }

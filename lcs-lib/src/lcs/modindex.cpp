@@ -4,10 +4,13 @@
 #include "error.hpp"
 #include "progress.hpp"
 #include "conflict.hpp"
+#include "wxyextract.hpp"
 #include <miniz.h>
 #include <json.hpp>
 
 using namespace LCS;
+
+using json = nlohmann::json;
 
 ModIndex::ModIndex(fs::path path)
     : path_(fs::absolute(path))
@@ -86,32 +89,66 @@ bool ModIndex::refresh() noexcept {
     return found;
 }
 
-Mod* ModIndex::install_from_zip(fs::path srcpath, WadIndex const& index, ProgressMulti& progress) {
+Mod* ModIndex::install_from_folder(fs::path srcpath, WadIndex const& index, ProgressMulti& progress) {
     lcs_trace_func(
-                lcs_trace_var(this->path_),
-                lcs_trace_var(srcpath)
-                );
+        lcs_trace_var(this->path_),
+        lcs_trace_var(srcpath)
+        );
+    std::string filename = srcpath.filename().generic_string();
+    lcs_assert_msg("Mod already exists!", !fs::exists(path_ / filename));
+    lcs_assert_msg("Not a valid mod file!", fs::exists(srcpath) && fs::is_directory(srcpath));
+    return install_from_folder_impl(srcpath, index, progress, filename);
+}
+
+
+Mod* ModIndex::install_from_fantome(fs::path srcpath, WadIndex const& index, ProgressMulti& progress) {
+    lcs_trace_func(
+        lcs_trace_var(this->path_),
+        lcs_trace_var(srcpath)
+        );
     std::string filename = srcpath.filename().replace_extension().generic_string();
     lcs_assert_msg("Mod already exists!", !fs::exists(path_ / filename));
     fs::path tmp_extract = create_tmp_extract();
-    {
-        ModUnZip zip(srcpath);
-        zip.extract(tmp_extract, progress);
-    }
+    ModUnZip zip(srcpath);
+    zip.extract(tmp_extract, progress);
+    auto mod = install_from_folder_impl(tmp_extract, index, progress, filename);
+    clean_tmp_extract();
+    return mod;
+}
+
+Mod* ModIndex::install_from_wxy(fs::path srcpath, WadIndex const& index, ProgressMulti& progress) {
+    lcs_trace_func(
+        lcs_trace_var(this->path_),
+        lcs_trace_var(srcpath)
+        );
+    std::string filename = srcpath.filename().replace_extension().generic_string();
+    lcs_assert_msg("Mod already exists!", !fs::exists(path_ / filename));
+    fs::path tmp_extract = create_tmp_extract();
+    WxyExtract wxy(srcpath);
+    wxy.extract_files(tmp_extract / "RAW", progress);
+    wxy.extract_meta(tmp_extract / "META", progress);
+    auto mod = install_from_folder_impl(tmp_extract, index, progress, filename);
+    clean_tmp_extract();
+    return mod;
+}
+
+
+Mod* ModIndex::install_from_folder_impl(fs::path srcpath, WadIndex const& index, ProgressMulti& progress,
+                                        std::string const& filename) {
     auto info = std::string{};
-    auto image = (tmp_extract / "META" / "image.png").generic_string();
+    auto image = (srcpath / "META" / "image.png").generic_string();
     {
-        InFile info_file(tmp_extract / "META" / "info.json");
+        InFile info_file(srcpath / "META" / "info.json");
         info.resize(info_file.size());
         info_file.read(info.data(), info.size());
         auto json = nlohmann::json::parse(info);
         if (json.is_object() && json.contains("image") && json["image"].is_string()) {
             auto img_name = json["image"].get<std::string>();
-            image = (tmp_extract / "META" / img_name).generic_string();
+            image = (srcpath / "META" / img_name).generic_string();
         }
     }
     auto queue = WadMakeQueue(index);
-    for (auto const& entry: fs::directory_iterator(tmp_extract / "WAD")) {
+    for (auto const& entry: fs::directory_iterator(srcpath / "WAD")) {
         if (entry.is_directory()) {
             queue.addItem(std::make_unique<WadMake>(entry.path()), Conflict::Abort);
         } else {
@@ -119,8 +156,32 @@ Mod* ModIndex::install_from_zip(fs::path srcpath, WadIndex const& index, Progres
         }
     }
     auto mod = make(filename, info, image, queue, progress);
-    clean_tmp_extract();
+
     return mod;
+}
+
+Mod* ModIndex::install_from_wad(fs::path srcpath, WadIndex const& index, ProgressMulti& progress) {
+    lcs_trace_func(
+        lcs_trace_var(this->path_),
+        lcs_trace_var(srcpath)
+        );
+    lcs_assert_msg("Wad mod does not exist!", fs::exists(srcpath));
+    std::string filename = srcpath.filename().replace_extension().generic_string();
+    lcs_assert_msg("Mod already exists!", !fs::exists(path_ / filename));
+    auto queue = WadMakeQueue(index);
+    if (fs::is_directory(srcpath)) {
+        queue.addItem(std::make_unique<WadMake>(srcpath), Conflict::Abort);
+    } else {
+        queue.addItem(std::make_unique<WadMakeCopy>(srcpath), Conflict::Abort);
+    }
+    json j = {
+        { "Name", filename },
+        { "Author", "UNKNOWN" },
+        { "Version", "0.0.0" },
+        { "Description", "Converted from .wad" },
+    };
+    auto jstr = j.dump(2);
+    return make(filename, jstr, "", queue, progress);
 }
 
 Mod* ModIndex::make(std::string_view const& fileName,
