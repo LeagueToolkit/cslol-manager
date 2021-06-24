@@ -43,14 +43,14 @@ namespace LCS {
 
         struct SkinFile {
             fs::path path;
-            std::string pathFirst;
-            std::string fileGamePath;
+            std::u8string pathFirst;
+            std::u8string fileGamePath;
             int32_t uncompresedSize;
             int32_t compressedSize;
             std::array<uint8_t, 16> checksum;
             std::array<uint8_t, 32> checksum2;
             uint32_t adler;
-            std::string project;
+            std::u8string project;
             int32_t offset;
             uint8_t compressionMethod;
         };
@@ -66,11 +66,11 @@ namespace LCS {
             uint32_t size;
         };
 
-        std::string name_;
-        std::string author_;
-        std::string version_;
-        std::string category_;
-        std::string subCategory_;
+        std::u8string name_;
+        std::u8string author_;
+        std::u8string version_;
+        std::u8string category_;
+        std::u8string subCategory_;
         int32_t wxyVersion_;
         std::vector<SkinFile> filesList_;
         std::vector<SkinFile> deleteList_;
@@ -80,9 +80,9 @@ namespace LCS {
         void read_oink();
         void build_paths();
 
-        void decryptStr(std::string& str) const;
-        void decryptStr2(std::string& str) const;
-        void decompressStr(std::string& str) const;
+        void decryptStr(std::u8string& str) const;
+        void decryptStr2(std::u8string& str) const;
+        void decompressStr(std::u8string& str) const;
     };
 }
 

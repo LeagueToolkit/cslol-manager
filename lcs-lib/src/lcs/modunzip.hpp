@@ -30,13 +30,13 @@ namespace LCS {
             mz_uint index;
             std::uint64_t size;
         };
-        WadMakeUnZip& addFolder(std::string name);
+        WadMakeUnZip& addFolder(std::u8string name);
         void extractFile(fs::path const& dest, CopyFile const& file, Progress& progress);
 
         fs::path path_;
         std::vector<CopyFile> metafile_;
         std::vector<CopyFile> wadfile_;
-        std::unordered_map<std::string, std::unique_ptr<WadMakeUnZip>> wadfolder_;
+        std::unordered_map<std::u8string, std::unique_ptr<WadMakeUnZip>> wadfolder_;
         mz_zip_archive zip_archive = {};
         std::unique_ptr<InFile> infile_ = {};
         std::uint64_t size_ = 0;

@@ -18,12 +18,14 @@ static uint64_t pathhash(fs::path const& path) noexcept {
     uint64_t h;
     fs::path noextension = path;
     noextension.replace_extension();
-    auto name = noextension.generic_string();
-    auto result = std::from_chars(name.data(), name.data() + name.size(), h, 16);
-    if (result.ptr == name.data() + name.size() && result.ec == std::errc{}) {
+    auto name = noextension.generic_u8string();
+    auto const start = reinterpret_cast<char const*>(name.data());
+    auto const end = start + name.size();
+    auto const result = std::from_chars(start, end, h, 16);
+    if (result.ptr == end && result.ec == std::errc{}) {
         return h;
     }
-    name = path.generic_string();
+    name = path.generic_u8string();
     std::transform(name.begin(), name.end(), name.begin(), ::tolower);
     return XXH64(name.data(), name.size(), 0);
 }
@@ -31,7 +33,7 @@ static uint64_t pathhash(fs::path const& path) noexcept {
 /// Copies a .wad from filesystem
 WadMakeCopy::WadMakeCopy(fs::path const& path)
     : path_(fs::absolute(path)),
-      name_(path_.filename().generic_string())
+      name_(path_.filename().generic_u8string())
 {
     lcs_trace_func(
                 lcs_trace_var(this->path_)
@@ -88,7 +90,7 @@ void WadMakeCopy::write(fs::path const& dstpath, Progress& progress) const {
 /// Makes a .wad from folder on a filesystem
 WadMake::WadMake(fs::path const& path)
     : path_(fs::absolute(path)),
-      name_(path_.filename().generic_string()) {
+      name_(path_.filename().generic_u8string()) {
     lcs_trace_func(
                 lcs_trace_var(this->path_)
                 );
@@ -176,7 +178,7 @@ void WadMake::write(fs::path const& dstpath, Progress& progress) const {
 /// Makes a .wad from folder inside a .zip archive
 WadMakeUnZip::WadMakeUnZip(fs::path const& path, void* archive)
     : path_(path),
-      name_(path_.filename().generic_string()),
+      name_(path_.filename().generic_u8string()),
       archive_(archive)
 {
     lcs_trace_func(

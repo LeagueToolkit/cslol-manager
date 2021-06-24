@@ -4,12 +4,12 @@
 
 using namespace LCS;
 
-static constexpr std::string_view INDEX_BLACKLIST[] = {
-    "Map21.wad.client",
-    "Map22.wad.client",
+static constexpr std::u8string_view INDEX_BLACKLIST[] = {
+    u8"Map21.wad.client",
+    u8"Map22.wad.client",
 };
 
-static bool is_blacklisted(std::string filename) noexcept {
+static bool is_blacklisted(std::u8string filename) noexcept {
     for (auto name: INDEX_BLACKLIST) {
         if (name == filename) {
             return true;
@@ -29,12 +29,12 @@ WadIndex::WadIndex(fs::path const& path, bool blacklist, bool ignorebad) :
     for (auto const& file : fs::recursive_directory_iterator(path_ / "DATA" / "FINAL")) {
         if (file.is_regular_file()) {
             if (auto filepath = file.path(); filepath.extension() == ".client") {
-                if (blacklist_ && is_blacklisted(filepath.filename().generic_string())) {
+                if (blacklist_ && is_blacklisted(filepath.filename().generic_u8string())) {
                     continue;
                 }
                 last_write_time_ = std::max(last_write_time_, fs::last_write_time(filepath));
                 try {
-                    auto filename = filepath.filename().generic_string();
+                    auto filename = filepath.filename().generic_u8string();
                     if (auto old = wads_.find(filename); old != wads_.end()) {
                         lcs_trace_func(
                             lcs_trace_var(filename),
@@ -70,7 +70,7 @@ bool WadIndex::is_uptodate() const {
     for (auto const& file : fs::recursive_directory_iterator(path_ / "DATA" / "FINAL")) {
         if (file.is_regular_file()) {
             if (auto filepath = file.path(); filepath.extension() == ".client") {
-                if (blacklist_ && is_blacklisted(filepath.filename().generic_string())) {
+                if (blacklist_ && is_blacklisted(filepath.filename().generic_u8string())) {
                     continue;
                 }
                 new_last_write_time = std::max(new_last_write_time, fs::last_write_time(filepath));

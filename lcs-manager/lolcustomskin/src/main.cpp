@@ -10,7 +10,7 @@
 int main(int argc, char** argv) {
     std::string prefix = argc > 1 ? argv[1] : "MOD/";
     std::filesystem::path exefile = argv[0];
-    std::string configfile = (exefile.parent_path() / "lolcustomskin.txt").generic_string();
+    std::string configfile = (exefile.parent_path() / "lolcustomskin.txt").generic_u8string();
     LCS::ModOverlay overlay = {};
 
     overlay.load(configfile.c_str());

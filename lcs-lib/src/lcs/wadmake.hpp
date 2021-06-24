@@ -12,9 +12,9 @@ namespace LCS {
         virtual ~WadMakeBase() noexcept = 0;
         virtual void write(fs::path const& path, Progress& progress) const = 0;
         virtual std::uint64_t size() const noexcept = 0;
-        virtual std::string const& name() const& noexcept = 0;
+        virtual std::u8string const& name() const& noexcept = 0;
         virtual fs::path const& path() const& noexcept = 0;
-        virtual std::optional<std::string> identify(WadIndex const& index) const noexcept = 0;
+        virtual std::optional<std::u8string> identify(WadIndex const& index) const noexcept = 0;
     };
 
     struct WadMakeCopy : WadMakeBase {
@@ -26,7 +26,7 @@ namespace LCS {
             return size_;
         }
 
-        inline std::string const& name() const& noexcept override {
+        inline std::u8string const& name() const& noexcept override {
             return name_;
         }
 
@@ -38,7 +38,7 @@ namespace LCS {
             return entries_;
         }
 
-        inline std::optional<std::string> identify(WadIndex const& index) const noexcept override {
+        inline std::optional<std::u8string> identify(WadIndex const& index) const noexcept override {
             if (auto wad = index.findOriginal(name_, entries_)) {
                 return wad->name();
             }
@@ -46,7 +46,7 @@ namespace LCS {
         }
     private:
         fs::path path_;
-        std::string name_;
+        std::u8string name_;
         std::vector<Wad::Entry> entries_;
         std::uint64_t size_ = 0;
         bool is_oldchecksum_ = false;
@@ -61,7 +61,7 @@ namespace LCS {
             return size_;
         }
 
-        inline std::string const& name() const& noexcept override {
+        inline std::u8string const& name() const& noexcept override {
             return name_;
         }
 
@@ -73,7 +73,7 @@ namespace LCS {
             return entries_;
         }
 
-        inline std::optional<std::string> identify(WadIndex const& index) const noexcept override {
+        inline std::optional<std::u8string> identify(WadIndex const& index) const noexcept override {
             if (auto wad = index.findOriginal(name_, entries_)) {
                 return wad->name();
             }
@@ -81,7 +81,7 @@ namespace LCS {
         }
     private:
         fs::path path_;
-        std::string name_;
+        std::u8string name_;
         std::map<uint64_t, fs::path> entries_;
         std::uint64_t size_ = 0;
     };
@@ -100,7 +100,7 @@ namespace LCS {
 
         std::uint64_t size() const noexcept override;
 
-        inline std::string const& name() const& noexcept override {
+        inline std::u8string const& name() const& noexcept override {
             return name_;
         }
 
@@ -112,7 +112,7 @@ namespace LCS {
             return entries_;
         }
 
-        inline std::optional<std::string> identify(WadIndex const& index) const noexcept override {
+        inline std::optional<std::u8string> identify(WadIndex const& index) const noexcept override {
             if (auto wad = index.findOriginal(name_, entries_)) {
                 return wad->name();
             }
@@ -120,7 +120,7 @@ namespace LCS {
         }
     private:
         fs::path path_;
-        std::string name_;
+        std::u8string name_;
         void* archive_;
         std::map<uint64_t, FileEntry> entries_;
         mutable std::uint64_t size_ = 0;
