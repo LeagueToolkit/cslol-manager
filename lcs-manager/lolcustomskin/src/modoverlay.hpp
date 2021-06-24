@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <filesystem>
 
 namespace LCS {
     struct Process;
@@ -19,8 +20,8 @@ namespace LCS {
         PtrStorage off_free_ptr = {};
         PtrStorage off_free_fn = {};
 
-        void save(char const *filename) const noexcept;
-        void load(char const *filename) noexcept;
+        void save(std::filesystem::path const& filename) const noexcept;
+        void load(std::filesystem::path const& filename) noexcept;
         std::string to_string() const noexcept;
         void from_string(std::string const &) noexcept;
         bool check(Process const &process) const;

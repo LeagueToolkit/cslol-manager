@@ -96,7 +96,7 @@ private:
     LCS::fs::path progDirPath_;
     QString leaguepath_ = {};
     LCS::fs::path leaguePathStd_;
-    std::string patcherConfig_ = {};
+    LCS::fs::path patcherConfig_ = {};
     std::unique_ptr<LCS::ModIndex> modIndex_ = nullptr;
     std::unique_ptr<LCS::WadIndex> wadIndex_ = nullptr;
 #ifdef WIN32
