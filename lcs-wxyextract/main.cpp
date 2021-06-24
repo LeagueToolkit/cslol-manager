@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
         wxy.extract_meta(dest / "META", progress);
         printf("Finished!\n");
     } catch(std::runtime_error const& error) {
-        auto message = error_stack_trace(error.what());
+        auto message = error_stack_trace_cstr(error.what());
         printf("Error: %s\r\n", message.c_str());
         if (argc < 3) {
             printf("Press enter to exit...!\n");

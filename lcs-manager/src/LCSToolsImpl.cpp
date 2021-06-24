@@ -6,12 +6,25 @@
 #include <QThread>
 #include <fstream>
 
+static QString QString_from_u8string(std::u8string const& str) noexcept {
+    return QString::fromUtf8(reinterpret_cast<char const*>(str.data()), static_cast<int>(str.size()));
+}
+
+static std::u8string QString_to_u8string(QString const& str) {
+    auto data = str.toUtf8();
+    return { data.begin(), data.end() };
+}
+
 static QString get_stack_trace(std::runtime_error const& err) noexcept {
-    return QString::fromStdString(LCS::error_stack_trace(err.what()));
+    QString result = {};
+
+    result = QString_from_u8string(LCS::error_stack_trace());
+    result += QString::fromStdString(err.what());
+    return result;
 }
 
 LCSToolsImpl::LCSToolsImpl(QObject *parent)
-    : QObject(parent), progDirPath_(QCoreApplication::applicationDirPath().toStdString()),
+    : QObject(parent), progDirPath_(QCoreApplication::applicationDirPath().toStdU16String()),
       patcherConfig_((progDirPath_ / "lolcustomskin.txt").generic_string()) {}
 
 LCSToolsImpl::~LCSToolsImpl() {
@@ -51,13 +64,13 @@ QJsonArray LCSToolsImpl::listProfiles() {
     }
     for(auto const& entry: LCS::fs::directory_iterator(profilesPath)) {
         auto path = entry.path();
-        if (entry.is_directory() && !LCS::fs::exists(path.generic_string() + ".profile")) {
+        if (entry.is_directory() && !LCS::fs::exists(path.generic_u8string() + ".profile")) {
             std::error_code error = {};
             LCS::fs::remove_all(path, error);
         } else if (entry.is_regular_file() && path.extension() == ".profile") {
             auto name = path.filename();
             name.replace_extension();
-            profiles.push_back(QString::fromStdString(name.generic_string()));
+            profiles.push_back(QString::fromStdString(name.generic_u8string()));
         }
     }
     if (!profiles.contains("Default Profile")) {
@@ -179,7 +192,7 @@ void LCSToolsImpl::changeLeaguePath(QString newLeaguePath) {
             path /= "Game";
         }
         if (LCS::fs::exists(path / "League of Legends.exe")) {
-            newLeaguePath = QString::fromStdString(path.generic_string());
+            newLeaguePath = QString::fromStdString(path.generic_u8string());
             if (newLeaguePath != leaguepath_) {
                 leaguePathStd_ = path;
                 leaguepath_ = newLeaguePath;
@@ -233,7 +246,7 @@ void LCSToolsImpl::changeIgnorebad(bool ignorebad) {
 void LCSToolsImpl::init() {
     if (state_ == LCSState::StateUnitialized) {
         setState(LCSState::StateBussy);
-        auto progDir = progDirPath_.generic_string();
+        auto progDir = progDirPath_.generic_u8string();
         setStatus("Verify path");
         if (progDir.size() > 100) {
             emit reportError("Program path too long", QString::fromStdString(progDir));
@@ -254,7 +267,7 @@ void LCSToolsImpl::init() {
             return;
         }
         setStatus("Acquire lock");
-        auto lockpath = QString::fromStdString((progDirPath_/ "lockfile").generic_string());
+        auto lockpath = QString::fromStdString((progDirPath_/ "lockfile").generic_u8string());
         lockfile_ = new QLockFile(lockpath);
         if (!lockfile_->tryLock()) {
             auto lockerror = QString::number((int)lockfile_->error());
@@ -438,7 +451,7 @@ void LCSToolsImpl::runProfile(QString name) {
     if (state_ == LCSState::StateIdle) {
         setState(LCSState::StateBussy);
         setStatus("Run profile");
-        auto profilePath = (progDirPath_ / "profiles" / name.toStdString()).generic_string() + "/";
+        auto profilePath = (progDirPath_ / "profiles" / name.toStdString()).generic_u8string() + "/";
         std::thread thread([this, profilePath = std::move(profilePath)] {
             try {
                 setStatus("Waiting for league match to start...");
@@ -502,7 +515,7 @@ void LCSToolsImpl::startEditMod(QString fileName) {
                 }
                 emit modEditStarted(fileName,
                                     parseInfoData(fileName, mod->info()),
-                                    QString::fromStdString(mod->image().generic_string()),
+                                    QString::fromStdString(mod->image().generic_u8string()),
                                     wads);
             } else {
                 throw std::runtime_error("No such mod found!");
@@ -600,7 +613,7 @@ void LCSToolsImpl::addModWads(QString fileName, QJsonArray wads) {
 
 /// Interface implementations
 void LCSToolsImpl::startItem(LCS::fs::path const& path, std::uint64_t bytes) noexcept {
-    auto name = QString::fromStdString(path.filename().generic_string());
+    auto name = QString::fromStdString(path.filename().generic_u8string());
     auto size = QString::number(bytes / 1024.0 / 1024.0, 'f', 2);
     setStatus("Processing " + name + "(" + size + "MB)");
 }

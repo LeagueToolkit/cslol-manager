@@ -28,7 +28,7 @@ void WadMakeQueue::addItem(std::unique_ptr<WadMakeBase> item, Conflict conflict)
                 lcs_trace_var(item->path())
                 );
     auto orgpath = item->path();
-    auto name = item->identify(index_).value_or("RAW.wad.client");
+    auto name = item->identify(index_).value_or(u8"RAW.wad.client");
     if (auto i = items_.find(name); i != items_.end()) {
         auto const& orgpath = i->second->path();
         auto const& newpath = item->path();

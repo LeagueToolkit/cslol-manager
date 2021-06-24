@@ -8,15 +8,20 @@ using namespace LCS;
     throw std::runtime_error(msg);
 }
 
-std::stringstream& LCS::error_stack() noexcept {
-    thread_local std::stringstream instance = {};
+std::basic_stringstream<char8_t>& LCS::error_stack() noexcept {
+    thread_local std::basic_stringstream<char8_t> instance = {};
     return instance;
 }
 
-std::string LCS::error_stack_trace(std::string message) noexcept {
+std::u8string LCS::error_stack_trace() noexcept {
     auto& ss = error_stack();
-    message.append(ss.str());
-    ss.str("");
+    std::u8string message = ss.str();
+    ss.str(u8"");
     ss.clear();
     return message;
+}
+
+std::string LCS::error_stack_trace_cstr(std::string message) noexcept {
+    auto result = error_stack_trace();
+    return message + std::string { result.begin(), result.end() };
 }

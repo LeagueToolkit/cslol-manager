@@ -20,7 +20,7 @@ namespace {
     inline constexpr static const char prefixDeploy[] = "deploy/";
     inline constexpr static const char prefixProjects[] = "projects/";
 
-    static inline uint64_t xxhashStr(std::string str, bool isProject = false) {
+    static inline uint64_t xxhashStr(std::u8string str, bool isProject = false) {
         XXH64_state_s xxstate{};
         XXH64_reset(&xxstate, 0);
         if(isProject) {
@@ -45,7 +45,7 @@ namespace {
         file.read((char*)&value, sizeof(T) * S);
     }
 
-    static inline void read(InFile& file, std::string& value, int32_t length) {
+    static inline void read(InFile& file, std::u8string& value, int32_t length) {
         value.clear();
         if(length > 0) {
             auto const start = file.tell();
@@ -60,7 +60,7 @@ namespace {
         }
     }
 
-    static inline void read(InFile& file, std::string& value) {
+    static inline void read(InFile& file, std::u8string& value) {
         value.clear();
         int32_t length;
         read(file, length);
@@ -87,7 +87,7 @@ WxyExtract::WxyExtract(fs::path const& path)
     build_paths();
 }
 
-void WxyExtract::decompressStr(std::string& str) const {
+void WxyExtract::decompressStr(std::u8string& str) const {
     lcs_trace_func(
                 lcs_trace_var(this->path_)
                 );
@@ -112,7 +112,7 @@ void WxyExtract::decompressStr(std::string& str) const {
     std::copy(buffer, buffer + strm.total_out, str.data());
 }
 
-void WxyExtract::decryptStr(std::string& str) const {
+void WxyExtract::decryptStr(std::u8string& str) const {
     if (wxyVersion_ > 6) {
         int32_t i = 0;
         int32_t nameSize = static_cast<int32_t>(str.size());
@@ -125,7 +125,7 @@ void WxyExtract::decryptStr(std::string& str) const {
     }
 }
 
-void WxyExtract::decryptStr2(std::string& str) const {
+void WxyExtract::decryptStr2(std::u8string& str) const {
     if (wxyVersion_ > 6) {
         int32_t i = 0;
         int32_t nameSize = static_cast<int32_t>(str.size());
@@ -175,7 +175,7 @@ void WxyExtract::read_old() {
         }
     }
 
-    std::vector<std::string> projectsList;
+    std::vector<std::u8string> projectsList;
 
     int32_t projectCount;
     read(file_, projectCount);
@@ -290,7 +290,7 @@ void WxyExtract::read_oink() {
     uint16_t contentCount;
     read(file_, contentCount);
 
-    std::vector<std::string> projectsList;
+    std::vector<std::u8string> projectsList;
     for(int32_t i = 0; i < contentCount; i++) {
         uint16_t pLength;
         read(file_, pLength);
@@ -302,7 +302,7 @@ void WxyExtract::read_oink() {
         int32_t fileCount;
         read(file_, fileCount);
 
-        std::vector<std::pair<uint64_t, std::string>> fileNames;
+        std::vector<std::pair<uint64_t, std::u8string>> fileNames;
 
         for(int32_t f = 0; f < fileCount; f++) {
             uint16_t nameLength;
@@ -353,9 +353,9 @@ void WxyExtract::build_paths() {
         auto beg = path.begin();
         auto end = path.end();
         for (auto i = beg; i != end; i++) {
-            std::string name = i->generic_string();
+            std::u8string name = i->generic_u8string();
             std::transform(name.begin(), name.end(), name.begin(), ::tolower);
-            if (name == "levels" || name == "data" || name == "assets") {
+            if (name == u8"levels" || name == u8"data" || name == u8"assets") {
                 file.pathFirst = name;
                 beg = i;
                 break;
@@ -492,11 +492,12 @@ void WxyExtract::extract_meta(fs::path const& dest, Progress& progress) const {
         auto extension = ScanExtension(uncompressedBuffer.data(), (size_t)(strm.total_out));
         if (!extension.empty()) {
             fs::path outpath = dest;
-            if (!foundFirst && extension == "png") {
+            if (!foundFirst && extension == u8"png") {
                 outpath /= "image.png";
                 foundFirst = true;
             } else {
-                outpath /= "image" + std::to_string(i) + "." + extension;
+                auto index = std::to_string(i);
+                outpath /= u8"image" + std::u8string{ index.begin(), index.end() } + u8"." + extension;
                 i++;
             }
             auto outfile = OutFile(outpath);

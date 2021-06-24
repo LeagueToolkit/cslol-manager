@@ -30,24 +30,25 @@
 #define __PRETTY_FUNCTION__ __FUNCTION__
 #endif
 
-#define lcs_trace_var(name) "\n\t" #name " = ", name
+#define lcs_trace_var(name) u8"\n\t" #name " = ", name
 #define lcs_trace_func(...) ::LCS::ErrorTrace lcs_paste(trace_,__LINE__) {      \
     [&, func = __PRETTY_FUNCTION__, line = __LINE__] () {                       \
-        ::LCS::push_error_msg(func, ':', line, ':' , __VA_ARGS__);              \
+        ::LCS::push_error_msg(func, u8':', line, u8':' , __VA_ARGS__);              \
     }                                                                           \
 }
 
 namespace LCS {
     [[noreturn]] extern void throw_error(char const* msg);
 
-    extern std::stringstream& error_stack() noexcept;
+    extern std::basic_stringstream<char8_t>& error_stack() noexcept;
 
-    extern std::string error_stack_trace(std::string message) noexcept;
+    extern std::u8string error_stack_trace() noexcept;
+    extern std::string error_stack_trace_cstr(std::string message) noexcept;
 
     template<typename...Args>
     inline void push_error_msg(Args&&...args) noexcept {
         auto& ss = error_stack();
-        ss << '\n';
+        ss << u8'\n';
         (ss << ... << std::forward<Args>(args)) ;
     }
 

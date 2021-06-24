@@ -28,7 +28,7 @@ ModUnZip::ModUnZip(fs::path path)
         if (stat.m_is_directory || !stat.m_is_supported) {
             continue;
         }
-        std::string spath = stat.m_filename;
+        std::u8string spath = reinterpret_cast<char8_t const*>(stat.m_filename);
         for (auto& c: spath) {
             if (c == '\\') {
                 c = '/';
@@ -49,7 +49,7 @@ ModUnZip::ModUnZip(fs::path path)
             piter++;
             if (piter != pend) {
                 auto relpath = pathmerge(piter, pend);
-                addFolder("RAW.wad.client").add(relpath, i, stat.m_uncomp_size);
+                addFolder(u8"RAW.wad.client").add(relpath, i, stat.m_uncomp_size);
             }
         } else if(*piter == "WAD") {
             piter++;
@@ -65,7 +65,7 @@ ModUnZip::ModUnZip(fs::path path)
                 wadfile_.push_back(CopyFile { name, i, stat.m_uncomp_size });
             } else {
                 auto relpath = pathmerge(piter, pend);
-                addFolder(name.generic_string()).add(relpath, i, stat.m_uncomp_size);
+                addFolder(name.generic_u8string()).add(relpath, i, stat.m_uncomp_size);
             }
         }
     }
@@ -111,7 +111,7 @@ void ModUnZip::extract(fs::path const& dstpath, ProgressMulti& progress) {
     progress.finishMulti();
 }
 
-WadMakeUnZip& ModUnZip::addFolder(std::string name) {
+WadMakeUnZip& ModUnZip::addFolder(std::u8string name) {
     lcs_trace_func(
                 lcs_trace_var(this->path_),
                 lcs_trace_var(name)
@@ -133,8 +133,11 @@ void ModUnZip::extractFile(fs::path const& outpath, CopyFile const& file, Progre
                 );
     progress.startItem(outpath, file.size);
     fs::create_directories(outpath.parent_path());
-    auto strpath = outpath.generic_string();
-    lcs_assert(mz_zip_reader_extract_to_file(&zip_archive, file.index, strpath.c_str(), 0));
+    OutFile outfile(outpath);
+    lcs_assert(mz_zip_reader_extract_to_cfile(&zip_archive,
+                                              file.index,
+                                              outfile.raw(),
+                                              0));
     progress.consumeData(file.size);
     progress.finishItem();
 }

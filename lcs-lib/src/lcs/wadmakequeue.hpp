@@ -27,7 +27,7 @@ namespace LCS {
         }
     private:
         WadIndex const& index_;
-        std::unordered_map<std::string, std::unique_ptr<WadMakeBase>> items_;
+        std::unordered_map<std::u8string, std::unique_ptr<WadMakeBase>> items_;
         mutable std::uint64_t size_ = 0;
         mutable bool sizeCalculated_ = false;
     };

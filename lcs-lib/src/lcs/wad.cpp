@@ -10,7 +10,7 @@
 
 using namespace LCS;
 
-Wad::Wad(fs::path const& path, std::string const& name)
+Wad::Wad(fs::path const& path, std::u8string const& name)
     : path_(fs::absolute(path)), size_(fs::file_size(path_)), name_(name) {
     lcs_trace_func(
                 lcs_trace_var(this->path_),
@@ -85,7 +85,7 @@ void Wad::extract(fs::path const& dstpath, HashTable const& hashtable, Progress&
             } else {
                 char hex[16];
                 auto result = std::to_chars(hex, hex + sizeof(hex), entry.xxhash, 16);
-                outpath /= std::string(hex, result.ptr);
+                outpath /= std::u8string(hex, result.ptr);
                 outpath.replace_extension(ScanExtension(uncompressedBuffer.data(), entry.sizeUncompressed));
             }
             lcs_trace_func(

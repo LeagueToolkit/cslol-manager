@@ -69,7 +69,7 @@ namespace LCS{
             return max->first;
         }
 
-        inline auto findOriginal(std::string const& filename, std::vector<Wad::Entry> const& entries) const& noexcept {
+        inline auto findOriginal(std::u8string const& filename, std::vector<Wad::Entry> const& entries) const& noexcept {
             if (auto i = wads_.find(filename); i != wads_.end()) {
                 return i->second.get();
             }
@@ -79,7 +79,7 @@ namespace LCS{
         }
 
         template<typename V>
-        inline auto findOriginal(std::string const& filename, std::map<uint64_t, V> const& entries) const& noexcept {
+        inline auto findOriginal(std::u8string const& filename, std::map<uint64_t, V> const& entries) const& noexcept {
             if (auto i = wads_.find(filename); i != wads_.end()) {
                 return i->second.get();
             }
@@ -89,7 +89,7 @@ namespace LCS{
         }
 
         template<typename V>
-        inline auto findOriginal(std::string const& filename, std::unordered_map<uint64_t, V> const& entries) const& noexcept {
+        inline auto findOriginal(std::u8string const& filename, std::unordered_map<uint64_t, V> const& entries) const& noexcept {
             if (auto i = wads_.find(filename); i != wads_.end()) {
                 return i->second.get();
             }
@@ -99,7 +99,7 @@ namespace LCS{
         }
     private:
         fs::path path_;
-        std::unordered_map<std::string, std::unique_ptr<Wad const>> wads_;
+        std::unordered_map<std::u8string, std::unique_ptr<Wad const>> wads_;
         std::unordered_multimap<uint64_t, Wad const*> lookup_;
         bool blacklist_;
         fs::file_time_type last_write_time_ = {};

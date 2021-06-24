@@ -26,6 +26,9 @@ namespace LCS {
     extern char const* VERSION;
     extern char const* COMMIT;
     extern char const* DATE;
+
+    extern std::u8string to_hex_string(std::uint32_t value);
+    extern std::u8string to_hex_string(std::uint64_t value);
 }
 
 #endif // LCS_COMMON_HPP

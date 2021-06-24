@@ -9,7 +9,7 @@
 
 using namespace LCS;
 
-Mod::Mod(fs::path path) : path_(fs::absolute(path)), filename_(path_.filename().generic_string()) {
+Mod::Mod(fs::path path) : path_(fs::absolute(path)), filename_(path_.filename().generic_u8string()) {
     lcs_trace_func(
                 lcs_trace_var(this->path_)
                 );
@@ -48,40 +48,56 @@ void Mod::write_zip(fs::path dstpath, ProgressMulti& progress) const {
     if (fs::exists(dstpath)) {
         fs::remove(dstpath);
     }
-    auto pathString = dstpath.generic_string();
     mz_zip_archive zip = {};
-    lcs_assert(mz_zip_writer_init_file(&zip, pathString.c_str(), 0));
+    OutFile outfile_(dstpath);
+    lcs_assert(mz_zip_writer_init_cfile(&zip, outfile_.raw(), 0));
     for (auto const& [name, wad]: wads_) {
-        std::string dstPath = "WAD\\" + name;
-        fs::path const& wadPath = wad->path();
-        std::string srcPath = wadPath.generic_string();
+        std::u8string dstPath = u8"WAD\\" + name;
+        fs::path const& srcPath = wad->path();
         lcs_trace_func(
                     lcs_trace_var(dstPath),
-                    lcs_trace_var(wadPath),
                     lcs_trace_var(srcPath)
                     );
-        progress.startItem(wadPath, wad->size());
-        lcs_assert(mz_zip_writer_add_file(&zip, dstPath.c_str(), srcPath.c_str(),
-                                          nullptr, 0, (mz_uint)MZ_DEFAULT_COMPRESSION));
+        progress.startItem(srcPath, wad->size());
+        InFile infile_(srcPath);
+        lcs_assert(mz_zip_writer_add_cfile(&zip,
+                                           reinterpret_cast<char const*>(dstPath.c_str()),
+                                           infile_.raw(), infile_.size(),
+                                           nullptr,
+                                           nullptr, 0,
+                                           (mz_uint)MZ_DEFAULT_COMPRESSION,
+                                           nullptr, 0,
+                                           nullptr, 0));
         progress.consumeData(wad->size());
         progress.finishItem();
     }
     if (fs::exists(image_)) {
-        std::string dstPath = "META\\image.png";
-        std::string srcPath = image_.generic_string();
-        mz_zip_writer_add_file(&zip, dstPath.c_str(), srcPath.c_str(),
-                               nullptr, 0, (mz_uint)MZ_DEFAULT_COMPRESSION);
+        std::u8string dstPath = u8"META\\image.png";
+        std::u8string srcPath = image_.generic_u8string();
+        InFile infile_(srcPath);
+        lcs_assert(mz_zip_writer_add_cfile(&zip,
+                                           reinterpret_cast<char const*>(dstPath.c_str()),
+                                           infile_.raw(), infile_.size(),
+                                           nullptr,
+                                           nullptr, 0,
+                                           (mz_uint)MZ_DEFAULT_COMPRESSION,
+                                           nullptr, 0,
+                                           nullptr, 0));
     }
-    std::string dstPath = "META\\info.json";
-    lcs_assert(mz_zip_writer_add_mem(&zip, dstPath.c_str(), info_.data(), info_.size(),
-                                     (mz_uint)MZ_DEFAULT_COMPRESSION));
+    {
+        std::u8string dstPath = u8"META\\info.json";
+        lcs_assert(mz_zip_writer_add_mem(&zip,
+                                         reinterpret_cast<char const*>(dstPath.c_str()),
+                                         info_.data(), info_.size(),
+                                         (mz_uint)MZ_DEFAULT_COMPRESSION));
+    }
     lcs_assert(mz_zip_writer_finalize_archive(&zip));
     lcs_assert(mz_zip_writer_end(&zip));
 
     progress.finishMulti();
 }
 
-void Mod::remove_wad(std::string const& name) {
+void Mod::remove_wad(std::u8string const& name) {
     lcs_trace_func(
                 lcs_trace_var(this->path_),
                 lcs_trace_var(name)
@@ -93,7 +109,7 @@ void Mod::remove_wad(std::string const& name) {
     fs::remove(path);
 }
 
-void Mod::change_info(std::string const& infoData) {
+void Mod::change_info(std::u8string const& infoData) {
     lcs_trace_func(
                 lcs_trace_var(this->path_)
                 );
@@ -123,8 +139,8 @@ std::vector<Wad const*> Mod::add_wads(WadMakeQueue& wads, ProgressMulti& progres
     lcs_trace_func(
                 lcs_trace_var(this->path_)
                 );
-    std::vector<std::string> removeExisting;
-    std::vector<std::string> skipNew;
+    std::vector<std::u8string> removeExisting;
+    std::vector<std::u8string> skipNew;
     std::vector<Wad const*> added;
     added.reserve(wads.items().size());
     // Handle conflicts
