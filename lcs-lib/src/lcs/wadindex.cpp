@@ -34,7 +34,7 @@ WadIndex::WadIndex(fs::path const& path, bool blacklist, bool ignorebad) :
                 }
                 last_write_time_ = std::max(last_write_time_, fs::last_write_time(filepath));
                 try {
-                    auto filename = filepath.filename().generic_u8string();
+                    auto filename = filepath.filename();
                     if (auto old = wads_.find(filename); old != wads_.end()) {
                         lcs_trace_func(
                             lcs_trace_var(filename),

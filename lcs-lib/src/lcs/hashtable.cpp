@@ -40,6 +40,6 @@ void HashTable::add_from_file(fs::path const& path) {
         if (result.ec != std::errc{} || result.ptr != end) {
             continue;
         }
-        hashes_.insert_or_assign(hash, path_converted.lexically_normal().generic_u8string());
+        hashes_.insert_or_assign(hash, path_converted.lexically_normal());
     }
 }

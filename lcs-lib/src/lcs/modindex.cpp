@@ -54,7 +54,7 @@ fs::path ModIndex::create_tmp_extract() {
     return path_ / "tmp_extract";
 }
 
-bool ModIndex::remove(std::u8string const& filename) noexcept {
+bool ModIndex::remove(fs::path const& filename) noexcept {
     lcs_trace_func(
                 lcs_trace_var(this->path_),
                 lcs_trace_var(filename)
@@ -78,7 +78,7 @@ bool ModIndex::refresh() noexcept {
     for (auto const& file : fs::directory_iterator(path_)) {
         auto dirpath = file.path();
         if (file.is_directory()) {
-            auto paths = dirpath.filename().generic_u8string();
+            auto paths = dirpath.filename();
             if (auto i = mods_.find(paths); i == mods_.end()) {
                 auto mod = new Mod { dirpath };
                 mods_.insert_or_assign(mod->filename(),  std::unique_ptr<Mod>{mod});
@@ -94,7 +94,7 @@ Mod* ModIndex::install_from_folder(fs::path srcpath, WadIndex const& index, Prog
         lcs_trace_var(this->path_),
         lcs_trace_var(srcpath)
         );
-    std::u8string filename = srcpath.filename().generic_u8string();
+    fs::path filename = srcpath.filename();
     lcs_assert_msg("Mod already exists!", !fs::exists(path_ / filename));
     lcs_assert_msg("Not a valid mod file!", fs::exists(srcpath) && fs::is_directory(srcpath));
     return install_from_folder_impl(srcpath, index, progress, filename);
@@ -106,7 +106,7 @@ Mod* ModIndex::install_from_fantome(fs::path srcpath, WadIndex const& index, Pro
         lcs_trace_var(this->path_),
         lcs_trace_var(srcpath)
         );
-    std::u8string filename = srcpath.filename().replace_extension().generic_u8string();
+    fs::path filename = srcpath.filename().replace_extension();
     lcs_assert_msg("Mod already exists!", !fs::exists(path_ / filename));
     fs::path tmp_extract = create_tmp_extract();
     ModUnZip zip(srcpath);
@@ -121,7 +121,7 @@ Mod* ModIndex::install_from_wxy(fs::path srcpath, WadIndex const& index, Progres
         lcs_trace_var(this->path_),
         lcs_trace_var(srcpath)
         );
-    std::u8string filename = srcpath.filename().replace_extension().generic_u8string();
+    fs::path filename = srcpath.filename().replace_extension();
     lcs_assert_msg("Mod already exists!", !fs::exists(path_ / filename));
     fs::path tmp_extract = create_tmp_extract();
     WxyExtract wxy(srcpath);
@@ -134,9 +134,9 @@ Mod* ModIndex::install_from_wxy(fs::path srcpath, WadIndex const& index, Progres
 
 
 Mod* ModIndex::install_from_folder_impl(fs::path srcpath, WadIndex const& index, ProgressMulti& progress,
-                                        std::u8string const& filename) {
-    auto info = std::u8string{};
-    auto image = (srcpath / "META" / "image.png").generic_u8string();
+                                        fs::path const& filename) {
+    std::u8string info = {};
+    fs::path image = srcpath / "META" / "image.png";
     {
         InFile info_file(srcpath / "META" / "info.json");
         info.resize(info_file.size());
@@ -144,7 +144,7 @@ Mod* ModIndex::install_from_folder_impl(fs::path srcpath, WadIndex const& index,
         auto json = nlohmann::json::parse(info);
         if (json.is_object() && json.contains("image") && json["image"].is_string()) {
             auto img_name = json["image"].get<std::u8string>();
-            image = (srcpath / "META" / img_name).generic_u8string();
+            image = srcpath / "META" / img_name;
         }
     }
     auto queue = WadMakeQueue(index);
@@ -166,7 +166,7 @@ Mod* ModIndex::install_from_wad(fs::path srcpath, WadIndex const& index, Progres
         lcs_trace_var(srcpath)
         );
     lcs_assert_msg("Wad mod does not exist!", fs::exists(srcpath));
-    std::u8string filename = srcpath.filename().replace_extension().generic_u8string();
+    fs::path filename = srcpath.filename().replace_extension();
     lcs_assert_msg("Mod already exists!", !fs::exists(path_ / filename));
     auto queue = WadMakeQueue(index);
     if (fs::is_directory(srcpath)) {
@@ -184,9 +184,9 @@ Mod* ModIndex::install_from_wad(fs::path srcpath, WadIndex const& index, Progres
     return make(filename, { jstr.begin(), jstr.end() }, u8"", queue, progress);
 }
 
-Mod* ModIndex::make(std::u8string const& fileName,
+Mod* ModIndex::make(fs::path const& fileName,
                     std::u8string const& info,
-                    std::u8string const& image,
+                    fs::path const& image,
                     WadMakeQueue const& queue,
                     ProgressMulti& progress)
 {
@@ -216,7 +216,7 @@ Mod* ModIndex::make(std::u8string const& fileName,
     return mod;
 }
 
-void ModIndex::export_zip(std::u8string const& filename, fs::path dstpath, ProgressMulti& progress) {
+void ModIndex::export_zip(fs::path const& filename, fs::path dstpath, ProgressMulti& progress) {
     lcs_trace_func(
                 lcs_trace_var(this->path_),
                 lcs_trace_var(filename),
@@ -227,7 +227,7 @@ void ModIndex::export_zip(std::u8string const& filename, fs::path dstpath, Progr
     i->second->write_zip(dstpath, progress);
 }
 
-void ModIndex::remove_mod_wad(std::u8string const& modFileName, std::u8string const& wadName) {
+void ModIndex::remove_mod_wad(fs::path const& modFileName, fs::path const& wadName) {
     lcs_trace_func(
                 lcs_trace_var(this->path_),
                 lcs_trace_var(modFileName),
@@ -238,7 +238,7 @@ void ModIndex::remove_mod_wad(std::u8string const& modFileName, std::u8string co
     i->second->remove_wad(wadName);
 }
 
-void ModIndex::change_mod_info(std::u8string const& modFileName, std::u8string const& infoData) {
+void ModIndex::change_mod_info(fs::path const& modFileName, std::u8string const& infoData) {
     lcs_trace_func(
                 lcs_trace_var(this->path_),
                 lcs_trace_var(modFileName)
@@ -248,7 +248,7 @@ void ModIndex::change_mod_info(std::u8string const& modFileName, std::u8string c
     i->second->change_info(infoData);
 }
 
-void ModIndex::change_mod_image(std::u8string const& modFileName, fs::path const& dstpath) {
+void ModIndex::change_mod_image(fs::path const& modFileName, fs::path const& dstpath) {
     lcs_trace_func(
                 lcs_trace_var(this->path_),
                 lcs_trace_var(modFileName),
@@ -259,7 +259,7 @@ void ModIndex::change_mod_image(std::u8string const& modFileName, fs::path const
     i->second->change_image(dstpath);
 }
 
-void ModIndex::remove_mod_image(std::u8string const& modFileName) {
+void ModIndex::remove_mod_image(fs::path const& modFileName) {
     lcs_trace_func(
                 lcs_trace_var(this->path_),
                 lcs_trace_var(modFileName)
@@ -269,7 +269,7 @@ void ModIndex::remove_mod_image(std::u8string const& modFileName) {
     i->second->remove_image();
 }
 
-std::vector<Wad const*> ModIndex::add_mod_wads(std::u8string const& modFileName, WadMakeQueue& wads,
+std::vector<Wad const*> ModIndex::add_mod_wads(fs::path const& modFileName, WadMakeQueue& wads,
                                                ProgressMulti& progress, Conflict conflict)
 {
     lcs_trace_func(

@@ -36,8 +36,8 @@ namespace LCS {
         static_assert (sizeof(Header) == 4 + 256 + 8 + 4);
 
         // Throws std::runtime_error
-        Wad(fs::path const& path, std::u8string const& name);
-        inline Wad(fs::path path) : Wad(path, path.filename().generic_u8string()) {}
+        Wad(fs::path const& path, fs::path const& name);
+        inline Wad(fs::path path) : Wad(path, path.filename()) {}
         Wad(Wad const&) = delete;
         Wad(Wad&&) = default;
         Wad& operator=(Wad const&) = delete;
@@ -84,7 +84,7 @@ namespace LCS {
     private:
         fs::path path_;
         std::uint64_t size_;
-        std::u8string name_;
+        fs::path name_;
         Header header_;
         std::vector<Entry> entries_;
         std::int64_t dataBegin_ = 0;

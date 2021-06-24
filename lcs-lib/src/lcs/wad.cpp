@@ -10,7 +10,7 @@
 
 using namespace LCS;
 
-Wad::Wad(fs::path const& path, std::u8string const& name)
+Wad::Wad(fs::path const& path, fs::path const& name)
     : path_(fs::absolute(path)), size_(fs::file_size(path_)), name_(name) {
     lcs_trace_func(
                 lcs_trace_var(this->path_),
