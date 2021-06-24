@@ -20,7 +20,7 @@ static QString get_stack_trace(std::runtime_error const& err) noexcept {
 
 LCSToolsImpl::LCSToolsImpl(QObject *parent)
     : QObject(parent), progDirPath_(QCoreApplication::applicationDirPath().toStdU16String()),
-      patcherConfig_((progDirPath_ / "lolcustomskin.txt").generic_string()) {}
+      patcherConfig_(progDirPath_ / "lolcustomskin.txt") {}
 
 LCSToolsImpl::~LCSToolsImpl() {
     if (lockfile_) {
@@ -243,26 +243,6 @@ void LCSToolsImpl::changeIgnorebad(bool ignorebad) {
 void LCSToolsImpl::init() {
     if (state_ == LCSState::StateUnitialized) {
         setState(LCSState::StateBussy);
-        auto progDir = progDirPath_.generic_u16string();
-        setStatus("Verify path");
-        if (progDir.size() > 100) {
-            emit reportError("Program path too long", QString::fromStdU16String(progDir));
-            setState(LCSState::StateCriticalError);
-            return;
-        }
-        bool invalid = [&progDir]() {
-            for (char c: progDir) {
-                if (c < 0) {
-                    return true;
-                }
-            }
-            return false;
-        }();
-        if (invalid) {
-            emit reportError("Program path contains non-english characters", QString::fromStdU16String(progDir));
-            setState(LCSState::StateCriticalError);
-            return;
-        }
         setStatus("Acquire lock");
         auto lockpath = QString::fromStdU16String((progDirPath_/ "lockfile").generic_u16string());
         lockfile_ = new QLockFile(lockpath);
@@ -275,7 +255,7 @@ void LCSToolsImpl::init() {
         setStatus("Load mods");
         try {
 #ifdef WIN32
-            patcher_.load(patcherConfig_.c_str());
+            patcher_.load(patcherConfig_);
 #endif
             modIndex_ = std::make_unique<LCS::ModIndex>(progDirPath_ / "installed");
             QJsonObject mods;
@@ -468,7 +448,7 @@ void LCSToolsImpl::runProfile(QString name) {
                         process->WaitInitialized();
                         setStatus("Scan offsets");
                         patcher_.scan(*process);
-                        patcher_.save(patcherConfig_.c_str());
+                        patcher_.save(patcherConfig_);
                     } else {
                         setStatus("Wait patchable");
                         patcher_.wait_patchable(*process);

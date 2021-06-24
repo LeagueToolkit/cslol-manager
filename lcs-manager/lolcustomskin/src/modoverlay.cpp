@@ -72,16 +72,28 @@ namespace {
     }
 }
 
-void ModOverlay::save(char const *filename) const noexcept {
-    if (FILE *file = fopen(filename, "wb"); file) {
+void ModOverlay::save(std::filesystem::path const& filename) const noexcept {
+    FILE* file = {};
+#ifdef WIN32
+    _wfopen_s(&file, filename.c_str(),  L"wb");
+#else
+    file = fopen(filename.c_str(), "wb");
+#endif
+    if (file) {
         auto str = to_string();
         fwrite(str.data(), 1, str.size(), file);
         fclose(file);
     }
 }
 
-void ModOverlay::load(char const *filename) noexcept {
-    if (FILE *file = fopen(filename, "rb"); file) {
+void ModOverlay::load(std::filesystem::path const& filename) noexcept {
+    FILE* file = {};
+#ifdef WIN32
+    _wfopen_s(&file, filename.c_str(),  L"rb");
+#else
+    file = fopen(filename.c_str(), "rb");
+#endif
+    if (file) {
         auto buffer = std::string();
         fseek(file, 0, SEEK_END);
         auto end = ftell(file);
@@ -194,7 +206,7 @@ namespace {
             0x5b, 0xc9, 0xff, 0xe0
         };
         ImportTrampoline org_open_data = {};
-        char prefix_open_data[0x100] = { "MOD\\" };
+        char prefix_open_data[0x400] = { "MOD\\" };
     };
 }
 
