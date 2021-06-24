@@ -2,6 +2,7 @@
 #define LCS_MODUNZIP_HPP
 #include "common.hpp"
 #include "wadmake.hpp"
+#include "iofile.hpp"
 #include <miniz.h>
 #include <vector>
 #include <unordered_map>
@@ -37,6 +38,7 @@ namespace LCS {
         std::vector<CopyFile> wadfile_;
         std::unordered_map<std::string, std::unique_ptr<WadMakeUnZip>> wadfolder_;
         mz_zip_archive zip_archive = {};
+        std::unique_ptr<InFile> infile_ = {};
         std::uint64_t size_ = 0;
         std::size_t items_ = 0;
     };
