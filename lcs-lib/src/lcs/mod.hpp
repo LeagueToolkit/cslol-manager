@@ -35,7 +35,7 @@ namespace LCS {
 
         void write_zip(fs::path dstpath, ProgressMulti& progress) const;
 
-        void remove_wad(std::u8string const& name);
+        void remove_wad(fs::path const& name);
 
         void change_info(std::u8string const& infoData);
 
@@ -46,10 +46,10 @@ namespace LCS {
         std::vector<Wad const*> add_wads(WadMakeQueue& wads, ProgressMulti& progress, Conflict conflict);
     private:
         fs::path path_;
-        std::u8string filename_;
+        fs::path filename_;
         std::u8string info_;
         fs::path image_;
-        std::map<std::u8string, std::unique_ptr<Wad>> wads_;
+        std::map<fs::path, std::unique_ptr<Wad>> wads_;
     };
 }
 #endif // LCS_MOD_HPP

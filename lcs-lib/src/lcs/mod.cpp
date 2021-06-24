@@ -9,7 +9,7 @@
 
 using namespace LCS;
 
-Mod::Mod(fs::path path) : path_(fs::absolute(path)), filename_(path_.filename().generic_u8string()) {
+Mod::Mod(fs::path path) : path_(fs::absolute(path)), filename_(path_.filename()) {
     lcs_trace_func(
                 lcs_trace_var(this->path_)
                 );
@@ -52,7 +52,7 @@ void Mod::write_zip(fs::path dstpath, ProgressMulti& progress) const {
     OutFile outfile_(dstpath);
     lcs_assert(mz_zip_writer_init_cfile(&zip, outfile_.raw(), 0));
     for (auto const& [name, wad]: wads_) {
-        std::u8string dstPath = u8"WAD\\" + name;
+        std::u8string dstPath = u8"WAD\\" + name.generic_u8string();
         fs::path const& srcPath = wad->path();
         lcs_trace_func(
                     lcs_trace_var(dstPath),
@@ -97,7 +97,7 @@ void Mod::write_zip(fs::path dstpath, ProgressMulti& progress) const {
     progress.finishMulti();
 }
 
-void Mod::remove_wad(std::u8string const& name) {
+void Mod::remove_wad(fs::path const& name) {
     lcs_trace_func(
                 lcs_trace_var(this->path_),
                 lcs_trace_var(name)
@@ -139,8 +139,8 @@ std::vector<Wad const*> Mod::add_wads(WadMakeQueue& wads, ProgressMulti& progres
     lcs_trace_func(
                 lcs_trace_var(this->path_)
                 );
-    std::vector<std::u8string> removeExisting;
-    std::vector<std::u8string> skipNew;
+    std::vector<fs::path> removeExisting;
+    std::vector<fs::path> skipNew;
     std::vector<Wad const*> added;
     added.reserve(wads.items().size());
     // Handle conflicts

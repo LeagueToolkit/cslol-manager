@@ -65,7 +65,7 @@ ModUnZip::ModUnZip(fs::path path)
                 wadfile_.push_back(CopyFile { name, i, stat.m_uncomp_size });
             } else {
                 auto relpath = pathmerge(piter, pend);
-                addFolder(name.generic_u8string()).add(relpath, i, stat.m_uncomp_size);
+                addFolder(name).add(relpath, i, stat.m_uncomp_size);
             }
         }
     }
@@ -111,7 +111,7 @@ void ModUnZip::extract(fs::path const& dstpath, ProgressMulti& progress) {
     progress.finishMulti();
 }
 
-WadMakeUnZip& ModUnZip::addFolder(std::u8string name) {
+WadMakeUnZip& ModUnZip::addFolder(fs::path const& name) {
     lcs_trace_func(
                 lcs_trace_var(this->path_),
                 lcs_trace_var(name)

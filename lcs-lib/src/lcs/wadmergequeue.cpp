@@ -65,13 +65,13 @@ void WadMergeQueue::cleanup() {
     lcs_trace_func(
                 lcs_trace_var(this->path_)
                 );
-    std::set<std::u8string> good = {};
+    std::set<fs::path> good = {};
     for(auto const& [wad, merge]: items_) {
-        good.insert(merge.get()->path().generic_u8string());
+        good.insert(merge.get()->path());
     }
     for(auto const& file: fs::recursive_directory_iterator(path_)) {
         if (file.is_regular_file()) {
-            auto str = file.path().generic_u8string();
+            auto str = file.path();
             if (auto i = good.find(str); i == good.end()) {
                 fs::remove(file);
             }

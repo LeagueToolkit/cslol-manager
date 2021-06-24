@@ -13,7 +13,7 @@ namespace LCS {
     class ConflictError : public std::runtime_error {
     public:
         ConflictError(uint64_t xxhash, fs::path const& orgpath, fs::path const& newpath);
-        ConflictError(std::u8string const& name, fs::path const& orgpath, fs::path const& newpath);
+        ConflictError(fs::path const& name, fs::path const& orgpath, fs::path const& newpath);
         std::u8string message;
     };
 }
