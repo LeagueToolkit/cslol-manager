@@ -15,13 +15,12 @@ constexpr auto pathmerge = [](auto beg, auto end) -> fs::path {
 };
 
 ModUnZip::ModUnZip(fs::path path)
-    : path_(fs::absolute(path)), zip_archive{}
+    : path_(fs::absolute(path)), zip_archive{}, infile_(std::make_unique<InFile>(path))
 {
     lcs_trace_func(
                 lcs_trace_var(this->path_)
                 );
-    auto paths = path_.generic_string();
-    lcs_assert(mz_zip_reader_init_file(&zip_archive, paths.c_str(), 0));
+    lcs_assert(mz_zip_reader_init_cfile(&zip_archive, infile_->raw(), 0, 0));
     mz_uint numFiles = mz_zip_reader_get_num_files(&zip_archive);
     mz_zip_archive_file_stat stat = {};
     for (mz_uint i = 0; i != numFiles; i++) {
