@@ -3,7 +3,6 @@
 copy2folder() {
     mkdir -p "$2"
     cp -r "Dist/." "$2"
-    cp "screenshots/fix_path.png" "$2"
     cp "lcs-manager/LICENSE" "$2"
 
     cp "$1/lcs-manager/lcs-manager.exe" "$2"

@@ -1,0 +1,9 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Nls\CodePage]
+"ACP"="65001"
+"MACCP"="65001"
+"OEMCP"="65001"
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\FileSystem]
+"LongPathsEnabled"=dword:00000001
