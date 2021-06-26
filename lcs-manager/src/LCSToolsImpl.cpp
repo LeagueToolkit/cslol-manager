@@ -174,7 +174,7 @@ namespace {
 void LCSToolsImpl::changeLeaguePath(QString newLeaguePath) {
     if (state_ == LCSState::StateIdle || state_ == LCSState::StateUnitialized) {
         if (state_ != LCSState::StateUnitialized) {
-            setState(LCSState::StateBussy);
+            setState(LCSState::StateBusy);
             setStatus("Change League Path");
         }
         if (newLeaguePath.isEmpty() || newLeaguePath.isNull()) {
@@ -212,7 +212,7 @@ void LCSToolsImpl::changeBlacklist(bool blacklist) {
     if (state_ == LCSState::StateIdle || state_ == LCSState::StateUnitialized) {
         if (blacklist_ != blacklist) {
             if (state_ != LCSState::StateUnitialized) {
-                setState(LCSState::StateBussy);
+                setState(LCSState::StateBusy);
                 setStatus("Toggle blacklist");
             }
             blacklist_ = blacklist;
@@ -229,7 +229,7 @@ void LCSToolsImpl::changeIgnorebad(bool ignorebad) {
     if (state_ == LCSState::StateIdle || state_ == LCSState::StateUnitialized) {
         if (ignorebad_ != ignorebad) {
             if (state_ != LCSState::StateUnitialized) {
-                setState(LCSState::StateBussy);
+                setState(LCSState::StateBusy);
                 setStatus("Toggle ignorebad");
             }
             ignorebad_ = ignorebad;
@@ -245,13 +245,13 @@ void LCSToolsImpl::changeIgnorebad(bool ignorebad) {
 
 void LCSToolsImpl::init() {
     if (state_ == LCSState::StateUnitialized) {
-        setState(LCSState::StateBussy);
+        setState(LCSState::StateBusy);
         setStatus("Acquire lock");
         auto lockpath = QString::fromStdU16String((progDirPath_/ "lockfile").generic_u16string());
         lockfile_ = new QLockFile(lockpath);
         if (!lockfile_->tryLock()) {
             auto lockerror = QString::number((int)lockfile_->error());
-            emit reportError("Acquire lock", QString("Lock error: ") + lockerror);
+            emit reportError("Check already running", QString("Lock error: ") + lockerror);
             setState(LCSState::StateCriticalError);
             return;
         }
@@ -284,7 +284,7 @@ void LCSToolsImpl::init() {
 
 void LCSToolsImpl::deleteMod(QString name) {
     if (state_ == LCSState::StateIdle) {
-        setState(LCSState::StateBussy);
+        setState(LCSState::StateBusy);
         setStatus("Delete mod");
         try {
             modIndex_->remove(name.toStdU16String());
@@ -298,7 +298,7 @@ void LCSToolsImpl::deleteMod(QString name) {
 
 void LCSToolsImpl::exportMod(QString name, QString dest) {
     if (state_ == LCSState::StateIdle) {
-        setState(LCSState::StateBussy);
+        setState(LCSState::StateBusy);
         setStatus("Export mod");
         try {
             modIndex_->export_zip(name.toStdU16String(), dest.toStdU16String(), *dynamic_cast<LCS::ProgressMulti*>(this));
@@ -311,8 +311,8 @@ void LCSToolsImpl::exportMod(QString name, QString dest) {
 
 void LCSToolsImpl::installFantomeZip(QString path) {
     if (state_ == LCSState::StateIdle) {
-        setState(LCSState::StateBussy);
-        setStatus("Install Fantome Mod");
+        setState(LCSState::StateBusy);
+        setStatus("Installing Mod");
         path = path.replace('\\', '/');
         try {
             auto const& index = wadIndex();
@@ -334,7 +334,7 @@ void LCSToolsImpl::installFantomeZip(QString path) {
             emit installedMod(QString::fromStdU16String(mod->filename().generic_u16string()),
                               parseInfoData(mod->filename(), mod->info()));
         } catch(std::runtime_error const& error) {
-            emit reportError("Install Fantome Mod", get_stack_trace(error));
+            emit reportError("Error while installing Mod", get_stack_trace(error));
         }
         setState(LCSState::StateIdle);
     }
@@ -342,7 +342,7 @@ void LCSToolsImpl::installFantomeZip(QString path) {
 
 void LCSToolsImpl::makeMod(QString fileName, QString image, QJsonObject infoData, QJsonArray items) {
     if (state_ == LCSState::StateIdle) {
-        setState(LCSState::StateBussy);
+        setState(LCSState::StateBusy);
         setStatus("Make mod");
         try {
             auto const& index = wadIndex();
@@ -366,7 +366,7 @@ void LCSToolsImpl::makeMod(QString fileName, QString image, QJsonObject infoData
 
 void LCSToolsImpl::saveProfile(QString name, QJsonObject mods, bool run) {
     if (state_ == LCSState::StateIdle) {
-        setState(LCSState::StateBussy);
+        setState(LCSState::StateBusy);
         setStatus("Save profile");
         if (name.isEmpty() || name.isNull()) {
             name = "Default Profile";
@@ -397,7 +397,7 @@ void LCSToolsImpl::saveProfile(QString name, QJsonObject mods, bool run) {
 
 void LCSToolsImpl::loadProfile(QString name) {
     if (state_ == LCSState::StateIdle) {
-        setState(LCSState::StateBussy);
+        setState(LCSState::StateBusy);
         setStatus("Save profile");
         if (name.isEmpty() || name.isNull()) {
             name = "Default Profile";
@@ -414,7 +414,7 @@ void LCSToolsImpl::loadProfile(QString name) {
 
 void LCSToolsImpl::deleteProfile(QString name) {
     if (state_ == LCSState::StateIdle) {
-        setState(LCSState::StateBussy);
+        setState(LCSState::StateBusy);
         setStatus("Delete profile");
         try {
             LCS::fs::remove(progDirPath_ / "profiles" / (name + ".profile").toStdU16String());
@@ -429,7 +429,7 @@ void LCSToolsImpl::deleteProfile(QString name) {
 
 void LCSToolsImpl::runProfile(QString name) {
     if (state_ == LCSState::StateIdle) {
-        setState(LCSState::StateBussy);
+        setState(LCSState::StateBusy);
         setStatus("Run profile");
         // FIXME: force league to use utf8 ??
         auto profilePath = (progDirPath_ / "profiles" / name.toStdU16String()).generic_string() + "/";
@@ -484,7 +484,7 @@ void LCSToolsImpl::stopProfile() {
 
 void LCSToolsImpl::startEditMod(QString fileName) {
     if (state_ == LCSState::StateIdle) {
-        setState(LCSState::StateBussy);
+        setState(LCSState::StateBusy);
         setStatus("Edit mod");
         try {
             LCS::fs::path nameStd = fileName.toStdU16String();
@@ -510,7 +510,7 @@ void LCSToolsImpl::startEditMod(QString fileName) {
 
 void LCSToolsImpl::changeModInfo(QString fileName, QJsonObject infoData) {
     if (state_ == LCSState::StateIdle) {
-        setState(LCSState::StateBussy);
+        setState(LCSState::StateBusy);
         setStatus("Change mod info");
         try {
             infoData = validateAndCorrect(fileName, infoData);
@@ -525,7 +525,7 @@ void LCSToolsImpl::changeModInfo(QString fileName, QJsonObject infoData) {
 
 void LCSToolsImpl::changeModImage(QString fileName, QString image) {
     if (state_ == LCSState::StateIdle) {
-        setState(LCSState::StateBussy);
+        setState(LCSState::StateBusy);
         setStatus("Change mod image");
         try {
             modIndex_->change_mod_image(fileName.toStdU16String(), image.toStdU16String());
@@ -539,7 +539,7 @@ void LCSToolsImpl::changeModImage(QString fileName, QString image) {
 
 void LCSToolsImpl::removeModImage(QString fileName) {
     if (state_ == LCSState::StateIdle) {
-        setState(LCSState::StateBussy);
+        setState(LCSState::StateBusy);
         setStatus("Remove mod image");
         try {
             modIndex_->remove_mod_image(fileName.toStdU16String());
@@ -553,7 +553,7 @@ void LCSToolsImpl::removeModImage(QString fileName) {
 
 void LCSToolsImpl::removeModWads(QString fileName, QJsonArray wads) {
     if (state_ == LCSState::StateIdle) {
-        setState(LCSState::StateBussy);
+        setState(LCSState::StateBusy);
         setStatus("Remove mod wads");
         try {
             for(auto wadName: wads) {
@@ -569,7 +569,7 @@ void LCSToolsImpl::removeModWads(QString fileName, QJsonArray wads) {
 
 void LCSToolsImpl::addModWads(QString fileName, QJsonArray wads) {
     if (state_ == LCSState::StateIdle) {
-        setState(LCSState::StateBussy);
+        setState(LCSState::StateBusy);
         setStatus("Add mod wads");
         try {
             auto const& index = wadIndex();
