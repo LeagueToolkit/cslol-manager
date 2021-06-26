@@ -77,42 +77,45 @@ QJsonArray LCSToolsImpl::listProfiles() {
 QJsonObject LCSToolsImpl::readProfile(QString profileName) {
     QJsonObject profile;
     LCS::fs::path profile_name = progDirPath_ / "profiles" / (profileName + ".profile").toStdU16String();
-    std::ifstream infile(profile_name);
+    std::ifstream infile(profile_name, std::ios::binary);
     std::string line;
     while(std::getline(infile, line)) {
         if (line.empty()) {
             continue;
         }
-        profile.insert(QString::fromStdString(line), true);
+        profile.insert(QString::fromUtf8(line.data(), (int)line.size()), true);
     }
     return profile;
 }
 
 void LCSToolsImpl::writeProfile(QString profileName, QJsonObject profile) {
     LCS::fs::path profile_name = progDirPath_ / "profiles" / (profileName + ".profile").toStdU16String();
-    std::ofstream outfile(profile_name);
+    std::ofstream outfile(profile_name, std::ios::binary);
     for(auto mod: profile.keys()) {
-        auto modname = mod.toStdString();
-        if (modname.empty()) {
+        auto modname = mod.toUtf8();
+        if (modname.size() == 0) {
             continue;
         }
-        outfile << modname << '\n';
+        outfile.write(modname.data(), modname.size());
+        outfile << '\n';
     }
 }
 
 QString LCSToolsImpl::readCurrentProfile() {
     QJsonObject profile;
-    std::ifstream infile(progDirPath_ / "current.profile");
+    std::ifstream infile(progDirPath_ / "current.profile", std::ios::binary);
     std::string line;
     if (!std::getline(infile, line) || line.empty()) {
         line = "Default Profile";
     }
-    return QString::fromStdString(line);
+    return QString::fromUtf8(line.data(), (int)line.size());
 }
 
 void LCSToolsImpl::writeCurrentProfile(QString profile) {
-    std::ofstream outfile(progDirPath_ / "current.profile");
-    outfile << profile.toStdString() << '\n';
+    std::ofstream outfile(progDirPath_ / "current.profile", std::ios::binary);
+    auto profiledata = profile.toUtf8();
+    outfile.write(profiledata.data(), profiledata.size());
+    outfile << '\n';
 }
 
 LCS::WadIndex const& LCSToolsImpl::wadIndex() {
