@@ -10,10 +10,10 @@
 int main(int argc, char** argv) {
     std::string prefix = argc > 1 ? argv[1] : "MOD/";
     std::filesystem::path exefile = argv[0];
-    std::string configfile = (exefile.parent_path() / "lolcustomskin.txt").generic_u8string();
+    std::filesystem::path configfile = exefile.parent_path() / "lolcustomskin.txt";
     LCS::ModOverlay overlay = {};
 
-    overlay.load(configfile.c_str());
+    overlay.load(configfile);
     printf("Source at https://github.com/moonshadow565/lolcustomskin\n"
            "Put your moded files into: %s\n"
            "Config format: %s\n"
@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
                 process->WaitInitialized();
                 puts("Rescanning");
                 overlay.scan(*process);
-                overlay.save(configfile.c_str());
+                overlay.save(configfile);
                 printf("Config: %s\n", overlay.to_string().c_str());
             } else {
                 puts("Wait patchable");
