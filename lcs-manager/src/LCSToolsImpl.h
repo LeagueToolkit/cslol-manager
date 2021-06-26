@@ -30,7 +30,7 @@ public:
         StateCriticalError = -1,
         StateUnitialized = 0,
         StateIdle = 1,
-        StateBussy = 2,
+        StateBusy = 2,
         StateRunning = 3,
         StatePatching = 4,
         StateStoping = 5,
