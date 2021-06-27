@@ -6,19 +6,22 @@
 #include <string_view>
 #include <thread>
 
+namespace fs = std::filesystem;
 
+#ifdef WIN32
+int wmain(int argc, wchar_t **argv, wchar_t **envp) {
+#else
 int main(int argc, char** argv) {
-    std::string prefix = argc > 1 ? argv[1] : "MOD/";
-    std::filesystem::path exefile = argv[0];
-    std::filesystem::path configfile = exefile.parent_path() / "lolcustomskin.txt";
+#endif
+    fs::path prefix = argc > 1 ? fs::path(argv[1]) : fs::path("MOD/");
+    fs::path configfile = fs::path(argv[0]).parent_path() / "lolcustomskin.txt";
     LCS::ModOverlay overlay = {};
 
     overlay.load(configfile);
     printf("Source at https://github.com/moonshadow565/lolcustomskin\n"
-           "Put your moded files into: %s\n"
            "Config format: %s\n"
            "Config: %s\n",
-           prefix.c_str(), LCS::ModOverlay::INFO, overlay.to_string().c_str());
+           LCS::ModOverlay::INFO, overlay.to_string().c_str());
     try {
         for (;;) {
             puts("===============================================================================");
