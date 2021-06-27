@@ -25,10 +25,11 @@ if (WIN32)
         src/main.cpp
         src/qml/qml.qrc
         src/qml/rc.rc
+        src/lcs-manager.exe.manifest
     )
     target_link_libraries(lcs-manager PRIVATE lcs-lib psapi)
 else()
-    add_executable(lcs-manager 
+    add_executable(lcs-manager
         src/LCSTools.h
         src/LCSTools.cpp
         src/LCSToolsImpl.h
