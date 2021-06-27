@@ -44,6 +44,17 @@ write_path: lodsb
             test al, al
             jne write_path
 
+lea edi, DWORD local_buffer[ebp]
+mov esi, edi
+fix_path: lodsb
+          cmp al, 47
+          jne fix_path_next
+          mov al, 92
+fix_path_next:
+          stosb
+          test al, al
+          jne fix_path
+
 ; call original with modified buffer
 lea eax, DWORD local_buffer[ebp]
 push DWORD arg_hTemplateFile[ebp]
