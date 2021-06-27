@@ -431,11 +431,7 @@ void LCSToolsImpl::runProfile(QString name) {
     if (state_ == LCSState::StateIdle) {
         setState(LCSState::StateBusy);
         setStatus("Run profile");
-        // FIXME: force league to use utf8 ??
-        auto profilePath = (progDirPath_ / "profiles" / name.toStdU16String()).generic_string() + "/";
-#ifdef WIN32
-        profilePath = "\\\\?\\" + profilePath;
-#endif
+        LCS::fs::path profilePath = progDirPath_ / "profiles" / name.toStdU16String();
         std::thread thread([this, profilePath = std::move(profilePath)] {
             try {
                 setStatus("Waiting for league match to start...");

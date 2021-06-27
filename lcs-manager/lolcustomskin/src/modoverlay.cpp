@@ -54,6 +54,14 @@ namespace {
             0x75, 0x12
             >();
 
+    constexpr auto FindWOpen = Pattern<
+            0x6A, 0x00,
+            0x6A, Any,
+            0x68, Any, Any, 0x12, 0x00,
+            Any,
+            0xFF, 0x15, Cap<Any>, Any, Any, Any
+            >();
+
     constexpr auto FindFree = Pattern<
             0xA1, Cap<Any>, Any, Any, Any,
             0x85, 0xC0,
@@ -104,20 +112,21 @@ void ModOverlay::load(std::filesystem::path const& filename) noexcept {
     }
 }
 
-char const ModOverlay::SCHEMA[] = "lcs-overlay v4 0x%08X 0x%08X 0x%08X 0x%08X 0x%08X 0x%08X";
-char const ModOverlay::INFO[] = "lcs-overlay v4 checksum off_open off_open_ref off_ret off_free_ptr off_free_fn";
+char const ModOverlay::SCHEMA[] = "lcs-overlay v5 0x%08X 0x%08X 0x%08X 0x%08X 0x%08X 0x%08X 0x%08X";
+char const ModOverlay::INFO[] = "lcs-overlay v5 checksum off_open off_open_ref off_wopen off_ret off_free_ptr off_free_fn";
 
 std::string ModOverlay::to_string() const noexcept {
-    char buffer[sizeof(SCHEMA) * 2] = {};
-    int size = sprintf(buffer, SCHEMA, checksum, off_open, off_open_ref, off_ret, off_free_ptr, off_free_fn);
+    char buffer[sizeof(SCHEMA) * 4] = {};
+    int size = sprintf(buffer, SCHEMA, checksum, off_open, off_open_ref, off_wopen, off_ret, off_free_ptr, off_free_fn);
     return std::string(buffer, (size_t)size);
 }
 
 void ModOverlay::from_string(std::string const &buffer) noexcept {
-    if (sscanf(buffer.c_str(), SCHEMA, &checksum, &off_open, &off_open_ref, &off_ret, &off_free_ptr, &off_free_fn) != 6) {
+    if (sscanf(buffer.c_str(), SCHEMA, &checksum, &off_open, &off_open_ref, &off_wopen, &off_ret, &off_free_ptr, &off_free_fn) != 7) {
         checksum = 0;
         off_open = 0;
         off_open_ref = 0;
+        off_wopen = 0;
         off_ret = 0;
         off_free_ptr = 0;
         off_free_fn = 0;
@@ -125,7 +134,7 @@ void ModOverlay::from_string(std::string const &buffer) noexcept {
 }
 
 bool ModOverlay::check(LCS::Process const &process) const {
-    return checksum && off_open && off_open_ref && off_ret && off_free_ptr && off_free_fn && process.Checksum() == checksum;
+    return checksum && off_open && off_open_ref && off_wopen && off_ret && off_free_ptr && off_free_fn && process.Checksum() == checksum;
 }
 
 void ModOverlay::scan(LCS::Process const &process) {
@@ -139,6 +148,13 @@ void ModOverlay::scan(LCS::Process const &process) {
 
     off_open_ref = (PtrStorage)(open_call_offset[1] - data.data());
     off_open = process.Debase(bytes2ptr(open_call_offset[1]));
+
+    // Find call to wfopen
+    auto wopen_call_offset = FindWOpen(data);
+    if (!wopen_call_offset[0]) {
+        throw std::runtime_error("Failed to find wfopen call!");
+    }
+    off_wopen = process.Debase(bytes2ptr(wopen_call_offset[1]));
 
     // Find ret
     auto ret_offset = FindRet(data);
@@ -174,7 +190,8 @@ namespace {
     struct CodePayload {
         // Pointers to be consumed by shellcode
         Ptr<uint8_t> org_open_ptr = {};
-        Ptr<char> prefix_open_ptr = {};
+        Ptr<char16_t> prefix_open_ptr = {};
+        Ptr<uint8_t> wopen_ptr = {};
         Ptr<uint8_t> org_free_ptr = {};
         PtrStorage find_ret_addr = {};
         PtrStorage hook_ret_addr = {};
@@ -184,31 +201,31 @@ namespace {
             0xc8, 0x00, 0x10, 0x00, 0x53, 0x57, 0x56, 0xe8,
             0x00, 0x00, 0x00, 0x00, 0x5b, 0x81, 0xe3, 0x00,
             0xf0, 0xff, 0xff, 0x8d, 0xbd, 0x00, 0xf0, 0xff,
-            0xff, 0x8b, 0x73, 0x04, 0xac, 0xaa, 0x84, 0xc0,
-            0x75, 0xfa, 0x4f, 0x8b, 0x75, 0x08, 0xac, 0xaa,
-            0x84, 0xc0, 0x75, 0xfa, 0x8d, 0xbd, 0x00, 0xf0,
-            0xff, 0xff, 0x89, 0xfe, 0xac, 0x3c, 0x2f, 0x75,
-            0x02, 0xb0, 0x5c, 0xaa, 0x84, 0xc0, 0x75, 0xf4,
-            0x8d, 0x85, 0x00, 0xf0, 0xff, 0xff, 0xff, 0x75,
-            0x20, 0xff, 0x75, 0x1c, 0xff, 0x75, 0x18, 0xff,
-            0x75, 0x14, 0xff, 0x75, 0x10, 0xff, 0x75, 0x0c,
-            0x50, 0xff, 0x13, 0x83, 0xf8, 0xff, 0x75, 0x17,
+            0xff, 0x8b, 0x73, 0x04, 0x66, 0xad, 0x66, 0xab,
+            0x66, 0x85, 0xc0, 0x75, 0xf7, 0x83, 0xef, 0x02,
+            0x8b, 0x75, 0x08, 0xb4, 0x00, 0xac, 0x3c, 0x2f,
+            0x75, 0x02, 0xb0, 0x5c, 0x66, 0xab, 0x84, 0xc0,
+            0x75, 0xf3, 0x8d, 0x85, 0x00, 0xf0, 0xff, 0xff,
             0xff, 0x75, 0x20, 0xff, 0x75, 0x1c, 0xff, 0x75,
             0x18, 0xff, 0x75, 0x14, 0xff, 0x75, 0x10, 0xff,
-            0x75, 0x0c, 0xff, 0x75, 0x08, 0xff, 0x13, 0x5e,
-            0x5f, 0x5b, 0xc9, 0xc2, 0x1c, 0x00
+            0x75, 0x0c, 0x50, 0xff, 0x53, 0x08, 0x83, 0xf8,
+            0xff, 0x75, 0x17, 0xff, 0x75, 0x20, 0xff, 0x75,
+            0x1c, 0xff, 0x75, 0x18, 0xff, 0x75, 0x14, 0xff,
+            0x75, 0x10, 0xff, 0x75, 0x0c, 0xff, 0x75, 0x08,
+            0xff, 0x13, 0x5e, 0x5f, 0x5b, 0xc9, 0xc2, 0x1c,
+            0x00
         };
         uint8_t hook_free_data[0x80] = {
             0xc8, 0x00, 0x00, 0x00, 0x53, 0x56, 0xe8, 0x00,
             0x00, 0x00, 0x00, 0x5b, 0x81, 0xe3, 0x00, 0xf0,
-            0xff, 0xff, 0x8b, 0x73, 0x0c, 0x89, 0xe8, 0x05,
+            0xff, 0xff, 0x8b, 0x73, 0x10, 0x89, 0xe8, 0x05,
             0x80, 0x01, 0x00, 0x00, 0x83, 0xe8, 0x04, 0x39,
             0xe8, 0x74, 0x09, 0x3b, 0x30, 0x75, 0xf5, 0x8b,
-            0x73, 0x10, 0x89, 0x30, 0x8b, 0x43, 0x08, 0x5e,
+            0x73, 0x14, 0x89, 0x30, 0x8b, 0x43, 0x0c, 0x5e,
             0x5b, 0xc9, 0xff, 0xe0
         };
         ImportTrampoline org_open_data = {};
-        char prefix_open_data[0x400] = { "MOD\\" };
+        char16_t prefix_open_data[0x400] = {};
     };
 }
 
@@ -218,19 +235,25 @@ void ModOverlay::wait_patchable(const Process &process, uint32_t timeout) {
     process.WaitPtrEq(ptr_open_ref, PtrStorage(ptr_open), 1, timeout);
     auto ptr_free = process.Rebase(off_free_ptr);
     process.WaitPtrNotEq(ptr_free, PtrStorage(0), 1, timeout);
+    auto ptr_wopen = process.Rebase(off_wopen);
+    process.WaitPtrNotEq(ptr_wopen, PtrStorage(0), 1, timeout);
 }
 
-void ModOverlay::patch(LCS::Process const &process, std::string prefix) const {
+void ModOverlay::patch(LCS::Process const &process, std::filesystem::path const& prefix) const {
     if (!check(process)) {
         throw std::runtime_error("Config invalid to patch this executable!");
     }
-    if (prefix.empty()) {
-        prefix = "MOD/";
+    std::u16string prefix_str = prefix.generic_u16string();
+    for (auto& c: prefix_str) {
+        if (c == u'/') {
+            c = u'\\';
+        }
     }
-    if (prefix.back() != '\\' && prefix.back() != '/') {
-        prefix.push_back('/');
+    prefix_str = u"\\\\?\\" + prefix_str;
+    if (!prefix_str.ends_with(u"\\")) {
+        prefix_str.push_back(u'\\');
     }
-    if (prefix.size() >= sizeof(CodePayload::prefix_open_data)) {
+    if (prefix_str.size() * sizeof(char16_t) >= sizeof(CodePayload::prefix_open_data)) {
         throw std::runtime_error("Prefix too big!");
     }
 
@@ -239,6 +262,9 @@ void ModOverlay::patch(LCS::Process const &process, std::string prefix) const {
     auto ptr_open = Ptr<Ptr<ImportTrampoline>>(process.Rebase(off_open));
     auto org_open = Ptr<ImportTrampoline>{};
     process.Read(ptr_open, org_open);
+    auto ptr_wopen = Ptr<Ptr<uint8_t>>(process.Rebase(off_wopen));
+    auto wopen = Ptr<uint8_t>{};
+    process.Read(ptr_wopen, wopen);
     auto find_ret_addr = process.Rebase(off_ret);
     auto ptr_free = Ptr<Ptr<uint8_t>>(process.Rebase(off_free_ptr));
     auto org_free_ptr = Ptr<uint8_t>(process.Rebase(off_free_fn));
@@ -247,12 +273,13 @@ void ModOverlay::patch(LCS::Process const &process, std::string prefix) const {
     auto payload = CodePayload {};
     payload.org_open_ptr = Ptr(mod_code->org_open_data.data);
     payload.prefix_open_ptr = Ptr(mod_code->prefix_open_data);
+    payload.wopen_ptr = wopen;
     payload.org_free_ptr = org_free_ptr;
     payload.find_ret_addr = find_ret_addr;
     payload.hook_ret_addr = find_ret_addr + 0x16;
 
     process.Read(org_open, payload.org_open_data);
-    std::copy_n(prefix.data(), prefix.size(), payload.prefix_open_data);
+    std::copy_n(prefix_str.data(), prefix_str.size(), payload.prefix_open_data);
 
     // Write payload
     process.Write(mod_code, payload);
