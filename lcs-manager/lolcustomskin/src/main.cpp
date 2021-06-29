@@ -9,8 +9,10 @@
 namespace fs = std::filesystem;
 
 #ifdef WIN32
+#define print_path(name, path) wprintf(L"%s: %s\n", L ## name, path.c_str())
 int wmain(int argc, wchar_t **argv, wchar_t **envp) {
 #else
+#define print_path(name, path) printf("%s%s\n", name, path.c_str())
 int main(int argc, char** argv) {
 #endif
     fs::path prefix = argc > 1 ? fs::path(argv[1]) : fs::path("MOD/");
@@ -22,6 +24,7 @@ int main(int argc, char** argv) {
            "Config format: %s\n"
            "Config: %s\n",
            LCS::ModOverlay::INFO, overlay.to_string().c_str());
+    print_path("Prefix", prefix);
     try {
         for (;;) {
             puts("===============================================================================");
