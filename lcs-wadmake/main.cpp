@@ -6,7 +6,13 @@
 
 using namespace LCS;
 
+#ifdef WIN32
+#define print_path(name, path) wprintf(L"%s: %s\n", L ## name, path.c_str())
+int wmain(int argc, wchar_t **argv, wchar_t **envp) {
+#else
+#define print_path(name, path) printf("%s: %s\n", name, path.c_str())
 int main(int argc, char** argv) {
+#endif
     try {
         if (argc < 2) {
             throw std::runtime_error("lolcustomskin-wadmake.exe <folder path> <optional: wad path>");
@@ -16,20 +22,14 @@ int main(int argc, char** argv) {
         if (argc > 2) {
             dest = argv[2];
         } else {
-            std::string source_str = source.generic_string();
-            if (source_str.size() && source_str.back() == '/') {
-                source_str.pop_back();
-            }
-            source_str.append(".wad.client");
-            dest = source_str;
+            dest = source;
+            dest.replace_extension(".wad.client");
         }
         fs::create_directories(dest.parent_path());
 
-        std::string source_str = source.generic_string();
-        std::string dest_str = dest.generic_string();
-        printf("Reading %s\n", source_str.c_str());
+        print_path("Reading", source);
         WadMake wadmake(source);
-        printf("Packing %s\n", dest_str.c_str());
+        print_path("Packing", dest);
         Progress progress = {};
         wadmake.write(dest, progress);
         printf("Finished!\n");

@@ -4,10 +4,15 @@
 #include <lcs/wad.hpp>
 #include <lcs/hashtable.hpp>
 
-
 using namespace LCS;
 
+#ifdef WIN32
+#define print_path(name, path) wprintf(L"%s: %s\n", L ## name, path.c_str())
+int wmain(int argc, wchar_t **argv, wchar_t **envp) {
+#else
+#define print_path(name, path) printf("%s: %s\n", name, path.c_str())
 int main(int argc, char** argv) {
+#endif
     try {
         if (argc < 2) {
             throw std::runtime_error("lolcustomskin-wadextract.exe <wad path> <optional: dest folder>");
@@ -25,11 +30,9 @@ int main(int argc, char** argv) {
 
         HashTable hashtable = {};
         hashtable.add_from_file(fs::path(argv[0]).parent_path() / "hashes.game.txt");
-        std::string source_str = source.generic_string();
-        std::string dest_str = dest.generic_string();
-        printf("Reading %s\n", source_str.c_str());
+        print_path("Reading", source);
         Wad wad(source);
-        printf("Extracting %s\n", dest_str.c_str());
+        print_path("Extract", dest);
         Progress progress = {};
         wad.extract(dest, hashtable, progress);
         printf("Finished!\n");

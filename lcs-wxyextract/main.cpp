@@ -5,7 +5,13 @@
 
 using namespace LCS;
 
+#ifdef WIN32
+#define print_path(name, path) wprintf(L"%s: %s\n", L ## name, path.c_str())
+int wmain(int argc, wchar_t **argv, wchar_t **envp) {
+#else
+#define print_path(name, path) printf("%s: %s\n", name, path.c_str())
 int main(int argc, char** argv) {
+#endif
     try {
         if (argc < 2) {
             throw std::runtime_error("lolcustomskin-wxyextract.exe <wxy path> <optional: dest folder>");
@@ -20,11 +26,9 @@ int main(int argc, char** argv) {
         }
         fs::create_directories(dest);
 
-        std::string source_str = source.generic_string();
-        std::string dest_str = dest.generic_string();
-        printf("Reading %s\n", source_str.c_str());
+        print_path("Reading", source);
         WxyExtract wxy(source);
-        printf("Extracting %s\n", dest_str.c_str());
+        print_path("Extracting", dest);
         Progress progress = {};
         wxy.extract_files(dest / "RAW", progress);
         wxy.extract_meta(dest / "META", progress);
