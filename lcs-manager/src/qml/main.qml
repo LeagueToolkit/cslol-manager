@@ -1,8 +1,10 @@
-import QtQuick 2.10
-import QtQuick.Layouts 1.10
-import QtQuick.Controls 1.4
+import QtQuick 2.12
+import QtQuick.Layouts 1.12
+import QtQuick.Controls 2.12
 import Qt.labs.settings 1.0
 import lolcustomskin.tools 1.0
+import QtQuick.Controls.Material 2.12
+
 
 ApplicationWindow {
     id: window
@@ -14,10 +16,14 @@ ApplicationWindow {
     Settings {
         id: settings
         property alias leaguePath: lcsTools.leaguePath
-        property alias blacklist: lcsToolBar.blacklist
-        property alias ignorebad: lcsToolBar.ignorebad
-        property alias disableUpdates: lcsToolBar.disableUpdates
         property alias logVisible: lcsDialogLog.visible
+
+        property alias blacklist: lcsMainMenu.blacklist
+        property alias ignorebad: lcsMainMenu.ignorebad
+        property alias disableUpdates: lcsMainMenu.disableUpdates
+        property alias themeDarkMode: lcsMainMenu.themeDarkMode
+        property alias themePrimaryColor: lcsMainMenu.themePrimaryColor
+        property alias themeAccentColor: lcsMainMenu.themeAccentColor
 
         property alias lastZipDirectory: lcsDialogOpenZipFantome.folder
         property alias lastImageFolder: lcsDialogNewMod.lastImageFolder
@@ -32,34 +38,57 @@ ApplicationWindow {
         fileName: "config.ini"
     }
 
+    Material.theme: lcsMainMenu.themeDarkMode ? Material.Dark : Material.Light
+    Material.primary: lcsMainMenu.colors_LIST[lcsMainMenu.themePrimaryColor]
+    Material.accent: lcsMainMenu.colors_LIST[lcsMainMenu.themeAccentColor]
+
     property bool isBussy: lcsTools.state !== LCSTools.StateIdle
 
     function logInfo(name, message) {
         lcsDialogLog.log("[INFO] " + name + ": " + message + "\n")
     }
 
-    function logWarning(name, error) {
+    function logUserError(name, error) {
         lcsDialogLog.log("[Warning] " + name + ": " + error + "\n")
-        lcsDialogWarning.text = name
-        lcsDialogWarning.detailedText = "Check logs for more details!"
-        lcsDialogWarning.open()
+        lcsDialogUserError.text = error
+        lcsDialogUserError.open()
     }
 
     function logError(name, error) {
         lcsDialogLog.log("[Error] " + name + ": " + error + "\n")
         lcsDialogError.text = name
-        lcsDialogError.detailedText = "Check logs for more details!"
         lcsDialogLog.open()
         lcsDialogError.open()
     }
 
 
-    toolBar: LCSToolBar {
+    header: LCSToolBar {
         id: lcsToolBar
         isBussy: window.isBussy
         patcherRunning: lcsTools.state === LCSTools.StateRunning
 
         profilesModel: [ "Default Profile" ]
+
+        onOpenSideMenu: lcsMainMenu.open()
+
+        onSaveProfileAndRun:  {
+            let name = lcsToolBar.profilesCurrentName
+            let mods = lcsModsView.saveProfile()
+            lcsTools.saveProfile(name, mods, run)
+        }
+
+        onStopProfile: lcsTools.stopProfile()
+
+        onLoadProfile: lcsTools.loadProfile(lcsToolBar.profilesCurrentName)
+
+        onNewProfile: lcsDialogNewProfile.open()
+
+        onRemoveProfile: lcsTools.deleteProfile(lcsToolBar.profilesCurrentName)
+
+    }
+
+    LCSSideMenu {
+        id: lcsMainMenu
 
         onInstallFantomeZip: lcsDialogOpenZipFantome.open()
 
@@ -77,21 +106,6 @@ ApplicationWindow {
         onShowLogs: if (!lcsDialogLog.visible) lcsDialogLog.visible = true
 
         onExit: Qt.quit()
-
-        onSaveProfileAndRun:  {
-            let name = lcsToolBar.profilesCurrentName
-            let mods = lcsModsView.saveProfile()
-            lcsTools.saveProfile(name, mods, run)
-        }
-
-        onStopProfile: lcsTools.stopProfile()
-
-        onLoadProfile: lcsTools.loadProfile(lcsToolBar.profilesCurrentName)
-
-        onNewProfile: lcsDialogNewProfile.open()
-
-        onRemoveProfile: lcsTools.deleteProfile(lcsToolBar.profilesCurrentName)
-
     }
 
     LCSModsView {
@@ -113,7 +127,7 @@ ApplicationWindow {
         onImportFile: lcsTools.installFantomeZip(file)
     }
 
-    statusBar: LCSStatusBar {
+    footer: LCSStatusBar {
         id: lcsStatusBar
         isBussy: window.isBussy
         statusMessage: lcsTools.status
@@ -180,8 +194,8 @@ ApplicationWindow {
         id: lcsDialogError
     }
 
-    LCSDialogWarning {
-        id: lcsDialogWarning
+    LCSDialogErrorUser {
+        id: lcsDialogUserError
     }
 
     LCSDialogUpdate {

@@ -1,11 +1,14 @@
-import QtQuick 2.10
-import QtQuick.Layouts 1.10
-import QtQuick.Controls 1.4
+import QtQuick 2.12
+import QtQuick.Layouts 1.12
+import QtQuick.Controls 2.12
+import QtQuick.Controls.Material 2.12
 
 
-TableView {
+
+ScrollView {
     id: lcsModsView
     enabled: !isBussy
+    padding: 5
 
     property bool isBussy: false
 
@@ -79,141 +82,90 @@ TableView {
         }
     }
 
-    DropArea {
-        id: fileDropArea
-        anchors.fill: parent
-        onDropped: {
-            if (drop.hasUrls) {
-                let url = drop.urls[0]
-                lcsModsView.importFile(lcsTools.fromFile(url))
-            }
-        }
-    }
-
-    model: ListModel {
-        id: lcsModsViewModel
-        dynamicRoles: true
-    }
-
-    selectionMode: SelectionMode.NoSelection
-
-    rowDelegate: Rectangle{
-        SystemPalette {
-            id: myPalette
-            colorGroup: SystemPalette.Active
-        }
-        color: styleData.alternate ? myPalette.alternateBase : myPalette.base
-        height: rowHeight
-        width: parent.width
-    }
-
-    horizontalScrollBarPolicy: Qt.ScrollBarAlwaysOff
-
-    TableViewColumn {
-        role: "Name"
-        title: "Name"
-        delegate: Item {
+    ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+    ListView {
+        id: lcsModsViewView
+        DropArea {
+            id: fileDropArea
             anchors.fill: parent
-            CheckBox {
-                id: modCheckbox
-                anchors.verticalCenter: parent.verticalCenter
-                text: model ? model.Name : ""
-                property bool installed: model ? model.Enabled : false
-                onInstalledChanged: {
-                    if (checked != installed) {
-                        checked = installed
-                    }
-                }
-                checked: false
-                onCheckedChanged: {
-                    if (checked != installed) {
-                        let row = styleData.row
-                        lcsModsViewModel.setProperty(row, "Enabled", checked)
-                    }
+            onDropped: {
+                if (drop.hasUrls) {
+                    let url = drop.urls[0]
+                    lcsModsView.importFile(lcsTools.fromFile(url))
                 }
             }
         }
-        width: parent.width * 0.3
-        resizable: false
-    }
 
-    TableViewColumn {
-        role: "Version"
-        title: "Version"
-        width: parent.width * 0.15
-        resizable: false
-        delegate: Item {
-            anchors.fill: parent
-            Label {
-                anchors.verticalCenter: parent.verticalCenter
-                text: styleData.value
-            }
+        spacing: 5
+
+        model: ListModel {
+            id: lcsModsViewModel
         }
-    }
 
-    TableViewColumn {
-        role: "Author"
-        title: "Author"
-        width: parent.width * 0.15
-        resizable: false
-        delegate: Item {
-            anchors.fill: parent
-            Label {
-                anchors.verticalCenter: parent.verticalCenter
-                text: styleData.value
-            }
-        }
-    }
+        delegate: Pane {
+            width: lcsModsViewView.width
+            Material.elevation: 3
+            Row {
+                width: parent.width
+                property string modName: model.Name
+                CheckBox {
+                    width: parent.width * 0.3
+                    id: modCheckbox
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: model ? model.Name : ""
+                    property bool installed: model ? model.Enabled : false
+                    onInstalledChanged: {
+                        if (checked != installed) {
+                            checked = installed
+                        }
+                    }
+                    checked: false
+                    onCheckedChanged: {
+                        if (checked != installed) {
+                            lcsModsViewModel.setProperty(index, "Enabled", checked)
+                        }
+                    }
+                }
 
-    TableViewColumn {
-        role: "Description"
-        title: "Description"
-        width: parent.width * 0.3
-        resizable: false
-        delegate: Item {
-            anchors.fill: parent
-            Label {
-                anchors.verticalCenter: parent.verticalCenter
-                text: styleData.value
-            }
-        }
-    }
+                Column {
+                    width: parent.width * 0.39
+                    anchors.verticalCenter: parent.verticalCenter
+                    Label {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: "V" + model.Version + " by " + model.Author
+                    }
 
-    TableViewColumn {
-        role: "FileName"
-        title: ""
-        horizontalAlignment: Text.AlignRight
-        width: parent.width * 0.1
-        resizable: false
-        delegate: RowLayout {
-            Layout.fillWidth: true
-            Layout.alignment: Qt.AlignVCenter
-            Item {
-                Layout.fillWidth: true
-            }
-            ToolButton {
-                //text: "\u2BC6"
-                menu: Menu {
-                    MenuItem {
-                        text: qsTr("Delete")
-                        onTriggered: {
-                            let modName = styleData.value
-                            let row = styleData.row
+                    Label {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: model.Description
+                    }
+                }
+
+                Row {
+                    width: parent.width * 0.3
+                    layoutDirection: Qt.RightToLeft
+                    anchors.verticalCenter: parent.verticalCenter
+                    ToolButton {
+                        text: qsTr("\uf00d")
+                        onClicked: {
+                            let modName = model.FileName
                             lcsModsViewModel.remove(row, 1)
                             lcsModsView.modRemoved(modName)
                         }
                     }
-                    MenuItem {
-                        text: qsTr("Export")
-                        onTriggered: {
-                            let modName = styleData.value
+                    ToolButton {
+                        text: qsTr("\uf019")
+                        font.family: "FontAwesome"
+                        onClicked: {
+                            let modName = model.FileName
                             lcsModsView.modExport(modName)
                         }
                     }
-                    MenuItem {
-                        text: qsTr("Edit")
-                        onTriggered: {
-                            let modName = styleData.value
+                    ToolButton {
+                        text: qsTr("\uf044")
+                        font.family: "FontAwesome"
+                        onClicked: {
+                            let modName = model.FileName
                             lcsModsView.modEdit(modName)
                         }
                     }

@@ -1,13 +1,17 @@
-import QtQuick 2.10
-import QtQuick.Layouts 1.10
-import QtQuick.Controls 1.4
-import QtQuick.Dialogs 1.2
+import QtQuick 2.12
+import QtQuick.Layouts 1.12
+import QtQuick.Controls 2.12
 
 Dialog {
     id: newProfileDialog
     visible: false
     title: "New Profile Name"
-    standardButtons: StandardButton.Ok | StandardButton.Cancel
+    standardButtons: Dialog.Ok | Dialog.Cancel
+    closePolicy: Popup.NoAutoClose
+    modal: true
+    width: parent.width * 0.5
+    x: (parent.width - width) / 2
+    y: (parent.height - height) / 2
 
     property alias text: newProfileName.text
 
