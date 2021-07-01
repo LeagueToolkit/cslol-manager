@@ -1,20 +1,25 @@
-import QtQuick 2.10
-import QtQuick.Layouts 1.10
-import QtQuick.Controls 1.4
-import QtQuick.Dialogs 1.2
+import QtQuick 2.12
+import QtQuick.Layouts 1.12
+import QtQuick.Controls 2.12
 
-MessageDialog {
+Dialog {
     id: lcsDialogUpdate
-    width: 640
-    height: 480
-    modality: Qt.ApplicationModal
-    standardButtons: StandardButton.Ok
+    width: parent.width * 0.5
+    x: (parent.width - width) / 2
+    y: (parent.height - height) / 2
+    standardButtons: Dialog.Ok
+    closePolicy: Popup.CloseOnEscape
+    modal: true
     title: "Update please!"
-    icon: StandardIcon.Information
-    onAccepted: {
-        Qt.openUrlExternally("https://github.com/LoL-Fantome/lolcustomskin-tools/releases/latest")
+    property string update_url: "https://github.com/LoL-Fantome/lolcustomskin-tools/releases/latest"
+    onAccepted: Qt.openUrlExternally(update_url)
+
+    RowLayout {
+        width: parent.width
+        Label {
+            text: "You will be redirected to download page after pressing OK button.\n" + update_url
+        }
     }
-    text: "New version has been released!"
 
     property bool disableUpdates: false
 

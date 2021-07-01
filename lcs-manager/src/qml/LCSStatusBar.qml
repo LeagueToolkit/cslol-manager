@@ -1,8 +1,8 @@
-import QtQuick 2.10
-import QtQuick.Layouts 1.10
-import QtQuick.Controls 1.4
+import QtQuick 2.12
+import QtQuick.Layouts 1.12
+import QtQuick.Controls 2.12
 
-StatusBar {
+ToolBar {
     property bool isBussy: false
     property string statusMessage: ""
     property bool isCopying: true
@@ -34,6 +34,7 @@ StatusBar {
     RowLayout {
         id: row
         width: parent.width
+        anchors.verticalCenter: parent.verticalCenter
         Label {
             Layout.fillWidth: true
             id: statusMessageLabel
@@ -41,8 +42,8 @@ StatusBar {
         }
         ProgressBar {
             id: progressBarData
-            minimumValue: 0
-            maximumValue: 1
+            from: 0
+            to: 1
             indeterminate: !isCopying
             value: dataDone / dataTotal
         }

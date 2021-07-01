@@ -9,7 +9,7 @@
         <file>LCSDialogOpenZipFantome.qml</file>
         <file>LCSDialogLog.qml</file>
         <file>LCSDialogError.qml</file>
-        <file>LCSDialogWarning.qml</file>
+        <file>LCSDialogErrorUser.qml</file>
         <file>LCSDialogNewMod.qml</file>
         <file>LCSDialogNewModImage.qml</file>
         <file>LCSDialogNewModWadFiles.qml</file>
@@ -18,5 +18,8 @@
         <file>LCSDialogEditMod.qml</file>
         <file>icon.png</file>
         <file>LCSDialogUpdate.qml</file>
+        <file>qtquickcontrols2.conf</file>
+        <file>fontawesome-webfont.ttf</file>
+        <file>LCSSideMenu.qml</file>
     </qresource>
 </RCC>

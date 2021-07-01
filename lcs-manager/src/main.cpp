@@ -3,6 +3,8 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QSettings>
+#include <QFontDatabase>
+#include <QFile>
 #include "LCSTools.h"
 #include "lcs/common.hpp"
 
@@ -12,7 +14,6 @@ int main(int argc, char *argv[])
     qmlRegisterType<LCSTools>("lolcustomskin.tools", 1, 0, "LCSTools");
 
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
-
     QApplication app(argc, argv);
 
     app.setOrganizationName("moonshadow565");
@@ -26,6 +27,9 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty("LCS_COMMIT", LCS::COMMIT);
     engine.rootContext()->setContextProperty("LCS_DATE", LCS::DATE);
     const QUrl url(QStringLiteral("qrc:/main.qml"));
+    QFile fontfile(":/fontawesome-webfont.ttf");
+    fontfile.open(QFile::OpenModeFlag::ReadOnly);
+    QFontDatabase::addApplicationFontFromData(fontfile.readAll());
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
                      &app, [url](QObject *obj, const QUrl &objUrl) {
         if (!obj && url == objUrl)

@@ -1,14 +1,18 @@
-import QtQuick 2.10
-import QtQuick.Layouts 1.10
-import QtQuick.Controls 1.4
-import QtQuick.Dialogs 1.2
+import QtQuick 2.12
+import QtQuick.Layouts 1.12
+import QtQuick.Controls 2.12
 
 Dialog {
     id: lcsDialogEditMod
-    modality: Qt.ApplicationModal
-    standardButtons: StandardButton.Close
+    modal: true
+    standardButtons: Dialog.Close
+    closePolicy: Popup.NoAutoClose
     visible: false
     title: "Edit " + fileName
+    width: parent.width * 0.9
+    height: parent.height * 0.9
+    x: (parent.width - width) / 2
+    y: (parent.height - height) / 2
 
     property string fileName: ""
     property bool isBussy: false
@@ -24,7 +28,7 @@ Dialog {
 
     function buildInfoData() {
         if (fieldName.text === "") {
-            window.logWarning("Edit mod", "Mod name can't be empty!")
+            window.logUserError("Edit mod", "Mod name can't be empty!")
             return
         }
         let name = fieldName.text == "" ? "UNKNOWN" : fieldName.text
@@ -86,106 +90,111 @@ Dialog {
         id: itemsModel
     }
 
-    ColumnLayout {
+    RowLayout {
         width: parent.width
         height: parent.height
         enabled: !isBussy
-        GroupBox {
-            title: "Info"
+        ColumnLayout {
             Layout.fillWidth: true
-            ColumnLayout {
-                width: parent.width
-                RowLayout {
-                    Layout.fillWidth: true
-                    Label {
-                        text: "Name: "
-                    }
-                    TextField {
-                        id: fieldName
+            Layout.fillHeight: true
+            GroupBox {
+                title: "Info"
+                Layout.fillWidth: true
+                ColumnLayout {
+                    width: parent.width
+                    RowLayout {
                         Layout.fillWidth: true
-                        placeholderText: "Name"
-                        validator: RegExpValidator {
-                            regExp: new RegExp("[0-9a-zA-Z_ ]{3,20}")
+                        Label {
+                            text: "Name: "
+                        }
+                        TextField {
+                            id: fieldName
+                            Layout.fillWidth: true
+                            placeholderText: "Name"
+                            validator: RegExpValidator {
+                                regExp: new RegExp("[0-9a-zA-Z_ ]{3,20}")
+                            }
+                        }
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Label {
+                            text: "Author: "
+                        }
+                        TextField {
+                            id: fieldAuthor
+                            Layout.fillWidth: true
+                            placeholderText: "Author"
+                            validator: RegExpValidator {
+                                regExp: new RegExp("[0-9a-zA-Z_ ]{3,20}")
+                            }
+                        }
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Label {
+                            text: "Version: "
+                        }
+                        TextField {
+                            id: fieldVersion
+                            Layout.fillWidth: true
+                            placeholderText: "0.0.0"
+                            validator: RegExpValidator {
+                                regExp: new RegExp("([0-9]+)(\\.[0-9]+){0,3}")
+                            }
+                        }
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Label {
+                            text: "Description: "
+                        }
+                        TextField {
+                            id: fieldDescription
+                            Layout.fillWidth: true
+                            placeholderText: "Description"
+                        }
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Item {
+                            Layout.fillWidth: true
+                        }
+                        Button {
+                            text: "Apply"
+                            onClicked: lcsDialogEditMod.changeInfoData(lcsDialogEditMod.buildInfoData())
                         }
                     }
                 }
-
+            }
+            GroupBox {
+                title: "Image"
+                Layout.fillWidth: true
                 RowLayout {
-                    Layout.fillWidth: true
-                    Label {
-                        text: "Author: "
-                    }
+                    width: parent.width
                     TextField {
-                        id: fieldAuthor
+                        id: fieldImage
                         Layout.fillWidth: true
-                        placeholderText: "Author"
-                        validator: RegExpValidator {
-                            regExp: new RegExp("[0-9a-zA-Z_ ]{3,20}")
-                        }
+                        placeholderText: ""
+                        readOnly: true
                     }
-                }
 
-                RowLayout {
-                    Layout.fillWidth: true
-                    Label {
-                        text: "Version: "
-                    }
-                    TextField {
-                        id: fieldVersion
-                        Layout.fillWidth: true
-                        placeholderText: "0.0.0"
-                        validator: RegExpValidator {
-                            regExp: new RegExp("([0-9]+)(\\.[0-9]+){0,3}")
-                        }
-                    }
-                }
-
-                RowLayout {
-                    Layout.fillWidth: true
-                    Label {
-                        text: "Description: "
-                    }
-                    TextField {
-                        id: fieldDescription
-                        Layout.fillWidth: true
-                        placeholderText: "Description"
-                    }
-                }
-                RowLayout {
-                    Layout.fillWidth: true
-                    Item {
-                        Layout.fillWidth: true
-                    }
                     Button {
-                        text: "Apply"
-                        onClicked: lcsDialogEditMod.changeInfoData(lcsDialogEditMod.buildInfoData())
+                        text: "Remove"
+                        onClicked: lcsDialogEditMod.removeImage()
+                    }
+
+                    Button {
+                        text: "Browse"
+                        onClicked: dialogImage.open()
                     }
                 }
             }
         }
-        GroupBox {
-            title: "Image"
-            Layout.fillWidth: true
-            RowLayout {
-                width: parent.width
-                TextField {
-                    id: fieldImage
-                    Layout.fillWidth: true
-                    placeholderText: ""
-                    readOnly: true
-                }
 
-                Button {
-                    text: "Remove"
-                    onClicked: lcsDialogEditMod.removeImage()
-                }
-
-                Button {
-                    text: "Browse"
-                    onClicked: dialogImage.open()
-                }
-            }
-        }
         GroupBox {
             title: "Files"
             Layout.fillWidth: true
@@ -194,30 +203,43 @@ Dialog {
                 width: parent.width
                 height: parent.height
 
-                TableView {
-                    id: itemsView
+                ScrollView {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    model: itemsModel
-                    horizontalScrollBarPolicy: Qt.ScrollBarAlwaysOff
-                    selectionMode: SelectionMode.MultiSelection
-                    TableViewColumn {
-                        title: "Name"
-                        role: "Name"
-                        width: itemsView.width
-                        resizable: false
-                    }
-                    DropArea {
-                        id: fileDropArea
-                        anchors.fill: parent
-                        onDropped: {
-                            if (drop.hasUrls) {
-                                let files = drop.urls
-                                let wads = []
-                                for(let i in drop.urls) {
-                                    wads[wads.length] = lcsTools.fromFile(files[i])
+                    padding: 5
+                    ListView {
+                        id: itemsView
+                        model: itemsModel
+                        flickableDirection: ListView.HorizontalAndVerticalFlick
+                        clip: true
+                        spacing: 5
+                        delegate: RowLayout{
+                            width: itemsView.width
+                            Label {
+                                Layout.fillWidth: true
+                                text: model.Name
+                                elide: Text.ElideLeft
+                            }
+                            ToolButton {
+                                text: qsTr("\uf00d")
+                                onClicked: {
+                                    let modName = model.Name
+                                    lcsDialogEditMod.removeWads([modName])
                                 }
-                                lcsDialogEditMod.addWads(wads)
+                            }
+                        }
+                        DropArea {
+                            id: fileDropArea
+                            anchors.fill: parent
+                            onDropped: {
+                                if (drop.hasUrls) {
+                                    let files = drop.urls
+                                    let wads = []
+                                    for(let i in drop.urls) {
+                                        wads[wads.length] = lcsTools.fromFile(files[i])
+                                    }
+                                    lcsDialogEditMod.addWads(wads)
+                                }
                             }
                         }
                     }
@@ -225,17 +247,6 @@ Dialog {
 
                 RowLayout {
                     width: parent.width
-                    Button {
-                        text: "Remove"
-                        onClicked: {
-                            let wads = []
-                            itemsView.selection.forEach(function(i) {
-                                wads[wads.length] = itemsModel.get(i)["Name"].toString()
-                            })
-                            itemsView.selection.clear()
-                            lcsDialogEditMod.removeWads(wads)
-                        }
-                    }
                     Item {
                         Layout.fillWidth: true
                     }

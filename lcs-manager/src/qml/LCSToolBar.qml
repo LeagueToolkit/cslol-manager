@@ -1,6 +1,6 @@
-import QtQuick 2.10
-import QtQuick.Layouts 1.10
-import QtQuick.Controls 1.4
+import QtQuick 2.12
+import QtQuick.Layouts 1.12
+import QtQuick.Controls 2.12
 
 ToolBar {
     id: lcsToolBar
@@ -11,17 +11,8 @@ ToolBar {
     property alias profilesCurrentIndex: profilesComboBox.currentIndex
     property alias profilesCurrentName: profilesComboBox.currentText
     property alias menuButtonHeight: mainMenuButton.height
-    property alias blacklist: blacklistCheck.checked
-    property alias ignorebad: ignorebadCheck.checked
-    property alias disableUpdates: disableUpdatesCheck.checked
 
-
-    signal showLogs()
-    signal installFantomeZip()
-    signal createNewMod()
-    signal changeGamePath()
-    signal exit()
-
+    signal openSideMenu()
     signal saveProfileAndRun(bool run)
     signal stopProfile()
     signal loadProfile()
@@ -35,53 +26,7 @@ ToolBar {
         ToolButton {
             id: mainMenuButton
             text: "\u2630"
-            onClicked: mainMenu.popup()
-              Menu {
-                id: mainMenu
-                MenuItem {
-                    text: qsTr("Install Mod")
-                    enabled: !isBussy
-                    onTriggered: lcsToolBar.installFantomeZip()
-                }
-                MenuItem {
-                    text: qsTr("Create a new mod")
-                    enabled: !isBussy
-                    onTriggered: lcsToolBar.createNewMod()
-                }
-                MenuSeparator {}
-                MenuItem {
-                    text: qsTr("Change Game Folder")
-                    enabled: !isBussy
-                    onTriggered: lcsToolBar.changeGamePath()
-                }
-                MenuItem {
-                    id: blacklistCheck
-                    text: qsTr("Blacklist extra gamemods")
-                    checkable: true
-                    checked: true
-                }
-                MenuItem {
-                    id: ignorebadCheck
-                    text: qsTr("Ignore faulty .wad's")
-                    checkable: true
-                    checked: false
-                }
-                MenuItem {
-                    id: disableUpdatesCheck
-                    text: qsTr("Disable updates")
-                    checkable: true
-                    checked: false
-                }
-                MenuSeparator {}
-                MenuItem {
-                    text: qsTr("Log Window")
-                    onTriggered: lcsToolBar.showLogs()
-                }
-                MenuItem {
-                    text: qsTr("Exit")
-                    onTriggered: lcsToolBar.exit()
-                }
-            }
+            onClicked: lcsToolBar.openSideMenu()
         }
         ComboBox {
             id: profilesComboBox

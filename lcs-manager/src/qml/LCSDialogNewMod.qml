@@ -1,14 +1,18 @@
-import QtQuick 2.10
-import QtQuick.Layouts 1.10
-import QtQuick.Controls 1.4
-import QtQuick.Dialogs 1.2
+import QtQuick 2.15
+import QtQuick.Layouts 1.12
+import QtQuick.Controls 2.12
 
 Dialog {
     id: lcsDialogNewMod
-    modality: Qt.ApplicationModal
-    standardButtons: StandardButton.Save
+    modal: true
+    standardButtons: Dialog.Save | Dialog.Close
+    closePolicy: Popup.NoAutoClose
     visible: false
     title: "New Mod"
+    width: parent.width * 0.9
+    height: parent.height * 0.9
+    x: (parent.width - width) / 2
+    y: (parent.height - height) / 2
 
     property alias lastImageFolder: dialogImage.folder
     property alias lastWadFileFolder: dialogWadFiles.folder
@@ -17,7 +21,7 @@ Dialog {
     signal save(string fileName, string image, var infoData, var items)
     onAccepted: {
         if (fieldName.text === "") {
-            window.logWarning("Add new mod", "Mod name can't be empty!")
+            window.logUserError("Add new mod", "Mod name can't be empty!")
             return
         }
         let name = fieldName.text == "" ? "UNKNOWN" : fieldName.text
@@ -52,90 +56,95 @@ Dialog {
         id: itemsModel
     }
 
-    ColumnLayout {
+
+    RowLayout {
         width: parent.width
         height: parent.height
-        GroupBox {
-            title: "Info"
+        ColumnLayout {
             Layout.fillWidth: true
-            ColumnLayout {
-                width: parent.width
-                RowLayout {
-                    Layout.fillWidth: true
-                    Label {
-                        text: "Name: "
-                    }
-                    TextField {
-                        id: fieldName
+            Layout.fillHeight: true
+            GroupBox {
+                title: "Info"
+                Layout.fillWidth: true
+                ColumnLayout {
+                    width: parent.width
+                    RowLayout {
                         Layout.fillWidth: true
-                        placeholderText: "Name"
-                        validator: RegExpValidator {
-                            regExp: new RegExp("[0-9a-zA-Z_ ]{3,20}")
+                        Label {
+                            text: "Name: "
+                        }
+                        TextField {
+                            id: fieldName
+                            Layout.fillWidth: true
+                            placeholderText: "Name"
+                            validator: RegExpValidator {
+                                regExp: new RegExp("[0-9a-zA-Z_ ]{3,20}")
+                            }
                         }
                     }
-                }
 
-                RowLayout {
-                    Layout.fillWidth: true
-                    Label {
-                        text: "Author: "
-                    }
-                    TextField {
-                        id: fieldAuthor
+                    RowLayout {
                         Layout.fillWidth: true
-                        placeholderText: "Author"
-                        validator: RegExpValidator {
-                            regExp: new RegExp("[0-9a-zA-Z_ ]{3,20}")
+                        Label {
+                            text: "Author: "
+                        }
+                        TextField {
+                            id: fieldAuthor
+                            Layout.fillWidth: true
+                            placeholderText: "Author"
+                            validator: RegExpValidator {
+                                regExp: new RegExp("[0-9a-zA-Z_ ]{3,20}")
+                            }
                         }
                     }
-                }
 
-                RowLayout {
-                    Layout.fillWidth: true
-                    Label {
-                        text: "Version: "
-                    }
-                    TextField {
-                        id: fieldVersion
+                    RowLayout {
                         Layout.fillWidth: true
-                        placeholderText: "0.0.0"
-                        validator: RegExpValidator {
-                            regExp: new RegExp("([0-9]+)(\\.[0-9]+){0,3}")
+                        Label {
+                            text: "Version: "
+                        }
+                        TextField {
+                            id: fieldVersion
+                            Layout.fillWidth: true
+                            placeholderText: "0.0.0"
+                            validator: RegExpValidator {
+                                regExp: new RegExp("([0-9]+)(\\.[0-9]+){0,3}")
+                            }
                         }
                     }
-                }
 
-                RowLayout {
-                    Layout.fillWidth: true
-                    Label {
-                        text: "Description: "
-                    }
-                    TextField {
-                        id: fieldDescription
+                    RowLayout {
                         Layout.fillWidth: true
-                        placeholderText: "Description"
+                        Label {
+                            text: "Description: "
+                        }
+                        TextField {
+                            id: fieldDescription
+                            Layout.fillWidth: true
+                            placeholderText: "Description"
+                        }
                     }
                 }
             }
-        }
-        GroupBox {
-            title: "Image"
-            Layout.fillWidth: true
-            RowLayout {
-                width: parent.width
-                TextField {
-                    id: fieldImage
-                    Layout.fillWidth: true
-                    placeholderText: ""
-                    readOnly: true
-                }
-                Button {
-                    text: "Remove"
-                    onClicked: fieldImage.text = ""
-                }
-                Button {
-                    text: "Browse"
-                    onClicked: dialogImage.open()
+            GroupBox {
+                title: "Image"
+                Layout.fillWidth: true
+                RowLayout {
+                    width: parent.width
+                    TextField {
+                        id: fieldImage
+                        Layout.fillWidth: true
+                        placeholderText: ""
+                        readOnly: true
+                    }
+                    Button {
+                        text: "Remove"
+                        onClicked: fieldImage.text = ""
+                    }
+                    Button {
+                        text: "Browse"
+                        onClicked: dialogImage.open()
+                    }
                 }
             }
         }
@@ -147,26 +156,48 @@ Dialog {
                 width: parent.width
                 height: parent.height
 
-                TableView {
-                    id: itemsView
+                ScrollView {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    model: itemsModel
-                    selectionMode: SelectionMode.MultiSelection
-                    TableViewColumn {
-                        title: "Path"
-                        role: "Path"
-                        width: itemsView.width
-                        resizable: false
-                    }
-                    DropArea {
-                        id: fileDropArea
-                        anchors.fill: parent
-                        onDropped: {
-                            if (drop.hasUrls) {
-                                let files = drop.urls
-                                for(let i in drop.urls) {
-                                    itemsModel.append({ "Path": lcsTools.fromFile(files[i]) })
+                    padding: 5
+                    ListView {
+                        id: itemsView
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        model: itemsModel
+                        flickableDirection: ListView.HorizontalAndVerticalFlick
+                        clip: true
+                        spacing: 5
+                        delegate: RowLayout{
+                            width: itemsView.width
+                            Label {
+                                Layout.fillWidth: true
+                                text: model.Path
+                                elide: Text.ElideLeft
+                            }
+                            ToolButton {
+                                text: qsTr("\uf00d")
+                                onClicked: {
+                                    let modName = model.Path
+                                    for(let i = 0; i < itemsModel.count; i++) {
+                                        let item = itemsModel.get(i)
+                                        if (item.Path === modName) {
+                                            itemsModel.remove(i);
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        DropArea {
+                            id: fileDropArea
+                            anchors.fill: parent
+                            onDropped: {
+                                if (drop.hasUrls) {
+                                    let files = drop.urls
+                                    for(let i in drop.urls) {
+                                        itemsModel.append({ "Path": lcsTools.fromFile(files[i]) })
+                                    }
                                 }
                             }
                         }
@@ -175,20 +206,6 @@ Dialog {
 
                 RowLayout {
                     width: parent.width
-                    Button {
-                        text: "Remove"
-                        onClicked: {
-                            let indexes = []
-                            itemsView.selection.forEach(function(index){
-                                indexes[indexes.length] = index
-                            })
-                            indexes.sort()
-                            for(let i = 0; i < indexes.length; i++) {
-                                itemsModel.remove(indexes[i] - i)
-                            }
-                            itemsView.selection.clear()
-                        }
-                    }
                     Button {
                         text: "Clear"
                         onClicked: itemsModel.clear()
