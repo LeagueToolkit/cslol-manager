@@ -14,6 +14,9 @@ Dialog {
     height: parent.height * 0.9
     x: (parent.width - width) / 2
     y: (parent.height - height) / 2
+    Overlay.modal: Rectangle {
+        color: "#aa333333"
+    }
 
     property bool isBussy: false
     property alias blacklist: blacklistCheck.checked
@@ -57,35 +60,32 @@ Dialog {
             Layout.fillWidth: true
             title: qsTr("General")
             ColumnLayout {
-                MenuItem {
+                Button {
                     text: qsTr("Change Game folder")
                     enabled: !isBussy
-                    onTriggered: lcsDialogSettings.changeGamePath()
+                    onClicked: lcsDialogSettings.changeGamePath()
                     Layout.fillWidth: true
                 }
-                MenuItem {
+                Button {
                     text: qsTr("Log window")
-                    onTriggered: lcsDialogSettings.showLogs()
+                    onClicked: lcsDialogSettings.showLogs()
                     Layout.fillWidth: true
                 }
-                MenuItem {
+                Switch {
                     id: blacklistCheck
                     text: qsTr("Blacklist extra gamemods")
-                    checkable: true
                     checked: true
                     Layout.fillWidth: true
                 }
-                MenuItem {
+                Switch {
                     id: ignorebadCheck
                     text: qsTr("Ignore faulty .wad's")
-                    checkable: true
                     checked: false
                     Layout.fillWidth: true
                 }
-                MenuItem {
+                Switch {
                     id: disableUpdatesCheck
                     text: qsTr("Disable updates")
-                    checkable: true
                     checked: false
                     Layout.fillWidth: true
                 }
@@ -96,10 +96,9 @@ Dialog {
             Layout.fillWidth: true
             title: qsTr("Theme")
             ColumnLayout {
-                MenuItem {
+                Switch {
                     id: themeDarkModeCheck
                     text: qsTr("Dark mode")
-                    checkable: true
                     checked: true
                     Layout.fillWidth: true
                 }
