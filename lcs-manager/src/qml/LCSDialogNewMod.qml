@@ -14,6 +14,10 @@ Dialog {
     x: (parent.width - width) / 2
     y: (parent.height - height) / 2
 
+    Overlay.modal: Rectangle {
+        color: "#aa333333"
+    }
+
     property alias lastImageFolder: dialogImage.folder
     property alias lastWadFileFolder: dialogWadFiles.folder
     property alias lastRawFolder: dialogRawFolder.folder

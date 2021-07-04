@@ -13,6 +13,10 @@ Dialog {
     modal: true
     title: "\uf071 Error - " + text
 
+    Overlay.modal: Rectangle {
+        color: "#aa333333"
+    }
+
     property string text: ""
 
     LCSLogView {

@@ -5,6 +5,10 @@ import QtQuick.Controls 2.15
 Drawer {
     id: lcsMainMenu
     height: parent.height
+    Overlay.modal: Rectangle {
+        color: "#aa333333"
+    }
+
     property bool isBussy: false
     property alias blacklist: blacklistCheck.checked
     property alias ignorebad: ignorebadCheck.checked

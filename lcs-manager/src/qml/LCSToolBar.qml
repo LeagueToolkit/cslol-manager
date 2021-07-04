@@ -34,26 +34,36 @@ ToolBar {
             currentIndex: 0
             enabled: !isBussy
             model: lcsToolBar.profilesModel
+            ToolTip.visible: hovered
+            ToolTip.text: qsTr("Select a profile to save, load or remove")
         }
         ToolButton {
             text: qsTr("Save")
             onClicked: lcsToolBar.saveProfileAndRun(false)
             enabled: !isBussy
+            ToolTip.visible: hovered
+            ToolTip.text: qsTr("Save enabled mods for selected profile")
         }
         ToolButton {
             text: qsTr("Load")
             onClicked: lcsToolBar.loadProfile()
             enabled: !isBussy
+            ToolTip.visible: hovered
+            ToolTip.text: qsTr("Load enabled mods for selected profile")
         }
         ToolButton {
             text: qsTr("Delete")
             onClicked: lcsToolBar.removeProfile()
             enabled: !isBussy
+            ToolTip.visible: hovered
+            ToolTip.text: qsTr("Delete selected profile")
         }
         ToolButton {
             text: qsTr("New")
             onClicked: lcsToolBar.newProfile()
             enabled: !isBussy
+            ToolTip.visible: hovered
+            ToolTip.text: qsTr("Create new profile")
         }
         ToolButton {
             text: patcherRunning ? qsTr("Stop") : qsTr("Run")
@@ -65,6 +75,8 @@ ToolBar {
                 }
             }
             enabled: !isBussy || patcherRunning
+            ToolTip.visible: hovered
+            ToolTip.text: qsTr("Runs patcher for currently selected mods")
         }
     }
 }

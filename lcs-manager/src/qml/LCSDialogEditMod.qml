@@ -14,6 +14,10 @@ Dialog {
     x: (parent.width - width) / 2
     y: (parent.height - height) / 2
 
+    Overlay.modal: Rectangle {
+        color: "#aa333333"
+    }
+
     property string fileName: ""
     property bool isBussy: false
     property alias lastImageFolder: dialogImage.folder
