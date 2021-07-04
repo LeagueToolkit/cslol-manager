@@ -43,21 +43,25 @@ ApplicationWindow {
     Material.accent: lcsMainMenu.colors_LIST[lcsMainMenu.themeAccentColor]
 
     property bool isBussy: lcsTools.state !== LCSTools.StateIdle
+    property string log_data: "[INFO] Version: " + LCS_VERSION + "\n"
+
+    function logClear() {
+        log_data = "[INFO] Version: " + LCS_VERSION + "\n"
+    }
 
     function logInfo(name, message) {
-        lcsDialogLog.log("[INFO] " + name + ": " + message + "\n")
+        log_data += "[INFO] " + name + ": " + message + "\n"
     }
 
     function logUserError(name, error) {
-        lcsDialogLog.log("[Warning] " + name + ": " + error + "\n")
+        log_data += "[Warning] " + name + ": " + error + "\n"
         lcsDialogUserError.text = error
         lcsDialogUserError.open()
     }
 
     function logError(name, error) {
-        lcsDialogLog.log("[Error] " + name + ": " + error + "\n")
+        log_data += "[Error] " + name + ": " + error + "\n"
         lcsDialogError.text = name
-        lcsDialogLog.open()
         lcsDialogError.open()
     }
 
@@ -246,7 +250,7 @@ ApplicationWindow {
                 lcsToolBar.profilesCurrentIndex = 0
             }
         }
-        onUpdateProfileStatus: lcsDialogLog.log(message)
+        onUpdateProfileStatus: log_data += message
         onModEditStarted: {
             lcsDialogEditMod.load(fileName, infoData, image, wads)
             lcsDialogEditMod.open()

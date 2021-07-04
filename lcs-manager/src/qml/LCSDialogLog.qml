@@ -17,36 +17,9 @@ ApplicationWindow {
     }
     title: "Log - " + LCS_VERSION
 
-    property alias text: logTextArea.text
-
-    function log(message) {
-        text += message
-    }
-
-    ColumnLayout {
+    LCSLogView {
+        id: lcsLogView
         width: parent.width
         height: parent.height
-        TextArea {
-            id: logTextArea
-            readOnly: true
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            text: "[INFO] Version: " + LCS_VERSION + "\n"
-        }
-        RowLayout {
-            width: parent.width
-            Button {
-                text: "Copy To Clipboard"
-                onClicked:  {
-                    logTextArea.selectAll()
-                    logTextArea.copy()
-                    logTextArea.deselect()
-                }
-            }
-            Button {
-                text: qsTr("Clear")
-                onClicked: lcsDialogLog.text = "[INFO] Version: " + LCS_VERSION + "\n"
-            }
-        }
     }
 }
