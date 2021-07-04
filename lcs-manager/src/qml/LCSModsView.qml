@@ -125,6 +125,8 @@ ScrollView {
                             lcsModsViewModel.setProperty(index, "Enabled", checked)
                         }
                     }
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Enable this mod")
                 }
 
                 Column {
@@ -149,17 +151,21 @@ ScrollView {
                         text: qsTr("\uf00d")
                         onClicked: {
                             let modName = model.FileName
-                            lcsModsViewModel.remove(row, 1)
+                            lcsModsViewModel.remove(index, 1)
                             lcsModsView.modRemoved(modName)
                         }
+                        ToolTip.visible: hovered
+                        ToolTip.text: qsTr("Remove this mod")
                     }
                     ToolButton {
-                        text: qsTr("\uf019")
+                        text: qsTr("\uf1c6")
                         font.family: "FontAwesome"
                         onClicked: {
                             let modName = model.FileName
                             lcsModsView.modExport(modName)
                         }
+                        ToolTip.visible: hovered
+                        ToolTip.text: qsTr("Export this mod")
                     }
                     ToolButton {
                         text: qsTr("\uf044")
@@ -168,6 +174,8 @@ ScrollView {
                             let modName = model.FileName
                             lcsModsView.modEdit(modName)
                         }
+                        ToolTip.visible: hovered
+                        ToolTip.text: qsTr("Edit this mod")
                     }
                 }
             }

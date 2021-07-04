@@ -23,10 +23,14 @@ ColumnLayout {
                 logTextArea.copy()
                 logTextArea.deselect()
             }
+            ToolTip.visible: hovered
+            ToolTip.text: qsTr("Puts log contents in your clipboard")
         }
         Button {
             text: qsTr("Clear")
             onClicked: window.logClear()
+            ToolTip.visible: hovered
+            ToolTip.text: qsTr("Clears all logs")
         }
     }
 }
