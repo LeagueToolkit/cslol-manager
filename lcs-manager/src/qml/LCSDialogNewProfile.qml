@@ -5,7 +5,7 @@ import QtQuick.Controls 2.15
 Dialog {
     id: newProfileDialog
     visible: false
-    title: "New Profile Name"
+    title: qsTr("New Profile Name")
     standardButtons: Dialog.Ok | Dialog.Cancel
     closePolicy: Popup.NoAutoClose
     modal: true

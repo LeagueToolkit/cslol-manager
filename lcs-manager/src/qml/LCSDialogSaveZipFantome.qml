@@ -6,7 +6,7 @@ import Qt.labs.platform 1.0
 FileDialog {
     id: lcsLCSDialogSaveZipFantome
     visible: false
-    title: "Save Fantome Mod"
+    title: qsTr("Save Fantome Mod")
     fileMode: FileDialog.SaveFile
     nameFilters: "Fantome Mod files (*.fantome *.zip)"
     property string modName: "mod.fantome"

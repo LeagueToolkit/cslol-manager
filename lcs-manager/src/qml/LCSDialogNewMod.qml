@@ -68,14 +68,14 @@ Dialog {
             Layout.fillWidth: true
             Layout.fillHeight: true
             GroupBox {
-                title: "Info"
+                title: qsTr("Info")
                 Layout.fillWidth: true
                 ColumnLayout {
                     width: parent.width
                     RowLayout {
                         Layout.fillWidth: true
                         Label {
-                            text: "Name: "
+                            text: qsTr("Name: ")
                         }
                         TextField {
                             id: fieldName
@@ -90,7 +90,7 @@ Dialog {
                     RowLayout {
                         Layout.fillWidth: true
                         Label {
-                            text: "Author: "
+                            text: qsTr("Author: ")
                         }
                         TextField {
                             id: fieldAuthor
@@ -105,7 +105,7 @@ Dialog {
                     RowLayout {
                         Layout.fillWidth: true
                         Label {
-                            text: "Version: "
+                            text: qsTr("Version: ")
                         }
                         TextField {
                             id: fieldVersion
@@ -120,7 +120,7 @@ Dialog {
                     RowLayout {
                         Layout.fillWidth: true
                         Label {
-                            text: "Description: "
+                            text: qsTr("Description: ")
                         }
                         TextField {
                             id: fieldDescription
@@ -131,7 +131,7 @@ Dialog {
                 }
             }
             GroupBox {
-                title: "Image"
+                title: qsTr("Image")
                 Layout.fillWidth: true
                 RowLayout {
                     width: parent.width
@@ -142,18 +142,18 @@ Dialog {
                         readOnly: true
                     }
                     Button {
-                        text: "Remove"
+                        text: qsTr("Remove")
                         onClicked: fieldImage.text = ""
                     }
                     Button {
-                        text: "Browse"
+                        text: qsTr("Browse")
                         onClicked: dialogImage.open()
                     }
                 }
             }
         }
         GroupBox {
-            title: "Files"
+            title: qsTr("Files")
             Layout.fillWidth: true
             Layout.fillHeight: true
             ColumnLayout {
@@ -211,18 +211,18 @@ Dialog {
                 RowLayout {
                     width: parent.width
                     Button {
-                        text: "Clear"
+                        text: qsTr("Clear")
                         onClicked: itemsModel.clear()
                     }
                     Item {
                         Layout.fillWidth: true
                     }
                     Button {
-                        text: "Add .wad files"
+                        text: qsTr("Add .wad files")
                         onClicked: dialogWadFiles.open()
                     }
                     Button {
-                        text: "Add RAW folder"
+                        text: qsTr("Add RAW folder")
                         onClicked: dialogRawFolder.open()
                     }
                 }
