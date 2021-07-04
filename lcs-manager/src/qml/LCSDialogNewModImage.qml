@@ -5,7 +5,7 @@ import Qt.labs.platform 1.0
 
 FileDialog {
     visible: false
-    title: "Select image file"
+    title: qsTr("Select image file")
     fileMode: FileDialog.OpenFile
     nameFilters: "PNG Image file (*.png)"
 }

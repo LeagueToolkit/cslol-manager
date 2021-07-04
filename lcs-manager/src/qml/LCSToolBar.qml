@@ -25,7 +25,8 @@ ToolBar {
         anchors.verticalCenter: parent.verticalCenter
         ToolButton {
             id: mainMenuButton
-            text: "\u2630"
+            text: "\uf013"
+            font.family: "FontAwesome"
             onClicked: lcsToolBar.openSideMenu()
         }
         ComboBox {

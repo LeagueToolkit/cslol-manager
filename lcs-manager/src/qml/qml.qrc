@@ -20,7 +20,7 @@
         <file>LCSDialogUpdate.qml</file>
         <file>qtquickcontrols2.conf</file>
         <file>fontawesome-webfont.ttf</file>
-        <file>LCSSideMenu.qml</file>
+        <file>LCSDialogSettings.qml</file>
         <file>LCSLogView.qml</file>
     </qresource>
 </RCC>

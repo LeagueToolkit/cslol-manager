@@ -5,10 +5,11 @@ import QtQuick.Controls.Material 2.15
 
 
 
-ScrollView {
+ColumnLayout {
     id: lcsModsView
     enabled: !isBussy
-    padding: 5
+    layoutDirection: Qt.RightToLeft
+    spacing: 5
 
     property bool isBussy: false
 
@@ -21,6 +22,10 @@ ScrollView {
     signal modEdit(string fileName)
 
     signal importFile(string file)
+
+    signal installFantomeZip()
+
+    signal createNewMod()
 
     function addMod(fileName, info, enabled) {
         lcsModsViewModel.append({
@@ -82,103 +87,128 @@ ScrollView {
         }
     }
 
-    ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-    ListView {
-        id: lcsModsViewView
-        DropArea {
-            id: fileDropArea
-            anchors.fill: parent
-            onDropped: {
-                if (drop.hasUrls) {
-                    let url = drop.urls[0]
-                    lcsModsView.importFile(lcsTools.fromFile(url))
-                }
-            }
-        }
-
+    ScrollView {
+        padding: 5
         spacing: 5
-
-        model: ListModel {
-            id: lcsModsViewModel
-        }
-
-        delegate: Pane {
-            width: lcsModsViewView.width
-            Material.elevation: 3
-            Row {
-                width: parent.width
-                property string modName: model.Name
-                CheckBox {
-                    width: parent.width * 0.3
-                    id: modCheckbox
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: model ? model.Name : ""
-                    property bool installed: model ? model.Enabled : false
-                    onInstalledChanged: {
-                        if (checked != installed) {
-                            checked = installed
-                        }
-                    }
-                    checked: false
-                    onCheckedChanged: {
-                        if (checked != installed) {
-                            lcsModsViewModel.setProperty(index, "Enabled", checked)
-                        }
-                    }
-                    ToolTip.visible: hovered
-                    ToolTip.text: qsTr("Enable this mod")
-                }
-
-                Column {
-                    width: parent.width * 0.39
-                    anchors.verticalCenter: parent.verticalCenter
-                    Label {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        text: "V" + model.Version + " by " + model.Author
-                    }
-
-                    Label {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        text: model.Description
-                    }
-                }
-
-                Row {
-                    width: parent.width * 0.3
-                    layoutDirection: Qt.RightToLeft
-                    anchors.verticalCenter: parent.verticalCenter
-                    ToolButton {
-                        text: qsTr("\uf00d")
-                        onClicked: {
-                            let modName = model.FileName
-                            lcsModsViewModel.remove(index, 1)
-                            lcsModsView.modRemoved(modName)
-                        }
-                        ToolTip.visible: hovered
-                        ToolTip.text: qsTr("Remove this mod")
-                    }
-                    ToolButton {
-                        text: qsTr("\uf1c6")
-                        font.family: "FontAwesome"
-                        onClicked: {
-                            let modName = model.FileName
-                            lcsModsView.modExport(modName)
-                        }
-                        ToolTip.visible: hovered
-                        ToolTip.text: qsTr("Export this mod")
-                    }
-                    ToolButton {
-                        text: qsTr("\uf044")
-                        font.family: "FontAwesome"
-                        onClicked: {
-                            let modName = model.FileName
-                            lcsModsView.modEdit(modName)
-                        }
-                        ToolTip.visible: hovered
-                        ToolTip.text: qsTr("Edit this mod")
+        Layout.fillHeight: true
+        Layout.fillWidth: true
+        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+        ListView {
+            id: lcsModsViewView
+            DropArea {
+                id: fileDropArea
+                anchors.fill: parent
+                onDropped: {
+                    if (drop.hasUrls) {
+                        let url = drop.urls[0]
+                        lcsModsView.importFile(lcsTools.fromFile(url))
                     }
                 }
             }
+
+            spacing: 5
+
+            model: ListModel {
+                id: lcsModsViewModel
+            }
+
+            delegate: Pane {
+                width: lcsModsViewView.width
+                Material.elevation: 3
+                Row {
+                    width: parent.width
+                    property string modName: model.Name
+                    CheckBox {
+                        width: parent.width * 0.3
+                        id: modCheckbox
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: model ? model.Name : ""
+                        property bool installed: model ? model.Enabled : false
+                        onInstalledChanged: {
+                            if (checked != installed) {
+                                checked = installed
+                            }
+                        }
+                        checked: false
+                        onCheckedChanged: {
+                            if (checked != installed) {
+                                lcsModsViewModel.setProperty(index, "Enabled", checked)
+                            }
+                        }
+                        ToolTip.visible: hovered
+                        ToolTip.text: qsTr("Enable this mod")
+                    }
+
+                    Column {
+                        width: parent.width * 0.39
+                        anchors.verticalCenter: parent.verticalCenter
+                        Label {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            text: "V" + model.Version + " by " + model.Author
+                        }
+
+                        Label {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            text: model.Description
+                        }
+                    }
+
+                    Row {
+                        width: parent.width * 0.3
+                        layoutDirection: Qt.RightToLeft
+                        anchors.verticalCenter: parent.verticalCenter
+                        ToolButton {
+                            text: qsTr("\uf00d")
+                            onClicked: {
+                                let modName = model.FileName
+                                lcsModsViewModel.remove(index, 1)
+                                lcsModsView.modRemoved(modName)
+                            }
+                            ToolTip.visible: hovered
+                            ToolTip.text: qsTr("Remove this mod")
+                        }
+                        ToolButton {
+                            text: qsTr("\uf1c6")
+                            font.family: "FontAwesome"
+                            onClicked: {
+                                let modName = model.FileName
+                                lcsModsView.modExport(modName)
+                            }
+                            ToolTip.visible: hovered
+                            ToolTip.text: qsTr("Export this mod")
+                        }
+                        ToolButton {
+                            text: qsTr("\uf044")
+                            font.family: "FontAwesome"
+                            onClicked: {
+                                let modName = model.FileName
+                                lcsModsView.modEdit(modName)
+                            }
+                            ToolTip.visible: hovered
+                            ToolTip.text: qsTr("Edit this mod")
+                        }
+                    }
+                }
+            }
+        }
+    }
+    Row {
+        spacing: 5
+        RoundButton {
+            text: "\uf067"
+            font.family: "FontAwesome"
+            onClicked: lcsModsView.createNewMod()
+            Material.background: Material.primaryColor
+            ToolTip.visible: hovered
+            ToolTip.text: qsTr("Create new mod")
+        }
+        RoundButton {
+            text: "\uf1c6"
+            font.family: "FontAwesome"
+            onClicked: lcsModsView.installFantomeZip()
+            Material.background: Material.primaryColor
+            ToolTip.visible: hovered
+            ToolTip.text: qsTr("Import new mod")
         }
     }
 }

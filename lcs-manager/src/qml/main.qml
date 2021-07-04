@@ -18,12 +18,12 @@ ApplicationWindow {
         property alias leaguePath: lcsTools.leaguePath
         property alias logVisible: lcsDialogLog.visible
 
-        property alias blacklist: lcsMainMenu.blacklist
-        property alias ignorebad: lcsMainMenu.ignorebad
-        property alias disableUpdates: lcsMainMenu.disableUpdates
-        property alias themeDarkMode: lcsMainMenu.themeDarkMode
-        property alias themePrimaryColor: lcsMainMenu.themePrimaryColor
-        property alias themeAccentColor: lcsMainMenu.themeAccentColor
+        property alias blacklist: lcsDialogSettings.blacklist
+        property alias ignorebad: lcsDialogSettings.ignorebad
+        property alias disableUpdates: lcsDialogSettings.disableUpdates
+        property alias themeDarkMode: lcsDialogSettings.themeDarkMode
+        property alias themePrimaryColor: lcsDialogSettings.themePrimaryColor
+        property alias themeAccentColor: lcsDialogSettings.themeAccentColor
 
         property alias lastZipDirectory: lcsDialogOpenZipFantome.folder
         property alias lastImageFolder: lcsDialogNewMod.lastImageFolder
@@ -38,9 +38,9 @@ ApplicationWindow {
         fileName: "config.ini"
     }
 
-    Material.theme: lcsMainMenu.themeDarkMode ? Material.Dark : Material.Light
-    Material.primary: lcsMainMenu.colors_LIST[lcsMainMenu.themePrimaryColor]
-    Material.accent: lcsMainMenu.colors_LIST[lcsMainMenu.themeAccentColor]
+    Material.theme: lcsDialogSettings.themeDarkMode ? Material.Dark : Material.Light
+    Material.primary: lcsDialogSettings.colors_LIST[lcsDialogSettings.themePrimaryColor]
+    Material.accent: lcsDialogSettings.colors_LIST[lcsDialogSettings.themeAccentColor]
 
     property bool isBussy: lcsTools.state !== LCSTools.StateIdle
     property string log_data: "[INFO] Version: " + LCS_VERSION + "\n"
@@ -73,7 +73,7 @@ ApplicationWindow {
 
         profilesModel: [ "Default Profile" ]
 
-        onOpenSideMenu: lcsMainMenu.open()
+        onOpenSideMenu: lcsDialogSettings.open()
 
         onSaveProfileAndRun:  {
             let name = lcsToolBar.profilesCurrentName
@@ -91,15 +91,8 @@ ApplicationWindow {
 
     }
 
-    LCSSideMenu {
-        id: lcsMainMenu
-
-        onInstallFantomeZip: lcsDialogOpenZipFantome.open()
-
-        onCreateNewMod: {
-            lcsDialogNewMod.clear()
-            lcsDialogNewMod.open()
-        }
+    LCSDialogSettings {
+        id: lcsDialogSettings
 
         onChangeGamePath: lcsDialogLolPath.open()
 
@@ -108,8 +101,6 @@ ApplicationWindow {
         onIgnorebadChanged: lcsTools.changeIgnorebad(ignorebad)
 
         onShowLogs: if (!lcsDialogLog.visible) lcsDialogLog.visible = true
-
-        onExit: Qt.quit()
     }
 
     LCSModsView {
@@ -129,6 +120,13 @@ ApplicationWindow {
         onModEdit: lcsTools.startEditMod(fileName)
 
         onImportFile: lcsTools.installFantomeZip(file)
+
+        onInstallFantomeZip: lcsDialogOpenZipFantome.open()
+
+        onCreateNewMod: {
+            lcsDialogNewMod.clear()
+            lcsDialogNewMod.open()
+        }
     }
 
     footer: LCSStatusBar {

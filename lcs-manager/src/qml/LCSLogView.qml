@@ -17,7 +17,7 @@ ColumnLayout {
     RowLayout {
         width: parent.width
         Button {
-            text: "Copy To Clipboard"
+            text: qsTr("Copy To Clipboard")
             onClicked:  {
                 logTextArea.selectAll()
                 logTextArea.copy()

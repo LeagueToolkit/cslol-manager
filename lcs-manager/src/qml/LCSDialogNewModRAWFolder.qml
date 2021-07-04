@@ -5,5 +5,5 @@ import Qt.labs.platform 1.0
 
 FolderDialog {
     visible: false
-    title: "Select RAW folder"
+    title: qsTr("Select RAW folder")
 }

@@ -6,6 +6,6 @@ import Qt.labs.platform 1.0
 FolderDialog {
     id: lolPathDialog
     visible: false
-    title: "Select League of Legends Game directory"
+    title: qsTr("Select League of Legends Game directory")
     folder: ""
 }

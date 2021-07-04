@@ -10,7 +10,7 @@ Dialog {
     standardButtons: Dialog.Ok
     closePolicy: Popup.CloseOnEscape
     modal: true
-    title: "Update please!"
+    title: qsTr("Update please!")
     property string update_url: "https://github.com/LoL-Fantome/lolcustomskin-tools/releases/latest"
     onAccepted: Qt.openUrlExternally(update_url)
 
