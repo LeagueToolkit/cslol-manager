@@ -4,34 +4,23 @@ import QtQuick.Controls 2.12
 
 Dialog {
     id: lcsDialogError
-    width: parent.width * 0.5
+    width: parent.width * 0.9
+    height: parent.height * 0.9
     x: (parent.width - width) / 2
     y: (parent.height - height) / 2
     standardButtons: Dialog.Ok
     closePolicy: Popup.NoAutoClose
     modal: true
-    title: "Error"
-    property alias text: errorTextLabel.text
-    RowLayout {
+    title: "\uf071 Error - " + text
+
+    property string text: ""
+
+    LCSLogView {
         width: parent.width
-        Label {
-            text: "\uf071"
-            font.family: "FontAwesome"
-            font.pointSize: 32
-        }
-        ColumnLayout {
-            Layout.fillWidth: true
-            Label {
-                id: errorTextLabel
-                Layout.fillWidth: true
-                text: "Oopsie!"
-            }
-            Label {
-                Layout.fillWidth: true
-                text: "Check logs for any errors!"
-            }
-        }
+        height: parent.height
+        spacing: 5
     }
+
     onAccepted: {
         close()
     }
