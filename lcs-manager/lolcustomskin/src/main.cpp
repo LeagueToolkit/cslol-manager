@@ -10,11 +10,17 @@ namespace fs = std::filesystem;
 
 #ifdef WIN32
 #define print_path(name, path) wprintf(L"%s: %s\n", L ## name, path.c_str())
-int wmain(int argc, wchar_t **argv, wchar_t **envp) {
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <shellapi.h>
+#include <processenv.h>
+#define make_main(body) int main() { auto argc = 0; auto argv = CommandLineToArgvW(GetCommandLineW(), &argc); body }
 #else
 #define print_path(name, path) printf("%s%s\n", name, path.c_str())
-int main(int argc, char** argv) {
+#define make_main(body) int main(int argc, char** argv) { body }
 #endif
+
+make_main({
     fs::path prefix = argc > 1 ? fs::path(argv[1]) : fs::path("MOD/");
     fs::path configfile = fs::path(argv[0]).parent_path() / "lolcustomskin.txt";
     LCS::ModOverlay overlay = {};
@@ -57,4 +63,4 @@ int main(int argc, char** argv) {
                error.what());
         getc(stdin);
     }
-}
+})

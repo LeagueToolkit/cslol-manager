@@ -21,6 +21,7 @@ Dialog {
             Layout.fillWidth: true
             id: newProfileName
             placeholderText: qsTr("Profile name");
+// FIXME: does not work in Qt6
             validator: RegExpValidator {
                 regExp: new RegExp("[0-9a-zA-Z_ ]{3,20}")
             }
