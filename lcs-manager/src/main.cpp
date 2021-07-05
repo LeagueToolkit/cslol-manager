@@ -1,4 +1,3 @@
-#include <QApplication>
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
@@ -14,8 +13,7 @@ int main(int argc, char *argv[])
     qmlRegisterType<LCSTools>("lolcustomskin.tools", 1, 0, "LCSTools");
 
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
-    QApplication app(argc, argv);
-
+    QGuiApplication app(argc, argv);
     app.setOrganizationName("moonshadow565");
     app.setOrganizationDomain("lcs");
     app.setApplicationName("lolcustomskin-manager");
