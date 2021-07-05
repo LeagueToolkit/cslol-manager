@@ -75,7 +75,7 @@ ApplicationWindow {
 
         onOpenSideMenu: lcsDialogSettings.open()
 
-        onSaveProfileAndRun:  {
+        onSaveProfileAndRun: function(run) {
             let name = lcsToolBar.profilesCurrentName
             let mods = lcsModsView.saveProfile()
             lcsTools.saveProfile(name, mods, run)
@@ -109,20 +109,23 @@ ApplicationWindow {
         isBussy: window.isBussy
         rowHeight: lcsToolBar.height
 
-        onModRemoved: lcsTools.deleteMod(fileName)
+        onModRemoved: function(fileName) {
+            lcsTools.deleteMod(fileName)
+        }
 
-        onModExport: {
+        onModExport: function(fileName) {
             lcsDialogSaveZipFantome.modName = fileName
             lcsDialogSaveZipFantome.open()
             lcsDialogSaveZipFantome.currentFile = lcsDialogSaveZipFantome.folder + "/" + fileName + ".fantome"
         }
+        onModEdit: function(fileName) {
+            lcsTools.startEditMod(fileName)
+        }
 
-        onModEdit: lcsTools.startEditMod(fileName)
-
-        onImportFile: lcsTools.installFantomeZip(file)
-
+        onImportFile: function(file) {
+            lcsTools.installFantomeZip(file)
+        }
         onInstallFantomeZip: lcsDialogOpenZipFantome.open()
-
         onCreateNewMod: {
             lcsDialogNewMod.clear()
             lcsDialogNewMod.open()
@@ -148,7 +151,9 @@ ApplicationWindow {
 
     LCSDialogNewMod {
         id: lcsDialogNewMod
-        onSave: lcsTools.makeMod(fileName, image, infoData, items)
+        onSave: function(fileName, image, infoData, items) {
+            lcsTools.makeMod(fileName, image, infoData, items)
+        }
     }
 
     LCSDialogEditMod {
@@ -156,11 +161,21 @@ ApplicationWindow {
         visible: false
         isBussy: window.isBussy
 
-        onChangeInfoData: lcsTools.changeModInfo(fileName, infoData)
-        onChangeImage: lcsTools.changeModImage(fileName, image)
-        onRemoveImage: lcsTools.removeModImage(fileName)
-        onRemoveWads: lcsTools.removeModWads(fileName, wads)
-        onAddWads: lcsTools.addModWads(fileName, wads)
+        onChangeInfoData: function(infoData) {
+            lcsTools.changeModInfo(fileName, infoData)
+        }
+        onChangeImage: function(image) {
+            lcsTools.changeModImage(fileName, image)
+        }
+        onRemoveImage: function() {
+            lcsTools.removeModImage(fileName)
+        }
+        onRemoveWads: function(wads) {
+            lcsTools.removeModWads(fileName, wads)
+        }
+        onAddWads: function(wads) {
+            lcsTools.addModWads(fileName, wads)
+        }
     }
 
     LCSDialogNewProfile {
@@ -208,13 +223,22 @@ ApplicationWindow {
     LCSTools {
         id: lcsTools
 
-        onStatusChanged: logInfo("Status changed", status)
-        onProgressStart: lcsStatusBar.start(itemsTotal, dataTotal)
-        onProgressItems: lcsStatusBar.updateItem(itemsDone)
-        onProgressData: lcsStatusBar.updateData(dataDone)
-        onProgressEnd: lcsStatusBar.isCopying = false
-
-        onInitialized: {
+        onStatusChanged: function(status) {
+            logInfo("Status changed", status)
+        }
+        onProgressStart: function(itemsTotal, dataTotal) {
+            lcsStatusBar.start(itemsTotal, dataTotal)
+        }
+        onProgressItems: function(itemsDone) {
+            lcsStatusBar.updateItem(itemsDone)
+        }
+        onProgressData: function(dataDone) {
+            lcsStatusBar.updateData(dataDone)
+        }
+        onProgressEnd: function() {
+            lcsStatusBar.isCopying = false
+        }
+        onInitialized: function(mods, profiles, profileName, profileMods) {
             lcsToolBar.profilesModel = profiles
             lcsToolBar.profilesCurrentIndex = 0
             for(let i in profiles) {
@@ -231,9 +255,13 @@ ApplicationWindow {
             }
         }
         onModDeleted: {}
-        onInstalledMod: lcsModsView.addMod(fileName, infoData, false)
+        onInstalledMod: function(fileName, infoData) {
+            lcsModsView.addMod(fileName, infoData, false)
+        }
         onProfileSaved: {}
-        onProfileLoaded: lcsModsView.loadProfile(profileMods)
+        onProfileLoaded: function(name, profileMods) {
+            lcsModsView.loadProfile(profileMods)
+        }
         onProfileDeleted: {
             let index = lcsToolBar.profilesCurrentIndex
             if (lcsToolBar.profilesModel.length > 1) {
@@ -248,25 +276,34 @@ ApplicationWindow {
                 lcsToolBar.profilesCurrentIndex = 0
             }
         }
-        onUpdateProfileStatus: log_data += message
-        onModEditStarted: {
+        onUpdateProfileStatus: function(message) {
+            log_data += message
+        }
+        onModEditStarted: function(fileName, infoData, image, wads) {
             lcsDialogEditMod.load(fileName, infoData, image, wads)
             lcsDialogEditMod.open()
         }
-        onModInfoChanged: {
+        onModInfoChanged: function(fileName, infoData) {
             lcsModsView.updateModInfo(fileName, infoData)
             lcsDialogEditMod.infoDataChanged(infoData)
         }
-        onModImageChanged: lcsDialogEditMod.imageChanged(image)
-        onModImageRemoved: lcsDialogEditMod.imageRemoved()
-        onModWadsAdded: lcsDialogEditMod.wadsAdded(wads)
-        onModWadsRemoved: lcsDialogEditMod.wadsRemoved(wads)
-
-        onReportError:  {
+        onModImageChanged: function(fileName, image) {
+            lcsDialogEditMod.imageChanged(image)
+        }
+        onModImageRemoved: function(fileName) {
+            lcsDialogEditMod.imageRemoved()
+        }
+        onModWadsAdded: function(fileName, wads) {
+            lcsDialogEditMod.wadsAdded(wads)
+        }
+        onModWadsRemoved: function(fileName, wads) {
+            lcsDialogEditMod.wadsRemoved(wads)
+        }
+        onReportError: function(category, message) {
             logError(category, message)
             lcsStatusBar.isCopying = false
         }
-        onReportWarning: {
+        onReportWarning: function(category, message) {
             logError(category, message)
             lcsStatusBar.isCopying = false
         }

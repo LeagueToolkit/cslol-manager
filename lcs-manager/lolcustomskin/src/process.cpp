@@ -10,6 +10,7 @@
 #include <stdexcept>
 #include <thread>
 #include <utility>
+#include <filesystem>
 
 using namespace LCS;
 
@@ -75,8 +76,9 @@ std::optional<Process> Process::Find(char const *name) noexcept {
     DWORD modSize = {};
     char dump[1024] = {};
     for (bool i = Process32First(handle.get(), &entry); i;
-         i = Process32Next(handle.get(), &entry)) {
-        if (strstr(entry.szExeFile, name)) {
+        i = Process32Next(handle.get(), &entry)) {
+        std::filesystem::path ExeFile = entry.szExeFile;
+        if (ExeFile.filename().generic_string() == name) {
             auto process = Process(entry.th32ProcessID);
             if (!process.handle_) {
                 return {};

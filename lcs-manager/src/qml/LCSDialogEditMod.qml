@@ -115,6 +115,7 @@ Dialog {
                             id: fieldName
                             Layout.fillWidth: true
                             placeholderText: "Name"
+// FIXME: does not work in Qt6
                             validator: RegExpValidator {
                                 regExp: new RegExp("[0-9a-zA-Z_ ]{3,20}")
                             }
@@ -130,6 +131,7 @@ Dialog {
                             id: fieldAuthor
                             Layout.fillWidth: true
                             placeholderText: "Author"
+// FIXME: does not work in Qt6
                             validator: RegExpValidator {
                                 regExp: new RegExp("[0-9a-zA-Z_ ]{3,20}")
                             }
@@ -145,6 +147,7 @@ Dialog {
                             id: fieldVersion
                             Layout.fillWidth: true
                             placeholderText: "0.0.0"
+// FIXME: does not work in Qt6
                             validator: RegExpValidator {
                                 regExp: new RegExp("([0-9]+)(\\.[0-9]+){0,3}")
                             }
