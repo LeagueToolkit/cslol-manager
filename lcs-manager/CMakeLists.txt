@@ -8,9 +8,15 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-
-find_package(Qt5 5.15 COMPONENTS Core Gui Quick QmlImportScanner REQUIRED)
+option(USE_QT6 "Use Qt6 instead of Qt5" OFF)
+if (USE_QT6)
+    find_package(Qt6 6.1 COMPONENTS Core Gui Quick QmlImportScanner REQUIRED)
+else()
+    find_package(Qt5 5.15 COMPONENTS Core Gui Quick QmlImportScanner REQUIRED)
+endif()
 find_package(Threads REQUIRED)
+
+
 
 if (WIN32)
     add_subdirectory(lolcustomskin)
