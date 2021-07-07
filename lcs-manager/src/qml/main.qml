@@ -127,6 +127,7 @@ ApplicationWindow {
         anchors.fill: parent
         isBussy: window.isBussy
         rowHeight: lcsToolBar.height
+        columnCount: Math.max(1, Math.floor(window.width / window.minimumWidth))
 
         onModRemoved: function(fileName) {
             lcsTools.deleteMod(fileName)

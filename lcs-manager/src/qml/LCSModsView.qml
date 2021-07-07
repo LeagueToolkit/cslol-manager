@@ -11,6 +11,8 @@ ColumnLayout {
     layoutDirection: Qt.RightToLeft
     spacing: 5
 
+    property int columnCount: 1
+
     property bool isBussy: false
 
     property real rowHeight: 0
@@ -93,7 +95,7 @@ ColumnLayout {
         Layout.fillHeight: true
         Layout.fillWidth: true
         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-        ListView {
+        GridView {
             id: lcsModsViewView
             DropArea {
                 id: fileDropArea
@@ -105,15 +107,16 @@ ColumnLayout {
                     }
                 }
             }
-
-            spacing: 5
+            cellWidth: lcsModsViewView.width / lcsModsView.columnCount
 
             model: ListModel {
                 id: lcsModsViewModel
             }
 
             delegate: Pane {
-                width: lcsModsViewView.width
+                width: lcsModsViewView.width / lcsModsView.columnCount - 5
+                Component.onCompleted: lcsModsViewView.cellHeight = height + 5
+
                 Material.elevation: 3
                 Row {
                     width: parent.width
@@ -143,18 +146,18 @@ ColumnLayout {
                         width: parent.width * 0.39
                         anchors.verticalCenter: parent.verticalCenter
                         Label {
-                            anchors.horizontalCenter: parent.horizontalCenter
+                            horizontalAlignment: Text.AlignHCenter
                             text: "V" + model.Version + " by " + model.Author
                             elide: Text.ElideRight
                             width: parent.width
                         }
 
                         Label {
-                            anchors.horizontalCenter: parent.horizontalCenter
+                            horizontalAlignment: Text.AlignHCenter
                             text: model.Description
                             wrapMode: Text.Wrap
                             elide: Text.ElideRight
-                            maximumLineCount: 3
+                            maximumLineCount: 2
                             width: parent.width
                         }
                     }

@@ -94,9 +94,10 @@ Dialog {
         id: itemsModel
     }
 
-    RowLayout {
+    GridLayout {
         width: parent.width
         height: parent.height
+        columns: height > width ? 1 : 2
         enabled: !isBussy
         ColumnLayout {
             Layout.fillWidth: true
@@ -196,9 +197,6 @@ Dialog {
                         onClicked: dialogImage.open()
                     }
                 }
-            }
-            Item {
-                Layout.fillHeight: true
             }
         }
 
