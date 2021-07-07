@@ -151,6 +151,13 @@ Dialog {
                     }
                 }
             }
+            Item {
+                Layout.fillHeight: true
+            }
+            Button {
+                text: qsTr("Clear")
+                onClicked: itemsModel.clear()
+            }
         }
         GroupBox {
             title: qsTr("Files")
@@ -211,18 +218,11 @@ Dialog {
                 RowLayout {
                     width: parent.width
                     Button {
-                        text: qsTr("Clear")
-                        onClicked: itemsModel.clear()
-                    }
-                    Item {
-                        Layout.fillWidth: true
-                    }
-                    Button {
-                        text: qsTr("Add .wad files")
+                        text: qsTr("Add WAD")
                         onClicked: dialogWadFiles.open()
                     }
                     Button {
-                        text: qsTr("Add RAW folder")
+                        text: qsTr("Add RAW")
                         onClicked: dialogRawFolder.open()
                     }
                 }

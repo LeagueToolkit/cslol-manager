@@ -197,6 +197,9 @@ Dialog {
                     }
                 }
             }
+            Item {
+                Layout.fillHeight: true
+            }
         }
 
         GroupBox {
@@ -251,15 +254,12 @@ Dialog {
 
                 RowLayout {
                     width: parent.width
-                    Item {
-                        Layout.fillWidth: true
-                    }
                     Button {
-                        text: "Add .wad files"
+                        text: "Add WAD"
                         onClicked: dialogWadFiles.open()
                     }
                     Button {
-                        text: "Add RAW folder"
+                        text: "Add RAW"
                         onClicked: dialogRawFolder.open()
                     }
                 }

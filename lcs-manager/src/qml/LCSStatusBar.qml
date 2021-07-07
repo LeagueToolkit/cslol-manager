@@ -37,10 +37,12 @@ ToolBar {
         anchors.verticalCenter: parent.verticalCenter
         Label {
             Layout.fillWidth: true
+            Layout.leftMargin: 5
             id: statusMessageLabel
             text: isBussy ? statusMessage : "Idle"
         }
         ProgressBar {
+            Layout.rightMargin: 5
             id: progressBarData
             from: 0
             to: 1

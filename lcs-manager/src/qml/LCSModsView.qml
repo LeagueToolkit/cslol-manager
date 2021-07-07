@@ -145,11 +145,17 @@ ColumnLayout {
                         Label {
                             anchors.horizontalCenter: parent.horizontalCenter
                             text: "V" + model.Version + " by " + model.Author
+                            elide: Text.ElideRight
+                            width: parent.width
                         }
 
                         Label {
                             anchors.horizontalCenter: parent.horizontalCenter
                             text: model.Description
+                            wrapMode: Text.Wrap
+                            elide: Text.ElideRight
+                            maximumLineCount: 3
+                            width: parent.width
                         }
                     }
 

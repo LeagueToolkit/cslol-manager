@@ -4,13 +4,17 @@ import QtQuick.Controls 2.15
 
 Dialog {
     id: lcsDialogUpdate
-    width: parent.width * 0.5
+    width: parent.width * 0.9
     x: (parent.width - width) / 2
     y: (parent.height - height) / 2
     standardButtons: Dialog.Ok
     closePolicy: Popup.CloseOnEscape
     modal: true
     title: qsTr("Update please!")
+    Overlay.modal: Rectangle {
+        color: "#aa333333"
+    }
+
     property string update_url: "https://github.com/LoL-Fantome/lolcustomskin-tools/releases/latest"
     onAccepted: Qt.openUrlExternally(update_url)
 
@@ -18,6 +22,8 @@ Dialog {
         width: parent.width
         Label {
             text: "You will be redirected to download page after pressing OK button.\n" + update_url
+            Layout.fillWidth: true
+            wrapMode: Text.Wrap
         }
     }
 
