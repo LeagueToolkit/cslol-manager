@@ -6,6 +6,7 @@ project(lolcustomskin)
 add_executable(lolcustomskin
     src/modoverlay.hpp
     src/modoverlay.cpp
+    src/ppp.hpp
     src/process.hpp
     src/process.cpp
     src/main.cpp

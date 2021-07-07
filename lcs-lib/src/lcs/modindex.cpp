@@ -148,12 +148,17 @@ Mod* ModIndex::install_from_folder_impl(fs::path srcpath, WadIndex const& index,
         }
     }
     auto queue = WadMakeQueue(index);
-    for (auto const& entry: fs::directory_iterator(srcpath / "WAD")) {
-        if (entry.is_directory()) {
-            queue.addItem(std::make_unique<WadMake>(entry.path()), Conflict::Abort);
-        } else {
-            queue.addItem(std::make_unique<WadMakeCopy>(entry.path()), Conflict::Abort);
+    if (fs::exists(srcpath / "WAD")) {
+        for (auto const& entry: fs::directory_iterator(srcpath / "WAD")) {
+            if (entry.is_directory()) {
+                queue.addItem(std::make_unique<WadMake>(entry.path()), Conflict::Abort);
+            } else {
+                queue.addItem(std::make_unique<WadMakeCopy>(entry.path()), Conflict::Abort);
+            }
         }
+    }
+    if (fs::exists(srcpath / "RAW")) {
+        queue.addItem(std::make_unique<WadMake>(srcpath / "RAW"), Conflict::Abort);
     }
     auto mod = make(filename, info, image, queue, progress);
 
@@ -175,7 +180,7 @@ Mod* ModIndex::install_from_wad(fs::path srcpath, WadIndex const& index, Progres
         queue.addItem(std::make_unique<WadMakeCopy>(srcpath), Conflict::Abort);
     }
     json j = {
-        { "Name", filename },
+        { "Name", filename.generic_u8string() },
         { "Author", "UNKNOWN" },
         { "Version", "0.0.0" },
         { "Description", "Converted from .wad" },
