@@ -5,80 +5,19 @@
 #include <cstdio>
 #include <cstdlib>
 #include <span>
+#include "ppp.hpp"
 
 using namespace LCS;
 
-
-namespace {
-    inline constexpr uint16_t Any = 0x0100u;
-
-    // capture offset of given byte
-    template <uint16_t C = Any>
-    inline constexpr uint16_t Cap = C | 0x0200u;
-
-    // returns function that searches for the given signature
-    // result of search is array with first offset + any offsets captured
-    template <uint16_t... ops>
-    inline constexpr auto Pattern() {
-        return [](std::span<const char> data) constexpr noexcept {
-            std::array<char const *, ((ops & 0x0200 ? 1 : 0) + ... + 1)> result = {};
-            if (data.size() >= sizeof...(ops)) {
-                auto const end = data.data() + (data.size() - sizeof...(ops));
-                for (auto *i = data.data(); i != end; i++) {
-                    auto c = i;
-                    if ((((uint8_t)*c++ == (ops & 0xFF) || (ops & 0x100)) && ...)) {
-                        auto *o = i;
-                        size_t r = 0;
-                        result[r++] = o;
-                        ((ops & 0x200 ? result[r++] = o++ : o++), ...);
-                        return result;
-                    }
-                }
-            }
-            return result;
-        };
-    }
-
-    constexpr auto FindOpen = Pattern<
-            0x6A, 0x03,
-            0x68, 0x00, 0x00, 0x00, 0xC0,
-            0x68, Any, Any, Any, Any,
-            0xFF, 0x15, Cap<Any>, Any, Any, Any
-            >();
-
-    constexpr auto FindRet = Pattern<
-            0x57,
-            0x8B, 0xCB,
-            0xE8, Any, Any, Any, Any,
-            Cap<0x84>, 0xC0,
-            0x75, 0x12
-            >();
-
-    constexpr auto FindWOpen = Pattern<
-            0x6A, 0x00,
-            0x6A, Any,
-            0x68, Any, Any, 0x12, 0x00,
-            Any,
-            0xFF, 0x15, Cap<Any>, Any, Any, Any
-            >();
-
-    constexpr auto FindFree = Pattern<
-            0xA1, Cap<Any>, Any, Any, Any,
-            0x85, 0xC0,
-            0x74, 0x09,
-            0x3D, Any, Any, Any, Any,
-            0x74, 0x02,
-            0xFF, 0xE0,
-            Cap<0xFF>, 0x74, 0x24, 0x04,
-            0xE8, Any, Any, Any, Any
-            >();
-
-    inline PtrStorage bytes2ptr(char const* bytes) {
-        PtrStorage result;
-        memcpy(&result, bytes, sizeof(result));
-        return result;
-    }
-}
+constexpr auto const find_open = &ppp::any<
+        "6A 03 68 00 00 00 00 C0 68 ?? ?? ?? ?? FF 15 o[u[?? ?? ?? ??]]"_pattern,
+        "6A 00 56 55 50 FF 15 o[u[?? ?? ?? ??]] 8B F8"_pattern>;
+constexpr auto const find_ret = &ppp::any<
+        "57 8B CB E8 ?? ?? ?? ?? o[84] C0 75 12"_pattern>;
+constexpr auto const find_wopen = &ppp::any<
+        "6A 00 6A ?? 68 ?? ?? 12 00 ?? FF 15 u[?? ?? ?? ??]"_pattern>;
+constexpr auto const find_free = &ppp::any<
+        "A1 u[?? ?? ?? ??] 85 C0 74 09 3D ?? ?? ?? ?? 74 02 FF E0 o[FF 74 24 04] E8 ?? ?? ??"_pattern>;
 
 void ModOverlay::save(std::filesystem::path const& filename) const noexcept {
     FILE* file = {};
@@ -138,39 +77,32 @@ bool ModOverlay::check(LCS::Process const &process) const {
 }
 
 void ModOverlay::scan(LCS::Process const &process) {
-    auto data = process.Dump();
+    auto const base = process.Base();
+    auto const data = process.Dump();
 
-    // Find call to fopen
-    auto open_call_offset = FindOpen(data);
-    if (!open_call_offset[0]) {
-        throw std::runtime_error("Failed to find fopen call!");
+    auto const open_match = find_open(data, base);
+    if (!open_match) {
+        throw std::runtime_error("Failed to find fopen!");
+    }
+    auto const wopen_match = find_wopen(data, base);
+    if (!wopen_match) {
+        throw std::runtime_error("Failed to find wfopen!");
+    }
+    auto const ret_match = find_ret(data, base);
+    if (!ret_match) {
+        throw std::runtime_error("Failed to find ret!");
+    }
+    auto const free_match = find_free(data, base);
+    if (!free_match) {
+        throw std::runtime_error("Failed to find free!");
     }
 
-    off_open_ref = (PtrStorage)(open_call_offset[1] - data.data());
-    off_open = process.Debase(bytes2ptr(open_call_offset[1]));
-
-    // Find call to wfopen
-    auto wopen_call_offset = FindWOpen(data);
-    if (!wopen_call_offset[0]) {
-        throw std::runtime_error("Failed to find wfopen call!");
-    }
-    off_wopen = process.Debase(bytes2ptr(wopen_call_offset[1]));
-
-    // Find ret
-    auto ret_offset = FindRet(data);
-    if (!ret_offset[0]) {
-        throw std::runtime_error("Failed to find ret offset!");
-    }
-    off_ret = (PtrStorage)(ret_offset[1] - data.data());
-
-    // Find EVP_PKEY_METHOD array
-    auto free_ptr_offset = FindFree(data);
-    if (!free_ptr_offset[0]) {
-        throw std::runtime_error("Failed to find pmeth arr offset!");
-    }
-
-    off_free_ptr = process.Debase(bytes2ptr(free_ptr_offset[1]));
-    off_free_fn = (PtrStorage)(free_ptr_offset[2] - data.data());
+    off_open_ref = process.Debase((PtrStorage)std::get<1>(*open_match));
+    off_open = process.Debase((PtrStorage)std::get<2>(*open_match));
+    off_wopen = process.Debase((PtrStorage)std::get<1>(*wopen_match));
+    off_ret = process.Debase((PtrStorage)std::get<1>(*ret_match));
+    off_free_ptr = process.Debase((PtrStorage)std::get<1>(*free_match));
+    off_free_fn = process.Debase((PtrStorage)std::get<2>(*free_match));
 
     checksum = process.Checksum();
 }
