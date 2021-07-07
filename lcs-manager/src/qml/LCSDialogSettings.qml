@@ -52,23 +52,39 @@ Dialog {
     signal showLogs()
     signal changeGamePath()
 
-    RowLayout {
-        spacing: 5
+    Column {
+        id: settingsLayout
         anchors.fill: parent
-        GroupBox {
+        TabBar {
+            id: settingsTabBar
+            width: settingsStackLayout.width
+
+            TabButton {
+                text: "Game"
+                width: settingsStackLayout.width / 3
+            }
+            TabButton {
+                text: "Theme"
+                width: settingsStackLayout.width / 3
+            }
+            TabButton {
+                text: "Misc"
+                width: settingsStackLayout.width / 3
+            }
+        }
+
+        StackLayout {
+            id: settingsStackLayout
+            width: parent.width
             Layout.fillHeight: true
-            Layout.fillWidth: true
-            title: qsTr("General")
+            currentIndex: settingsTabBar.currentIndex
             ColumnLayout {
+                id: settingsGameTab
+                spacing: 5
                 Button {
                     text: qsTr("Change Game folder")
                     enabled: !isBussy
                     onClicked: lcsDialogSettings.changeGamePath()
-                    Layout.fillWidth: true
-                }
-                Button {
-                    text: qsTr("Log window")
-                    onClicked: lcsDialogSettings.showLogs()
                     Layout.fillWidth: true
                 }
                 Switch {
@@ -83,25 +99,10 @@ Dialog {
                     checked: false
                     Layout.fillWidth: true
                 }
-                Switch {
-                    id: disableUpdatesCheck
-                    text: qsTr("Disable updates")
-                    checked: false
-                    Layout.fillWidth: true
-                }
             }
-        }
-        GroupBox {
-            Layout.fillHeight: true
-            Layout.fillWidth: true
-            title: qsTr("Theme")
             ColumnLayout {
-                Switch {
-                    id: themeDarkModeCheck
-                    text: qsTr("Dark mode")
-                    checked: true
-                    Layout.fillWidth: true
-                }
+                id: settingsThemeTab
+                spacing: 5
                 RowLayout {
                     Layout.fillWidth: true
                     Label {
@@ -125,6 +126,27 @@ Dialog {
                         currentIndex: 1
                         Layout.fillWidth: true
                     }
+                }
+                Switch {
+                    id: themeDarkModeCheck
+                    text: qsTr("Dark mode")
+                    checked: true
+                    Layout.fillWidth: true
+                }
+            }
+            ColumnLayout {
+                id: settingsMiscTab
+                spacing: 5
+                Button {
+                    text: qsTr("Log window")
+                    onClicked: lcsDialogSettings.showLogs()
+                    Layout.fillWidth: true
+                }
+                Switch {
+                    id: disableUpdatesCheck
+                    text: qsTr("Disable updates")
+                    checked: false
+                    Layout.fillWidth: true
                 }
             }
         }

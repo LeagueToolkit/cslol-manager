@@ -10,7 +10,9 @@ ApplicationWindow {
     id: window
     visible: true
     width: 640
-    height: 480
+    height: 640
+    minimumHeight: 640
+    minimumWidth: 640
     title: qsTr("LolCustomSkin Manager - " + LCS_VERSION)
 
     Settings {
@@ -32,10 +34,27 @@ ApplicationWindow {
 
         property alias windowHeight: window.height
         property alias windowWidth: window.width
+        property bool windowMaximised
         property alias logHeight: lcsDialogLog.height
         property alias logWidth: lcsDialogLog.width
 
         fileName: "config.ini"
+    }
+
+    property bool firstTick: false
+    onVisibilityChanged: {
+        if (firstTick) {
+            if (window.visibility === ApplicationWindow.Maximized) {
+                if (settings.windowMaximised !== true) {
+                    settings.windowMaximised = true;
+                }
+            }
+            if (window.visibility === ApplicationWindow.Windowed) {
+                if (settings.windowMaximised !== false) {
+                    settings.windowMaximised = false;
+                }
+            }
+        }
     }
 
     Material.theme: lcsDialogSettings.themeDarkMode ? Material.Dark : Material.Light
@@ -310,6 +329,12 @@ ApplicationWindow {
     }
 
     Component.onCompleted: {
+        if (settings.windowMaximised) {
+            if (window.visibility !== ApplicationWindow.Maximized) {
+                window.visibility = ApplicationWindow.Maximized;
+            }
+        }
+        firstTick = true;
         lcsTools.init()
         lcsDialogUpdate.checkForUpdates()
     }
