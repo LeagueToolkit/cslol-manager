@@ -61,9 +61,10 @@ Dialog {
     }
 
 
-    RowLayout {
+    GridLayout  {
         width: parent.width
         height: parent.height
+        columns: height > width ? 1 : 2
         ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -151,13 +152,6 @@ Dialog {
                     }
                 }
             }
-            Item {
-                Layout.fillHeight: true
-            }
-            Button {
-                text: qsTr("Clear")
-                onClicked: itemsModel.clear()
-            }
         }
         GroupBox {
             title: qsTr("Files")
@@ -217,6 +211,10 @@ Dialog {
 
                 RowLayout {
                     width: parent.width
+                    Button {
+                        text: qsTr("Clear")
+                        onClicked: itemsModel.clear()
+                    }
                     Button {
                         text: qsTr("Add WAD")
                         onClicked: dialogWadFiles.open()
