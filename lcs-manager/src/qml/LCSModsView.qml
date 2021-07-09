@@ -111,6 +111,7 @@ ColumnLayout {
                 }
             }
             cellWidth: lcsModsViewView.width / lcsModsView.columnCount
+            cellHeight: 75
 
             model: ListModel {
                 id: lcsModsViewModel
@@ -119,7 +120,10 @@ ColumnLayout {
             delegate: Pane {
                 width: lcsModsViewView.width / lcsModsView.columnCount - 5
                 Component.onCompleted: {
-                    lcsModsViewView.cellHeight = height + 5
+                    let newCellHeight = height + 5
+                    if (lcsModsViewView.cellHeight < newCellHeight) {
+                        lcsModsViewView.cellHeight = newCellHeight;
+                    }
                 }
 
                 Material.elevation: 3

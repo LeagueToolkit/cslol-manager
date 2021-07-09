@@ -227,6 +227,7 @@ Dialog {
                             }
                             ToolButton {
                                 text: qsTr("\uf00d")
+                                font.family: "FontAwesome"
                                 onClicked: {
                                     let modName = model.Name
                                     lcsDialogEditMod.removeWads([modName])
