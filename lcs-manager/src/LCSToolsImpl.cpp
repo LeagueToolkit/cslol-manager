@@ -6,7 +6,6 @@
 #include <QThread>
 #include <fstream>
 
-
 LCSToolsImpl::LCSToolsImpl(QObject *parent)
     : QObject(parent), progDirPath_(QCoreApplication::applicationDirPath().toStdU16String()),
       patcherConfig_(progDirPath_ / "lolcustomskin.txt") {}
@@ -109,10 +108,15 @@ void LCSToolsImpl::writeCurrentProfile(QString profile) {
 
 LCS::WadIndex const& LCSToolsImpl::wadIndex() {
     if (leaguePath_.empty()) {
+        lcs_hint("Select your Game directory!");
         throw std::runtime_error("Game path not set!");
     }
 
     while (wadIndex_ == nullptr || !wadIndex_->is_uptodate()) {
+        lcs_hint("Make sure your Game directory points to correct location!\n"
+                 "Make sure you don't have garbage files in your Game folder!\n"
+                 "Try repairing the Game!\n"
+                 "Try reinstalling the Game!");
         wadIndex_ = std::make_unique<LCS::WadIndex>(leaguePath_, blacklist_, ignorebad_);
         QThread::msleep(250);
     }
@@ -166,9 +170,6 @@ void LCSToolsImpl::changeLeaguePath(QString newLeaguePath) {
             setState(LCSState::StateBusy);
             setStatus("Change League Path");
         }
-//        if (newLeaguePath.isEmpty() || newLeaguePath.isNull()) {
-//            return;
-//        }
         LCS::fs::path path = newLeaguePath.toStdU16String();
         if (path.extension() == ".exe") {
             path.remove_filename();
@@ -236,6 +237,7 @@ void LCSToolsImpl::init() {
         auto lockpath = QString::fromStdU16String((progDirPath_/ "lockfile").generic_u16string());
         lockfile_ = new QLockFile(lockpath);
         try {
+            lcs_hint("Make sure you already don't have LCS running!");
             if (!lockfile_->tryLock()) {
                 auto lockerror = QString::number((int)lockfile_->error());
                 throw std::runtime_error("Lock error: " + lockerror.toStdString());
@@ -300,30 +302,35 @@ void LCSToolsImpl::exportMod(QString name, QString dest) {
     }
 }
 
-void LCSToolsImpl::installFantomeZip(QString path) {
+void LCSToolsImpl::installFantomeZip(QStringList paths) {
     if (state_ == LCSState::StateIdle) {
         setState(LCSState::StateBusy);
         setStatus("Installing Mod");
-        path = path.replace('\\', '/');
         try {
             auto const& index = wadIndex();
-            auto& progress = *dynamic_cast<LCS::ProgressMulti*>(this);
-            LCS::Mod* mod = nullptr;
-            // TODO: gezi skin
-            if (path.endsWith(".wad.client")
-                || path.endsWith(".wad.client/")
-                || path.endsWith(".wad")
-                || path.endsWith(".wad/")) {
-                mod = modIndex_->install_from_wad(path.toStdU16String(), index, progress);
-            } else if (path.endsWith(".fantome") || path.endsWith(".zip")) {
-                mod = modIndex_->install_from_fantome(path.toStdU16String(), index, progress);
-            } else if (path.endsWith(".wxy")) {
-                mod = modIndex_->install_from_wxy(path.toStdU16String(), index, progress);
-            } else {
-                mod = modIndex_->install_from_folder(path.toStdU16String(), index, progress);
+            for (QString path: paths) {
+                path = path.replace('\\', '/');
+                auto& progress = *dynamic_cast<LCS::ProgressMulti*>(this);
+                LCS::Mod* mod = nullptr;
+                // TODO: gezi skin
+                if (path.endsWith(".wad.client")
+                    || path.endsWith(".wad.client/")
+                    || path.endsWith(".wad")
+                    || path.endsWith(".wad/")) {
+                    mod = modIndex_->install_from_wad(path.toStdU16String(), index, progress);
+                } else if (path.endsWith(".fantome") || path.endsWith(".zip")) {
+                    mod = modIndex_->install_from_fantome(path.toStdU16String(), index, progress);
+                } else if (path.endsWith(".wxy")) {
+                    mod = modIndex_->install_from_wxy(path.toStdU16String(), index, progress);
+                } else {
+                    lcs_hint("Make sure you have: \n"
+                             "\t-META folder with info.json file!\n"
+                             "\t-Either RAW or WAD folder!\n");
+                    mod = modIndex_->install_from_folder(path.toStdU16String(), index, progress);
+                }
+                emit installedMod(QString::fromStdU16String(mod->filename().generic_u16string()),
+                                  parseInfoData(mod->filename(), mod->info()));
             }
-            emit installedMod(QString::fromStdU16String(mod->filename().generic_u16string()),
-                              parseInfoData(mod->filename(), mod->info()));
         } catch(std::runtime_error const& error) {
             emit_reportError("Installing a mod", error);
         }
@@ -427,6 +434,7 @@ void LCSToolsImpl::runProfile(QString name) {
             try {
                 setStatus("Waiting for league match to start...");
                 setState(LCSState::StateRunning);
+                lcs_hint("Try running LCS as Administrator!");
                 while (state_ == LCSState::StateRunning) {
 #ifdef WIN32
                     auto process = LCS::Process::Find("League of Legends.exe");
@@ -612,19 +620,22 @@ void LCSToolsImpl::finishMulti() noexcept {
 /// Errorreporting garbage
 void LCSToolsImpl::emit_reportError(QString category, std::runtime_error const& error) {
     QString stack_trace = {};
-    if (auto raw_stack_trace = LCS::error_stack_trace(); true) {
-        stack_trace = QString::fromUtf8((char const*)raw_stack_trace.data(),
-                                        (int)raw_stack_trace.size());
-    }
     QString message = {};
-    if (auto conflict_err = dynamic_cast<LCS::ConflictError const*>(&error)) {
-        message = QString::fromUtf8((char const*)conflict_err->message.data(),
-                                         (int)conflict_err->message.size());
-    } else {
-        message = QString::fromStdString(error.what());
+    if (auto str = LCS::error_stack_trace(); !str.empty()) {
+        stack_trace += QString::fromUtf8((char const*)str.data(), (int)str.size());
     }
-    stack_trace += '\n';
-    stack_trace += message;
+    if (auto conflict_err = dynamic_cast<LCS::ConflictError const*>(&error)) {
+        stack_trace += '\n';
+        auto const& str = conflict_err->message;
+        stack_trace += QString::fromUtf8((char const*)str.data(), (int)str.size());
+    } else {
+        stack_trace += '\n';
+        stack_trace += QString::fromStdString(error.what());
+    }
+    message += QString::fromStdString(error.what());
+    if (auto str = LCS::hint_stack_trace(); !str.empty()) {
+        message += QString::fromUtf8((char const*)str.data(), (int)str.size());
+    }
     emit reportError(category, stack_trace, message);
 }
 

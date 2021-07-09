@@ -155,6 +155,7 @@ std::vector<Wad const*> Mod::add_wads(WadMakeQueue& wads, ProgressMulti& progres
                 removeExisting.push_back(name);
                 continue;
             } else  if(conflict == Conflict::Abort) {
+                lcs_hint("This mod would modify same wad multiple time!");
                 throw ConflictError(name, orgpath, newpath);
             }
         }

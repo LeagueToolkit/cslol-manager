@@ -41,6 +41,7 @@ ApplicationWindow {
         fileName: "config.ini"
     }
 
+    property var validName: new RegExp(/[\p{L}\p{M}\p{Z}\p{N}\w]{3,50}/u)
     property bool firstTick: false
     onVisibilityChanged: {
         if (firstTick) {
@@ -160,16 +161,16 @@ ApplicationWindow {
         onModExport: function(fileName) {
             if (checkGamePath()) {
                 lcsDialogSaveZipFantome.modName = fileName
-                lcsDialogSaveZipFantome.currentFile = lcsDialogSaveZipFantome.folder + "/" + fileName + ".fantome"
+                lcsDialogSaveZipFantome.currentFiles = [ "file:///" + fileName + ".fantome" ]
                 lcsDialogSaveZipFantome.open()
             }
         }
         onModEdit: function(fileName) {
             lcsTools.startEditMod(fileName)
         }
-        onImportFile: function(file) {
+        onImportFile: function(files) {
             if (checkGamePath()) {
-                lcsTools.installFantomeZip(file)
+                lcsTools.installFantomeZip(files)
             }
         }
         onInstallFantomeZip: function() {
@@ -194,7 +195,7 @@ ApplicationWindow {
     LCSDialogOpenZipFantome {
         id: lcsDialogOpenZipFantome
         onAccepted: function() {
-            lcsTools.installFantomeZip(lcsTools.fromFile(file))
+            lcsTools.installFantomeZip([ lcsTools.fromFile(file) ])
         }
     }
 

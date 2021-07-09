@@ -23,7 +23,7 @@ ColumnLayout {
 
     signal modEdit(string fileName)
 
-    signal importFile(string file)
+    signal importFile(var files)
 
     signal installFantomeZip()
 
@@ -102,8 +102,11 @@ ColumnLayout {
                 anchors.fill: parent
                 onDropped: {
                     if (drop.hasUrls) {
-                        let url = drop.urls[0]
-                        lcsModsView.importFile(lcsTools.fromFile(url))
+                        let urls = []
+                        for(let i = 0; i < drop.urls.length; ++i) {
+                            urls[i] = lcsTools.fromFile(drop.urls[i]);
+                        }
+                        lcsModsView.importFile(urls)
                     }
                 }
             }
@@ -115,7 +118,9 @@ ColumnLayout {
 
             delegate: Pane {
                 width: lcsModsViewView.width / lcsModsView.columnCount - 5
-                Component.onCompleted: lcsModsViewView.cellHeight = height + 5
+                Component.onCompleted: {
+                    lcsModsViewView.cellHeight = height + 5
+                }
 
                 Material.elevation: 3
                 Row {

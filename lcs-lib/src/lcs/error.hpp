@@ -36,18 +36,31 @@
         ::LCS::push_error_msg(func, u8':', line, u8':' , __VA_ARGS__);              \
     }                                                                           \
 }
+#define lcs_hint(...) ::LCS::ErrorTrace lcs_paste(trace_,__LINE__) { \
+    [&] () { \
+        ::LCS::push_hint_msg(__VA_ARGS__); \
+    } \
+}
 
 namespace LCS {
     [[noreturn]] extern void throw_error(char const* msg);
 
     extern std::basic_stringstream<char8_t>& error_stack() noexcept;
-
     extern std::u8string error_stack_trace() noexcept;
-    extern std::string error_stack_trace_cstr(std::string message) noexcept;
+
+    extern std::basic_stringstream<char8_t>& hint_stack() noexcept;
+    extern std::u8string hint_stack_trace() noexcept;
 
     template<typename...Args>
     inline void push_error_msg(Args&&...args) noexcept {
         auto& ss = error_stack();
+        ss << u8'\n';
+        (ss << ... << std::forward<Args>(args)) ;
+    }
+
+    template<typename...Args>
+    inline void push_hint_msg(Args&&...args) noexcept {
+        auto& ss = hint_stack();
         ss << u8'\n';
         (ss << ... << std::forward<Args>(args)) ;
     }
@@ -61,5 +74,7 @@ namespace LCS {
             }
         }
     };
+
+    extern void error_print(std::runtime_error const& error) noexcept;
 }
 #endif // LCS_ERROR_HPP
