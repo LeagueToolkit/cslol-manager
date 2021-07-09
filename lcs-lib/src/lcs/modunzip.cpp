@@ -20,7 +20,7 @@ ModUnZip::ModUnZip(fs::path path)
     lcs_trace_func(
                 lcs_trace_var(this->path_)
                 );
-    lcs_assert(mz_zip_reader_init_cfile(&zip_archive, infile_->raw(), 0, 0));
+    lcs_assert_msg("Invalid zip file!", mz_zip_reader_init_cfile(&zip_archive, infile_->raw(), 0, 0));
     mz_uint numFiles = mz_zip_reader_get_num_files(&zip_archive);
     mz_zip_archive_file_stat stat = {};
     for (mz_uint i = 0; i != numFiles; i++) {
@@ -132,7 +132,7 @@ void ModUnZip::extractFile(fs::path const& outpath, CopyFile const& file, Progre
                 lcs_trace_var(file.path)
                 );
     progress.startItem(outpath, file.size);
-    fs::create_directories(outpath.parent_path());
+    lcs_rethrow(fs::create_directories(outpath.parent_path()));
     OutFile outfile(outpath);
     lcs_assert(mz_zip_reader_extract_to_cfile(&zip_archive,
                                               file.index,

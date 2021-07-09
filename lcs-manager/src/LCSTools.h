@@ -62,7 +62,7 @@ signals:
     void init();
     void deleteMod(QString name);
     void exportMod(QString name, QString dest);
-    void installFantomeZip(QString path);
+    void installFantomeZip(QStringList paths);
     void saveProfile(QString name, QJsonObject mods, bool run);
     void loadProfile(QString name);
     void deleteProfile(QString name);

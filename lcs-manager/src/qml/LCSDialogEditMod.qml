@@ -117,7 +117,7 @@ Dialog {
                             Layout.fillWidth: true
                             placeholderText: "Name"
                             validator: RegularExpressionValidator {
-                                regularExpression: /[\w ]{3,50}/
+                                regularExpression: window.validName
                             }
                         }
                     }
@@ -132,7 +132,7 @@ Dialog {
                             Layout.fillWidth: true
                             placeholderText: "Author"
                             validator: RegularExpressionValidator {
-                                regularExpression: /[\w ]{3,50}/
+                                regularExpression: window.validName
                             }
                         }
                     }

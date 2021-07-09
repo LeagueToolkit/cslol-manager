@@ -40,8 +40,7 @@ make_main({
         wadmake.write(dest, progress);
         printf("Finished!\n");
     } catch(std::runtime_error const& error) {
-        auto message = error_stack_trace_cstr(error.what());
-        printf("Error: %s\r\n", message.c_str());
+        error_print(error);
         if (argc < 3) {
             printf("Press enter to exit...!\n");
             getc(stdin);

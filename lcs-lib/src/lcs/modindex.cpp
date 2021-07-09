@@ -15,6 +15,7 @@ using json = nlohmann::json;
 ModIndex::ModIndex(fs::path path)
     : path_(fs::absolute(path))
 {
+    lcs_hint("If this error persists try re-installing mods in new installation!");
     lcs_trace_func(
                 lcs_trace_var(this->path_)
                 );
@@ -138,7 +139,9 @@ Mod* ModIndex::install_from_folder_impl(fs::path srcpath, WadIndex const& index,
     std::u8string info = {};
     fs::path image = srcpath / "META" / "image.png";
     {
-        InFile info_file(srcpath / "META" / "info.json");
+        fs::path info_file_path = srcpath / "META" / "info.json";
+        lcs_assert_msg("Valid mod must contain META/info.json file!", fs::exists(info_file_path));
+        InFile info_file(info_file_path);
         info.resize(info_file.size());
         info_file.read(info.data(), info.size());
         auto json = nlohmann::json::parse(info);
@@ -172,6 +175,9 @@ Mod* ModIndex::install_from_wad(fs::path srcpath, WadIndex const& index, Progres
         );
     lcs_assert_msg("Wad mod does not exist!", fs::exists(srcpath));
     fs::path filename = srcpath.filename().replace_extension();
+    if (filename.extension().generic_u8string() == u8".wad") {
+        filename = filename.replace_extension();
+    }
     lcs_assert_msg("Mod already exists!", !fs::exists(path_ / filename));
     auto queue = WadMakeQueue(index);
     if (fs::is_directory(srcpath)) {
