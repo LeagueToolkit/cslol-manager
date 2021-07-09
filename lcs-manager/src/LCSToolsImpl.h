@@ -64,8 +64,7 @@ signals:
     void modImageRemoved(QString fileName);
     void modWadsAdded(QString modFileName, QJsonArray wads);
     void modWadsRemoved(QString modFileName, QJsonArray wads);
-    void reportWarning(QString category, QString message);
-    void reportError(QString category, QString message);
+    void reportError(QString category, QString stack_trace, QString message);
 
 public slots:
     void changeLeaguePath(QString newLeaguePath);
@@ -94,8 +93,7 @@ public slots:
 private:
     QLockFile* lockfile_ = nullptr;
     LCS::fs::path progDirPath_;
-    QString leaguepath_ = {};
-    LCS::fs::path leaguePathStd_;
+    LCS::fs::path leaguePath_;
     LCS::fs::path patcherConfig_ = {};
     std::unique_ptr<LCS::ModIndex> modIndex_ = nullptr;
     std::unique_ptr<LCS::WadIndex> wadIndex_ = nullptr;
@@ -115,6 +113,8 @@ private:
     QString readCurrentProfile();
     void writeCurrentProfile(QString profile);
     LCS::WadIndex const& wadIndex();
+
+    void emit_reportError(QString category, std::runtime_error const& error);
 
 /// ProgressMulti impl
 public:

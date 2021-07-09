@@ -11,18 +11,53 @@ Dialog {
     standardButtons: Dialog.Ok
     closePolicy: Popup.NoAutoClose
     modal: true
-    title: "\uf071 Error - " + text
+    title: "\uf071 Error - " + category
 
     Overlay.modal: Rectangle {
         color: "#aa333333"
     }
 
-    property string text: ""
+    property string category: ""
+    property alias message: logErrorMessageTextArea.text
 
-    LCSLogView {
+    ColumnLayout {
+        id: lcsLogView
+        spacing: 5
         width: parent.width
         height: parent.height
-        spacing: 5
+        TextArea {
+            id: logErrorMessageTextArea
+            readOnly: true
+            text: message
+            width: parent.width
+            Layout.fillWidth: true
+        }
+        ScrollView {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            TextArea {
+                id: logTextArea
+                readOnly: true
+                Layout.fillWidth: true
+                text: "```\n" + window.log_data + "\n```"
+            }
+        }
+        RowLayout {
+            Layout.fillWidth: true
+            Button {
+                text: qsTr("Copy")
+                onClicked:  {
+                    logTextArea.selectAll()
+                    logTextArea.copy()
+                    logTextArea.deselect()
+                }
+                ToolTip.visible: hovered
+                ToolTip.text: qsTr("Puts log contents in your clipboard")
+            }
+            Label {
+                text: "Please use copy button to report your errors"
+            }
+        }
     }
 
     onAccepted: {

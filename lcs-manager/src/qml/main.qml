@@ -67,21 +67,26 @@ ApplicationWindow {
     function logClear() {
         log_data = "[INFO] Version: " + LCS_VERSION + "\n"
     }
-
     function logInfo(name, message) {
         log_data += "[INFO] " + name + ": " + message + "\n"
     }
-
     function logUserError(name, error) {
         log_data += "[Warning] " + name + ": " + error + "\n"
         lcsDialogUserError.text = error
         lcsDialogUserError.open()
     }
-
-    function logError(name, error) {
-        log_data += "[Error] " + name + ": " + error + "\n"
-        lcsDialogError.text = name
+    function logError(category, stack_trace, message) {
+        log_data += "[Error] " + category + ": " + stack_trace + "\n"
+        lcsDialogError.category = category
+        lcsDialogError.message = message
         lcsDialogError.open()
+    }
+    function checkGamePath() {
+        if (lcsTools.leaguePath === "") {
+            lcsDialogLolPath.open();
+            return false;
+        }
+        return true;
     }
 
 
@@ -97,29 +102,49 @@ ApplicationWindow {
         onSaveProfileAndRun: function(run) {
             let name = lcsToolBar.profilesCurrentName
             let mods = lcsModsView.saveProfile()
-            lcsTools.saveProfile(name, mods, run)
+            if (checkGamePath()) {
+                lcsTools.saveProfile(name, mods, run)
+            }
         }
 
-        onStopProfile: lcsTools.stopProfile()
+        onStopProfile: function() {
+            lcsTools.stopProfile()
+        }
 
-        onLoadProfile: lcsTools.loadProfile(lcsToolBar.profilesCurrentName)
+        onLoadProfile: function() {
+            lcsTools.loadProfile(lcsToolBar.profilesCurrentName)
+        }
 
-        onNewProfile: lcsDialogNewProfile.open()
+        onNewProfile: function() {
+            lcsDialogNewProfile.open()
+        }
 
-        onRemoveProfile: lcsTools.deleteProfile(lcsToolBar.profilesCurrentName)
+        onRemoveProfile: function() {
+            lcsTools.deleteProfile(lcsToolBar.profilesCurrentName)
+        }
 
     }
 
     LCSDialogSettings {
         id: lcsDialogSettings
 
-        onChangeGamePath: lcsDialogLolPath.open()
+        onChangeGamePath: function() {
+            lcsDialogLolPath.open()
+        }
 
-        onBlacklistChanged: lcsTools.changeBlacklist(blacklist)
+        onBlacklistChanged: function() {
+            lcsTools.changeBlacklist(blacklist)
+        }
 
-        onIgnorebadChanged: lcsTools.changeIgnorebad(ignorebad)
+        onIgnorebadChanged: function() {
+            lcsTools.changeIgnorebad(ignorebad)
+        }
 
-        onShowLogs: if (!lcsDialogLog.visible) lcsDialogLog.visible = true
+        onShowLogs: function() {
+            if (!lcsDialogLog.visible) {
+                lcsDialogLog.visible = true
+            }
+        }
     }
 
     LCSModsView {
@@ -132,23 +157,30 @@ ApplicationWindow {
         onModRemoved: function(fileName) {
             lcsTools.deleteMod(fileName)
         }
-
         onModExport: function(fileName) {
-            lcsDialogSaveZipFantome.modName = fileName
-            lcsDialogSaveZipFantome.open()
-            lcsDialogSaveZipFantome.currentFile = lcsDialogSaveZipFantome.folder + "/" + fileName + ".fantome"
+            if (checkGamePath()) {
+                lcsDialogSaveZipFantome.modName = fileName
+                lcsDialogSaveZipFantome.currentFile = lcsDialogSaveZipFantome.folder + "/" + fileName + ".fantome"
+                lcsDialogSaveZipFantome.open()
+            }
         }
         onModEdit: function(fileName) {
             lcsTools.startEditMod(fileName)
         }
-
         onImportFile: function(file) {
-            lcsTools.installFantomeZip(file)
+            if (checkGamePath()) {
+                lcsTools.installFantomeZip(file)
+            }
         }
-        onInstallFantomeZip: lcsDialogOpenZipFantome.open()
+        onInstallFantomeZip: function() {
+            if (checkGamePath()) {
+                lcsDialogOpenZipFantome.open()
+            }
+        }
         onCreateNewMod: {
-            lcsDialogNewMod.clear()
-            lcsDialogNewMod.open()
+            if (checkGamePath()) {
+                lcsDialogNewMod.open()
+            }
         }
     }
 
@@ -161,12 +193,16 @@ ApplicationWindow {
 
     LCSDialogOpenZipFantome {
         id: lcsDialogOpenZipFantome
-        onAccepted: lcsTools.installFantomeZip(lcsTools.fromFile(file))
+        onAccepted: function() {
+            lcsTools.installFantomeZip(lcsTools.fromFile(file))
+        }
     }
 
     LCSDialogSaveZipFantome {
         id: lcsDialogSaveZipFantome
-        onAccepted: lcsTools.exportMod(modName, lcsTools.fromFile(file))
+        onAccepted: function() {
+            lcsTools.exportMod(modName, lcsTools.fromFile(file))
+        }
     }
 
     LCSDialogNewMod {
@@ -194,7 +230,9 @@ ApplicationWindow {
             lcsTools.removeModWads(fileName, wads)
         }
         onAddWads: function(wads) {
-            lcsTools.addModWads(fileName, wads)
+            if (checkGamePath()) {
+                lcsTools.addModWads(fileName, wads)
+            }
         }
     }
 
@@ -218,6 +256,11 @@ ApplicationWindow {
         id: lcsDialogLolPath
         folder: lcsTools.toFile(lcsTools.leaguePath)
         onAccepted: lcsTools.leaguePath = lcsTools.fromFile(folder)
+        onRejected:  {
+            if (lcsTools.leaguePath === "") {
+                lcsDialogLolPath.open()
+            }
+        }
     }
 
     LCSDialogLog {
@@ -319,13 +362,14 @@ ApplicationWindow {
         onModWadsRemoved: function(fileName, wads) {
             lcsDialogEditMod.wadsRemoved(wads)
         }
-        onReportError: function(category, message) {
-            logError(category, message)
+        onReportError: function(category, stack_trace, message) {
+            logError(category, stack_trace, message)
             lcsStatusBar.isCopying = false
         }
-        onReportWarning: function(category, message) {
-            logError(category, message)
-            lcsStatusBar.isCopying = false
+        onLeaguePathChanged: function(path) {
+            if (path === "") {
+                lcsDialogLolPath.open()
+            }
         }
     }
 
