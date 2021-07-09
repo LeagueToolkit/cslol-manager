@@ -182,6 +182,7 @@ Dialog {
                             }
                             ToolButton {
                                 text: qsTr("\uf00d")
+                                font.family: "FontAwesome"
                                 onClicked: {
                                     let modName = model.Path
                                     for(let i = 0; i < itemsModel.count; i++) {
