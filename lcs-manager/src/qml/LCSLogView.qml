@@ -12,6 +12,7 @@ ColumnLayout {
             id: logTextArea
             readOnly: true
             text: window.log_data
+            Layout.fillWidth: true
         }
     }
     RowLayout {

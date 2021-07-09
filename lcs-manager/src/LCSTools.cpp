@@ -13,7 +13,6 @@ LCSTools::LCSTools(QObject *parent) : QObject(parent)
     connect(worker_, &LCSToolsImpl::stateChanged, this, &LCSTools::setState);
     connect(worker_, &LCSToolsImpl::statusChanged, this, &LCSTools::setStatus);
     connect(worker_, &LCSToolsImpl::leaguePathChanged, this, &LCSTools::setLeaguePath);
-    connect(worker_, &LCSToolsImpl::reportWarning, this, &LCSTools::reportWarning);
     connect(worker_, &LCSToolsImpl::reportError, this, &LCSTools::reportError);
 
     connect(worker_, &LCSToolsImpl::blacklistChanged, this, &LCSTools::blacklistChanged);

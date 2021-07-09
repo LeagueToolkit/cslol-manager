@@ -53,8 +53,7 @@ signals:
     void modImageRemoved(QString fileName);
     void modWadsAdded(QString modFileName, QJsonArray wads);
     void modWadsRemoved(QString modFileName, QJsonArray wads);
-    void reportWarning(QString category, QString message);
-    void reportError(QString category, QString message);
+    void reportError(QString category, QString stack_trace, QString message);
 
 
     void changeLeaguePath(QString newLeaguePath);
