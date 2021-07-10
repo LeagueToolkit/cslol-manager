@@ -37,7 +37,7 @@ make_main({
         WadMake wadmake(source);
         print_path("Packing", dest);
         Progress progress = {};
-        wadmake.write(dest, progress);
+        wadmake.write(dest, progress, nullptr);
         printf("Finished!\n");
     } catch(std::runtime_error const& error) {
         error_print(error);
