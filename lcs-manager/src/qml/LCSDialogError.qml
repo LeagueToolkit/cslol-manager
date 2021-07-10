@@ -12,6 +12,7 @@ Dialog {
     closePolicy: Popup.NoAutoClose
     modal: true
     title: "\uf071 Error - " + category
+    font.family: "FontAwesome"
 
     Overlay.modal: Rectangle {
         color: "#aa333333"

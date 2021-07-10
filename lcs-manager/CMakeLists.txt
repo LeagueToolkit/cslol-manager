@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.20)
 
 project(lcs-manager LANGUAGES CXX)
 
@@ -16,15 +16,9 @@ else()
 endif()
 find_package(Threads REQUIRED)
 
-
-
 if (WIN32)
     add_subdirectory(lolcustomskin)
     add_executable(lcs-manager WIN32
-        lolcustomskin/src/modoverlay.hpp
-        lolcustomskin/src/modoverlay.cpp
-        lolcustomskin/src/process.hpp
-        lolcustomskin/src/process.cpp
         src/LCSTools.h
         src/LCSTools.cpp
         src/LCSToolsImpl.h
@@ -34,7 +28,7 @@ if (WIN32)
         src/qml/rc.rc
         src/lcs-manager.exe.manifest
     )
-    target_link_libraries(lcs-manager PRIVATE lcs-lib psapi)
+    target_link_libraries(lcs-manager PRIVATE lcs-lib lolcustomskin-lib)
 else()
     add_executable(lcs-manager
         src/LCSTools.h

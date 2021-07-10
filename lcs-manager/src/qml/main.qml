@@ -181,6 +181,7 @@ ApplicationWindow {
         onCreateNewMod: {
             if (checkGamePath()) {
                 lcsDialogNewMod.open()
+                lcsDialogNewMod.clear()
             }
         }
     }

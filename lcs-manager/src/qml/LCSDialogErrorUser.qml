@@ -11,6 +11,8 @@ Dialog {
     closePolicy: Popup.NoAutoClose
     modal: true
     title: "\uf071 Warning"
+    font.family: "FontAwesome"
+
     property alias text: warningTextLabel.text
 
     Overlay.modal: Rectangle {

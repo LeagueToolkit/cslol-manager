@@ -177,6 +177,7 @@ ColumnLayout {
                         anchors.verticalCenter: parent.verticalCenter
                         ToolButton {
                             text: qsTr("\uf00d")
+                            font.family: "FontAwesome"
                             onClicked: {
                                 let modName = model.FileName
                                 lcsModsViewModel.remove(index, 1)

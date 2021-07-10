@@ -18,8 +18,8 @@
 #include "lcs/wadmerge.hpp"
 #include "lcs/wadmergequeue.hpp"
 #ifdef WIN32
-#include "process.hpp"
-#include "modoverlay.hpp"
+#include "lcs/process.hpp"
+#include "lcs/modoverlay.hpp"
 #endif
 
 class LCSToolsImpl : public QObject, public LCS::ProgressMulti
