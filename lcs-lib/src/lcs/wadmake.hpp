@@ -85,47 +85,6 @@ namespace LCS {
         std::map<uint64_t, fs::path> entries_;
         std::uint64_t size_ = 0;
     };
-
-    struct WadMakeUnZip : WadMakeBase {
-        struct FileEntry {
-            fs::path path;
-            unsigned int index;
-            std::uint64_t size;
-        };
-        WadMakeUnZip(fs::path const& source, void* archive);
-
-        void add(fs::path const& srcpath, unsigned int zipEntry, std::uint64_t size);
-
-        void write(fs::path const& dstpath, Progress& progress, WadIndex const* index = nullptr) const override;
-
-        std::uint64_t size() const noexcept override;
-
-        inline fs::path const& name() const& noexcept override {
-            return name_;
-        }
-
-        inline fs::path const& path() const& noexcept override {
-            return path_;
-        }
-
-        inline auto const& entries() const& noexcept {
-            return entries_;
-        }
-
-        inline std::optional<fs::path> identify(WadIndex const& index) const noexcept override {
-            if (auto wad = index.findOriginal(name_, entries_)) {
-                return wad->name();
-            }
-            return {};
-        }
-    private:
-        fs::path path_;
-        fs::path name_;
-        void* archive_;
-        std::map<uint64_t, FileEntry> entries_;
-        mutable std::uint64_t size_ = 0;
-        mutable bool sizeCalculated_;
-    };
 }
 
 #endif // WADMAKE_HPP
