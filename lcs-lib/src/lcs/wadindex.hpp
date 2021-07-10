@@ -40,6 +40,10 @@ namespace LCS{
             return lookup_;
         }
 
+        inline auto const& checksums() const& noexcept {
+            return checksums_;
+        }
+
         inline auto findExtra(uint64_t hash) const& noexcept {
             auto [beg, end] = lookup_.equal_range(hash);
             return EntryRange<decltype(beg)> { beg, end };
@@ -101,6 +105,7 @@ namespace LCS{
         fs::path path_;
         std::map<fs::path, std::unique_ptr<Wad const>> wads_;
         std::unordered_multimap<uint64_t, Wad const*> lookup_;
+        std::unordered_map<uint64_t, uint64_t> checksums_;
         bool blacklist_;
         fs::file_time_type last_write_time_ = {};
     };
