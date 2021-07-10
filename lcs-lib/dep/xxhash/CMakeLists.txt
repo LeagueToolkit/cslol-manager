@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.20)
 
 project(xxhash)
 add_library(xxhash STATIC src/xxhash.h src/xxh3.h src/xxhash.c)

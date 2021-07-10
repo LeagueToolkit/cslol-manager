@@ -1,5 +1,5 @@
-#include "modoverlay.hpp"
-#include "process.hpp"
+#include "lcs/modoverlay.hpp"
+#include "lcs/process.hpp"
 #include <cstdio>
 #include <filesystem>
 #include <stdexcept>

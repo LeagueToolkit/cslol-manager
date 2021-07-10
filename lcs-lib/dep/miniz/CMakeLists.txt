@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.20)
 
 project(miniz)
 add_library(miniz STATIC src/miniz.h  src/miniz.c)
