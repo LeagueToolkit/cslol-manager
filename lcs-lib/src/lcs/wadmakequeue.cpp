@@ -53,7 +53,7 @@ void WadMakeQueue::write(fs::path const& dstpath, ProgressMulti& progress) const
     for(auto const& kvp: items_) {
         auto const& name = kvp.first;
         auto const& item = kvp.second;
-        item->write(dstpath / name, progress);
+        item->write(dstpath / name, progress, &index_);
     }
     progress.finishMulti();
 }

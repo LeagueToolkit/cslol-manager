@@ -10,7 +10,7 @@
 namespace LCS {
     struct WadMakeBase {
         virtual ~WadMakeBase() noexcept = 0;
-        virtual void write(fs::path const& path, Progress& progress, WadIndex const* index = nullptr) const = 0;
+        virtual void write(fs::path const& path, Progress& progress, WadIndex const* index) const = 0;
         virtual std::uint64_t size() const noexcept = 0;
         virtual fs::path const& name() const& noexcept = 0;
         virtual fs::path const& path() const& noexcept = 0;
@@ -20,7 +20,7 @@ namespace LCS {
     struct WadMakeCopy : WadMakeBase {
         WadMakeCopy(fs::path const& path);
 
-        void write(fs::path const& dstpath, Progress& progress, WadIndex const* index = nullptr) const override;
+        void write(fs::path const& dstpath, Progress& progress, WadIndex const* index) const override;
 
         inline std::uint64_t size() const noexcept override {
             return size_;
@@ -55,7 +55,7 @@ namespace LCS {
     struct WadMake : WadMakeBase {
         WadMake(fs::path const& path);
 
-        void write(fs::path const& dstpath, Progress& progress, WadIndex const* index = nullptr) const override;
+        void write(fs::path const& dstpath, Progress& progress, WadIndex const* index) const override;
 
         inline std::uint64_t size() const noexcept override {
             return size_;

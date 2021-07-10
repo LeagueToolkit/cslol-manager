@@ -1,6 +1,7 @@
 #include "wadmake.hpp"
 #include "error.hpp"
 #include "progress.hpp"
+#include "utility.hpp"
 #include <charconv>
 #include <numeric>
 #include <xxhash.h>
@@ -40,8 +41,10 @@ WadMakeCopy::WadMakeCopy(fs::path const& path)
                 );
     auto wad = Wad(path_);
     entries_ = wad.entries();
-    size_ = (size_t)fs::file_size(path_);
     is_oldchecksum_ = wad.is_oldchecksum();
+    for (auto const& entry: entries_) {
+        size_ += entry.sizeCompressed;
+    }
 }
 
 void WadMakeCopy::write(fs::path const& dstpath, Progress& progress, WadIndex const* index) const {
@@ -49,41 +52,49 @@ void WadMakeCopy::write(fs::path const& dstpath, Progress& progress, WadIndex co
                 lcs_trace_var(this->path_),
                 lcs_trace_var(dstpath)
                 );
-    std::uint64_t sizeData = size();
-    progress.startItem(dstpath, sizeData);
-    fs::create_directories(dstpath.parent_path());
-    if (!is_oldchecksum_) {
-        fs::copy_file(path_, dstpath);
-        progress.consumeData(sizeData);
-    } else {
-        Wad::Header header{
-            { 'R', 'W', '\x03', '\x01' },
-            {},
-            {},
-            static_cast<uint32_t>(entries_.size())
-        };
-        auto entries = std::vector<Wad::Entry> {};
-        InFile infile(path_);
-        OutFile outfile(dstpath);
-        std::vector<char> buffer;
-        for(auto entry: entries_) {
-            buffer.reserve(entry.sizeCompressed);
-            infile.seek(entry.dataOffset, SEEK_SET);
-            infile.read(buffer.data(), entry.sizeCompressed);
-            if (entry.type != Wad::Entry::Type::FileRedirection) {
+    progress.startItem(dstpath, size_);
+    InFile infile(path_);
+    lcs_rethrow(fs::create_directories(dstpath.parent_path()));
+    OutFile outfile(dstpath);
+    std::vector<char> buffer;
+    std::vector<Wad::Entry> entries = {};
+    entries.reserve(entries_.size());
+    std::uint32_t dataOffset = sizeof(Wad::Header) + entries_.size() * sizeof(Wad::Entry);
+    outfile.seek(dataOffset, SEEK_SET);
+    for(auto entry: entries_) {
+        buffer.reserve(entry.sizeCompressed);
+        infile.seek(entry.dataOffset, SEEK_SET);
+        infile.read(buffer.data(), entry.sizeCompressed);
+        if (entry.type != Wad::Entry::Type::FileRedirection) {
+            if (is_oldchecksum_) {
                 entry.checksum = XXH3_64bits(buffer.data(), entry.sizeCompressed);
             }
-            outfile.seek(entry.dataOffset, SEEK_SET);
-            outfile.write(buffer.data(), entry.sizeCompressed);
-            progress.consumeData(entry.sizeCompressed);
-            entries.push_back(entry);
+            if (index) {
+                auto const i = index->checksums().find(entry.xxhash);
+                if (i != index->checksums().end() && i->second == entry.checksum) {
+                    progress.consumeData(entry.sizeCompressed);
+                    continue;
+                }
+            }
         }
-        outfile.seek(0, SEEK_SET);
-        outfile.write(&header, sizeof(header));
-        progress.consumeData(sizeof(header));
-        outfile.write(entries.data(), entries.size() * sizeof(Wad::Entry));
-        progress.consumeData(entries.size() * sizeof(Wad::Entry));
+        entry.dataOffset = dataOffset;
+        dataOffset += entry.sizeCompressed;
+        outfile.write(buffer.data(), entry.sizeCompressed);
+        entries.push_back(entry);
+        progress.consumeData(entry.sizeCompressed);
     }
+    Wad::Header header{
+        { 'R', 'W', '\x03', '\x01' },
+        {},
+        {},
+        static_cast<uint32_t>(entries.size())
+    };
+    outfile.seek(0, SEEK_SET);
+    outfile.write(&header, sizeof(Wad::Header));
+    progress.consumeData(sizeof(header));
+    outfile.write(entries.data(), entries.size() * sizeof(Wad::Entry));
+    progress.consumeData(entries.size() * sizeof(Wad::Entry));
+
     progress.finishItem();
 }
 
@@ -112,19 +123,18 @@ void WadMake::write(fs::path const& dstpath, Progress& progress, WadIndex const*
                 lcs_trace_var(this->path_),
                 lcs_trace_var(dstpath)
                 );
-    std::uint64_t sizeData = size();
-    progress.startItem(dstpath, sizeData);
-    fs::create_directories(dstpath.parent_path());
+    progress.startItem(dstpath, size_);
+    lcs_rethrow(fs::create_directories(dstpath.parent_path()));
     OutFile outfile(dstpath);
-    outfile.seek(sizeof(Wad::Header) + sizeof(Wad::Entry) * entries_.size(), SEEK_SET);
     std::vector<Wad::Entry> entries;
     entries.reserve(entries_.size());
     std::vector<char> uncompressedBuffer;
     std::vector<char> compressedBuffer;
-    uint64_t dataOffset = (uint64_t)(outfile.tell());
-
+    uint64_t dataOffset = sizeof(Wad::Header) + sizeof(Wad::Entry) * entries_.size();
+    outfile.seek(dataOffset, SEEK_SET);
     for(auto const& [xxhash, path]: entries_) {
         std::uint64_t uncompressedSize = fs::file_size(path);
+        std::uint64_t compressedSize = {};
         uncompressedBuffer.reserve(uncompressedSize);
         {
             InFile infile(path);
@@ -140,27 +150,38 @@ void WadMake::write(fs::path const& dstpath, Progress& progress, WadIndex const*
             {},
             {}
         };
-        if (path.extension() == ".wpk") {
-            entry.sizeCompressed = (uint32_t)uncompressedSize;
-            entry.type = Wad::Entry::Uncompressed;
-            entry.checksum = XXH3_64bits(uncompressedBuffer.data(), uncompressedSize);
-            outfile.write((char const*)uncompressedBuffer.data(), uncompressedSize);
-        } else {
-            size_t estimate = ZSTD_compressBound(uncompressedSize);
-            compressedBuffer.reserve(estimate);
-            size_t compressedSize = ZSTD_compress(compressedBuffer.data(), estimate,
-                                                  uncompressedBuffer.data(), uncompressedSize,
-                                                  3);
-            entry.sizeCompressed = (uint32_t)compressedSize;
-            entry.type = Wad::Entry::ZStandardCompressed;
-            entry.checksum = XXH3_64bits(compressedBuffer.data(), compressedSize);
-            outfile.write((char const*)compressedBuffer.data(), compressedSize);
+        std::u8string extension = path.extension().generic_u8string();
+        if (extension.empty()) {
+            extension = u8"." + ScanExtension(uncompressedBuffer.data(), (size_t)uncompressedSize);
         }
+        if (extension == u8".wpk") {
+            entry.type = Wad::Entry::Uncompressed;
+            compressedSize = uncompressedSize;
+            compressedBuffer.reserve((size_t)compressedSize);
+            memcpy(compressedBuffer.data(), uncompressedBuffer.data(), (size_t)compressedSize);
+        } else {
+            entry.type = Wad::Entry::ZStandardCompressed;
+            size_t const estimate = ZSTD_compressBound(uncompressedSize);
+            compressedBuffer.reserve(estimate);
+            compressedSize = ZSTD_compress(compressedBuffer.data(), estimate,
+                                           uncompressedBuffer.data(), uncompressedSize,
+                                           3);
+        }
+        entry.checksum = XXH3_64bits(compressedBuffer.data(), compressedSize);
+        if (index) {
+            auto const i = index->checksums().find(entry.xxhash);
+            if (i != index->checksums().end() && i->second == entry.checksum) {
+                progress.consumeData(uncompressedSize);
+                continue;
+            }
+        }
+        entry.sizeCompressed = (uint32_t)compressedSize;
         entry.dataOffset = static_cast<uint32_t>(dataOffset);
         dataOffset += entry.sizeCompressed;
         constexpr auto GB = static_cast<std::uint64_t>(1024 * 1024 * 1024);
         lcs_assert(dataOffset <= 2 * GB);
         entries.push_back(entry);
+        outfile.write((char const*)compressedBuffer.data(), compressedSize);
         progress.consumeData(uncompressedSize);
     }
     outfile.seek(0, SEEK_SET);
