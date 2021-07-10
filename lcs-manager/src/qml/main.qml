@@ -22,6 +22,7 @@ ApplicationWindow {
 
         property alias blacklist: lcsDialogSettings.blacklist
         property alias ignorebad: lcsDialogSettings.ignorebad
+        property alias suppressInstallConflicts: lcsDialogSettings.suppressInstallConflicts
         property alias disableUpdates: lcsDialogSettings.disableUpdates
         property alias themeDarkMode: lcsDialogSettings.themeDarkMode
         property alias themePrimaryColor: lcsDialogSettings.themePrimaryColor
@@ -104,7 +105,7 @@ ApplicationWindow {
             let name = lcsToolBar.profilesCurrentName
             let mods = lcsModsView.saveProfile()
             if (checkGamePath()) {
-                lcsTools.saveProfile(name, mods, run)
+                lcsTools.saveProfile(name, mods, run, settings.suppressInstallConflicts)
             }
         }
 

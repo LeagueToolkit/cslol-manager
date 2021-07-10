@@ -362,7 +362,8 @@ void LCSToolsImpl::makeMod(QString fileName, QString image, QJsonObject infoData
     }
 }
 
-void LCSToolsImpl::saveProfile(QString name, QJsonObject mods, bool run) {
+void LCSToolsImpl::saveProfile(QString name, QJsonObject mods, bool run, bool skipConflict) {
+    LCS::Conflict conflictStrategy = skipConflict ? LCS::Conflict::Skip : LCS::Conflict::Abort;
     if (state_ == LCSState::StateIdle) {
         setState(LCSState::StateBusy);
         setStatus("Save profile");
@@ -375,7 +376,7 @@ void LCSToolsImpl::saveProfile(QString name, QJsonObject mods, bool run) {
             for(auto key: mods.keys()) {
                 auto fileName = key.toStdU16String();
                 if (auto i = modIndex_->mods().find(fileName); i != modIndex_->mods().end()) {
-                    queue.addMod(i->second.get(), LCS::Conflict::Abort);
+                    queue.addMod(i->second.get(), conflictStrategy);
                 }
             }
             queue.write(*dynamic_cast<LCS::ProgressMulti*>(this));
