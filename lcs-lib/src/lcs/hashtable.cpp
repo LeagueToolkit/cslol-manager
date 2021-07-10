@@ -9,15 +9,15 @@ void HashTable::add_from_file(fs::path const& path) {
     lcs_trace_func(
                 lcs_trace_var(path)
                 );
-    std::basic_ifstream<char8_t> file(path, std::ios::binary);
-    std::u8string line;
+    std::ifstream file(path, std::ios::binary);
+    std::string line;
     while(std::getline(file, line) && !line.empty()) {
         auto space = line.find_first_of(u8' ');
         if (space == std::u8string::npos) {
             continue;
         }
-        std::u8string_view line_hex = { line.data(), space };
-        std::u8string_view line_path = { line.data() + space + 1, line.size() - space - 1 };
+        std::u8string_view line_hex = { (char8_t const*)line.data(), space };
+        std::u8string_view line_path = { (char8_t const*)line.data() + space + 1, line.size() - space - 1 };
         fs::path path_converted = line_path;
         std::u8string normal = path_converted.lexically_normal().generic_u8string();
         if (normal != line_path) {

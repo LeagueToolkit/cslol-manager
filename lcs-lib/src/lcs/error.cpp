@@ -10,28 +10,26 @@ using namespace LCS;
     throw std::runtime_error(msg);
 }
 
-std::basic_stringstream<char8_t>& LCS::error_stack() noexcept {
-    thread_local std::basic_stringstream<char8_t> instance = {};
+std::u8string& LCS::error_stack() noexcept {
+    thread_local std::u8string instance = {};
     return instance;
 }
 
 std::u8string LCS::error_stack_trace() noexcept {
     auto& ss = error_stack();
-    std::u8string message = ss.str();
-    ss.str(u8"");
+    std::u8string message = ss;
     ss.clear();
     return message;
 }
 
-std::basic_stringstream<char8_t>& LCS::hint_stack() noexcept {
-    thread_local std::basic_stringstream<char8_t> instance = {};
+std::u8string& LCS::hint_stack() noexcept {
+    thread_local std::u8string instance = {};
     return instance;
 }
 
 std::u8string LCS::hint_stack_trace() noexcept {
     auto& ss = hint_stack();
-    std::u8string message = ss.str();
-    ss.str(u8"");
+    std::u8string message = ss;
     ss.clear();
     return message;
 }

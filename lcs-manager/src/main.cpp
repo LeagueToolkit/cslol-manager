@@ -14,6 +14,10 @@ int main(int argc, char *argv[])
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+#else
+    if (LCS::fs::exists("opengl.txt")) {
+        QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
+    }
 #endif
     QGuiApplication app(argc, argv);
     app.setOrganizationName("moonshadow565");
@@ -21,10 +25,6 @@ int main(int argc, char *argv[])
     app.setApplicationName("lolcustomskin-manager");
     QSettings::setPath(QSettings::Format::IniFormat, QSettings::Scope::SystemScope, QCoreApplication::applicationDirPath());
     QSettings::setDefaultFormat(QSettings::Format::IniFormat);
-
-    if (LCS::fs::exists("opengl.txt")) {
-        QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
-    }
 
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty("LCS_VERSION", LCS::VERSION);
