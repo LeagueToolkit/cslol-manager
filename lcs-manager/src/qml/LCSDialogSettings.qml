@@ -25,6 +25,7 @@ Dialog {
     property alias themeDarkMode: themeDarkModeCheck.checked
     property alias themePrimaryColor: themePrimaryColorBox.currentIndex
     property alias themeAccentColor: themeAccentColorBox.currentIndex
+    property alias suppressInstallConflicts: suppressInstallConflictsCheck.checked
 
     property var colors_LIST: [
         "Red",
@@ -91,6 +92,12 @@ Dialog {
                     id: blacklistCheck
                     text: qsTr("Blacklist extra gamemods")
                     checked: true
+                    Layout.fillWidth: true
+                }
+                Switch {
+                    id: suppressInstallConflictsCheck
+                    text: qsTr("Suppress install conflicts")
+                    checked: false
                     Layout.fillWidth: true
                 }
                 Switch {
