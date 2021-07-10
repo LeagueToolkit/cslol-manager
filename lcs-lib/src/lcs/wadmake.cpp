@@ -44,7 +44,7 @@ WadMakeCopy::WadMakeCopy(fs::path const& path)
     is_oldchecksum_ = wad.is_oldchecksum();
 }
 
-void WadMakeCopy::write(fs::path const& dstpath, Progress& progress) const {
+void WadMakeCopy::write(fs::path const& dstpath, Progress& progress, WadIndex const* index) const {
     lcs_trace_func(
                 lcs_trace_var(this->path_),
                 lcs_trace_var(dstpath)
@@ -107,7 +107,7 @@ WadMake::WadMake(fs::path const& path)
     });
 }
 
-void WadMake::write(fs::path const& dstpath, Progress& progress) const {
+void WadMake::write(fs::path const& dstpath, Progress& progress, WadIndex const* index) const {
     lcs_trace_func(
                 lcs_trace_var(this->path_),
                 lcs_trace_var(dstpath)
@@ -207,7 +207,7 @@ void WadMakeUnZip::add(fs::path const& srcpath, unsigned int zipEntry, std::uint
     sizeCalculated_ = false;
 }
 
-void WadMakeUnZip::write(fs::path const& dstpath, Progress& progress) const {
+void WadMakeUnZip::write(fs::path const& dstpath, Progress& progress, WadIndex const* index) const {
     lcs_trace_func(
                 lcs_trace_var(this->path_),
                 lcs_trace_var(dstpath)

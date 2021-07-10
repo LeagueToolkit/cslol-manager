@@ -44,8 +44,16 @@ WadIndex::WadIndex(fs::path const& path, bool blacklist, bool ignorebad) :
                         throw_error("Game contains duplicated wads!");
                     }
                     auto wad = std::make_unique<Wad>(filepath, filename);
+                    lcs_hint("Your Game installation might be dirty.\n"
+                             "Try uninstalling and re-installing the Game.");
+                    lcs_assert_msg("Legacy wad in Game folder!", !wad->is_oldchecksum());
                     for(auto const& entry: wad->entries()) {
                         lookup_.insert(std::make_pair(entry.xxhash, wad.get()));
+                        if (auto i = checksums_.find(entry.checksum); i != checksums_.end()) {
+                            lcs_assert_msg("Inconsistent file checksum in Game folder!",  i->second == entry.checksum);
+                        } else {
+                            checksums_.insert(std::make_pair(entry.xxhash, entry.checksum));
+                        }
                     }
                     wads_.insert_or_assign(wad->name(), std::move(wad));
                 } catch(std::runtime_error const& err) {
