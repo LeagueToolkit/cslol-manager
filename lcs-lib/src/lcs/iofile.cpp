@@ -11,8 +11,8 @@ File::File(fs::path const& path, bool readonly)
     : path_(path), readonly_(readonly), handle_(nullptr)
 {
     lcs_trace_func(
-                lcs_trace_var(path_),
-                lcs_trace_var(readonly_)
+                lcs_trace_var(path),
+                lcs_trace_var(readonly)
                 );
     if (readonly) {
         lcs_assert(fs::exists(path));
@@ -37,10 +37,10 @@ File::File(fs::path const& path, bool readonly)
         if (auto error_details = strerror(error)) {
             msg += error_details;
         }
-        msg += "\nMAKE SURE:\n"
+        lcs_hint("\nMAKE SURE:\n"
                "\t1. its not opened by something else already (for example: another modding tool)!\n"
                "\t2. league is NOT patching (restart both league and LCS)!\n"
-               "\t3. you have sufficient priviliges (for example: run as Administrator)";
+               "\t3. you have sufficient priviliges (for example: run as Administrator)");
         throw_error(msg.c_str());
     }
 }
@@ -55,8 +55,6 @@ File::~File() {
 
 void File::write(void const* data, std::size_t size) {
     lcs_trace_func(
-                lcs_trace_var(path_),
-                lcs_trace_var(readonly_),
                 lcs_trace_var(size)
                 );
     lcs_assert(fwrite(data, 1, size, (FILE*)handle_) == size);
@@ -64,8 +62,6 @@ void File::write(void const* data, std::size_t size) {
 
 void File::read(void* data, std::size_t size) {
     lcs_trace_func(
-                lcs_trace_var(path_),
-                lcs_trace_var(readonly_),
                 lcs_trace_var(size),
                 lcs_trace_var(tell())
                 );
@@ -74,8 +70,6 @@ void File::read(void* data, std::size_t size) {
 
 void File::seek(std::int64_t pos, int origin) {
     lcs_trace_func(
-                lcs_trace_var(path_),
-                lcs_trace_var(readonly_),
                 lcs_trace_var(pos),
                 lcs_trace_var(origin),
                 lcs_trace_var(tell())
@@ -89,10 +83,6 @@ void File::seek(std::int64_t pos, int origin) {
 }
 
 std::int64_t File::tell() const {
-    lcs_trace_func(
-                lcs_trace_var(path_),
-                lcs_trace_var(readonly_)
-                );
 #ifdef WIN32
     auto const result = _ftelli64((FILE*)handle_);
 #else
@@ -104,10 +94,6 @@ std::int64_t File::tell() const {
 }
 
 std::int64_t File::size() {
-    lcs_trace_func(
-                lcs_trace_var(path_),
-                lcs_trace_var(readonly_)
-                );
     auto const cur = tell();
     seek(0, SEEK_END);
     auto const result = tell();

@@ -2,11 +2,24 @@
 
 using namespace LCS;
 
+std::u8string LCS::func_to_u8string(char const* func) {
+    std::u8string str = to_u8string(func);
+    auto const end = str.find_first_of(u8'(');
+    if (end != std::u8string::npos) {
+        str.resize((size_t)end);
+    }
+    return str;
+}
+
 std::map<std::u8string, std::u8string>& LCS::path_remap() {
     thread_local std::map<std::u8string, std::u8string> instance = {
         { u8"<LCS>", u8"" },
         { u8"<LOL>", u8"" },
         { u8"<PWD>", u8"" },
+        { u8"<Desktop>", u8"" },
+        { u8"<Documents>", u8"" },
+        { u8"<Downloads>", u8"" },
+        { u8"<Home>", u8"" },
     };
     return instance;
 }

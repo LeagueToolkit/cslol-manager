@@ -9,9 +9,15 @@
 namespace LCS {
     extern std::map<std::u8string, std::u8string>& path_remap();
 
-    inline std::u8string to_u8string(char8_t const* from) {
-        std::u8string_view view = from;
+    extern std::u8string func_to_u8string(char const* func);
+
+    inline std::u8string to_u8string(char const* from) {
+        std::string_view view = from;
         return { view.begin(), view.end() };
+    }
+
+    inline std::u8string to_u8string(char8_t const* from) {
+        return from;
     }
 
     extern std::u8string to_u8string(fs::path const& from);

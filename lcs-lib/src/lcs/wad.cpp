@@ -13,8 +13,8 @@ using namespace LCS;
 Wad::Wad(fs::path const& path, fs::path const& name)
     : path_(fs::absolute(path)), size_(fs::file_size(path_)), name_(name) {
     lcs_trace_func(
-                lcs_trace_var(path_),
-                lcs_trace_var(name_)
+                lcs_trace_var(path),
+                lcs_trace_var(name)
                 );
     InFile infile(path_);
     infile.read((char*)&header_, sizeof(header_));
@@ -36,7 +36,6 @@ Wad::Wad(fs::path const& path, fs::path const& name)
 
 void Wad::extract(fs::path const& dstpath, HashTable const& hashtable, Progress& progress) const {
     lcs_trace_func(
-                lcs_trace_var(path_),
                 lcs_trace_var(dstpath)
                 );
     InFile infile(path_);

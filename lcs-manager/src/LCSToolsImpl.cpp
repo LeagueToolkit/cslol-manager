@@ -80,7 +80,7 @@ QJsonObject LCSToolsImpl::readProfile(QString profileName) {
 void LCSToolsImpl::writeProfile(QString profileName, QJsonObject profile) {
     LCS::fs::path profile_name = progDirPath_ / "profiles" / (profileName + ".profile").toStdU16String();
     std::ofstream outfile(profile_name, std::ios::binary);
-    for(auto mod: profile.keys()) {
+    for(QString const& mod: profile.keys()) {
         auto modname = mod.toUtf8();
         if (modname.size() == 0) {
             continue;
@@ -237,11 +237,11 @@ void LCSToolsImpl::init() {
         setState(LCSState::StateBusy);
         setStatus("Acquire lock");
         constexpr auto remap_location = [] (std::u8string name, QStandardPaths::StandardLocation type) {
-            if (LCS::fs::path path = QStandardPaths::writableLocation(type).toStdU16String(); !path.empty()) {
-                LCS::path_remap()[name] = path.generic_u8string();
-            }
+            LCS::fs::path path = QStandardPaths::writableLocation(type).toStdU16String();
+            LCS::path_remap()[name] = path.generic_u8string();
         };
         LCS::path_remap()[u8"<LCS>"] = progDirPath_.generic_u8string();
+        LCS::path_remap()[u8"<LOL>"] = leaguePath_.generic_u8string();
         LCS::path_remap()[u8"<PWD>"] = LCS::fs::current_path().generic_u8string();
         remap_location(u8"<Desktop>", QStandardPaths::DesktopLocation);
         remap_location(u8"<Documents>", QStandardPaths::DocumentsLocation);
@@ -387,7 +387,7 @@ void LCSToolsImpl::saveProfile(QString name, QJsonObject mods, bool run, bool sk
         try {
             auto const& index = wadIndex();
             LCS::WadMergeQueue queue(progDirPath_ / "profiles" / name.toStdU16String(), index);
-            for(auto key: mods.keys()) {
+            for(QString const& key: mods.keys()) {
                 auto fileName = key.toStdU16String();
                 if (auto i = modIndex_->mods().find(fileName); i != modIndex_->mods().end()) {
                     queue.addMod(i->second.get(), conflictStrategy);
@@ -404,7 +404,7 @@ void LCSToolsImpl::saveProfile(QString name, QJsonObject mods, bool run, bool sk
         setState(LCSState::StateIdle);
     }
     if (run) {
-        emit runProfile(name);
+        runProfile(name);
     }
 }
 
@@ -635,19 +635,12 @@ void LCSToolsImpl::finishMulti() noexcept {
 /// Errorreporting garbage
 void LCSToolsImpl::emit_reportError(QString category, std::runtime_error const& error) {
     QString stack_trace = {};
-    QString message = {};
+    QString message = QString::fromStdString(error.what());
     if (auto str = LCS::error_stack_trace(); !str.empty()) {
         stack_trace += QString::fromUtf8((char const*)str.data(), (int)str.size());
     }
-    if (auto conflict_err = dynamic_cast<LCS::ConflictError const*>(&error)) {
-        stack_trace += '\n';
-        auto const& str = conflict_err->message;
-        stack_trace += QString::fromUtf8((char const*)str.data(), (int)str.size());
-    } else {
-        stack_trace += '\n';
-        stack_trace += QString::fromStdString(error.what());
-    }
-    message += QString::fromStdString(error.what());
+    stack_trace += '\n';
+    stack_trace += message;
     if (auto str = LCS::hint_stack_trace(); !str.empty()) {
         message += QString::fromUtf8((char const*)str.data(), (int)str.size());
     }
