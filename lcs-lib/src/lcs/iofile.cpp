@@ -11,8 +11,8 @@ File::File(fs::path const& path, bool readonly)
     : path_(path), readonly_(readonly), handle_(nullptr)
 {
     lcs_trace_func(
-                lcs_trace_var(this->path_),
-                lcs_trace_var(this->readonly_)
+                lcs_trace_var(path_),
+                lcs_trace_var(readonly_)
                 );
     if (readonly) {
         lcs_assert(fs::exists(path));
@@ -55,8 +55,8 @@ File::~File() {
 
 void File::write(void const* data, std::size_t size) {
     lcs_trace_func(
-                lcs_trace_var(this->path_),
-                lcs_trace_var(this->readonly_),
+                lcs_trace_var(path_),
+                lcs_trace_var(readonly_),
                 lcs_trace_var(size)
                 );
     lcs_assert(fwrite(data, 1, size, (FILE*)handle_) == size);
@@ -64,8 +64,8 @@ void File::write(void const* data, std::size_t size) {
 
 void File::read(void* data, std::size_t size) {
     lcs_trace_func(
-                lcs_trace_var(this->path_),
-                lcs_trace_var(this->readonly_),
+                lcs_trace_var(path_),
+                lcs_trace_var(readonly_),
                 lcs_trace_var(size),
                 lcs_trace_var(tell())
                 );
@@ -74,8 +74,8 @@ void File::read(void* data, std::size_t size) {
 
 void File::seek(std::int64_t pos, int origin) {
     lcs_trace_func(
-                lcs_trace_var(this->path_),
-                lcs_trace_var(this->readonly_),
+                lcs_trace_var(path_),
+                lcs_trace_var(readonly_),
                 lcs_trace_var(pos),
                 lcs_trace_var(origin),
                 lcs_trace_var(tell())
@@ -90,8 +90,8 @@ void File::seek(std::int64_t pos, int origin) {
 
 std::int64_t File::tell() const {
     lcs_trace_func(
-                lcs_trace_var(this->path_),
-                lcs_trace_var(this->readonly_)
+                lcs_trace_var(path_),
+                lcs_trace_var(readonly_)
                 );
 #ifdef WIN32
     auto const result = _ftelli64((FILE*)handle_);
@@ -105,8 +105,8 @@ std::int64_t File::tell() const {
 
 std::int64_t File::size() {
     lcs_trace_func(
-                lcs_trace_var(this->path_),
-                lcs_trace_var(this->readonly_)
+                lcs_trace_var(path_),
+                lcs_trace_var(readonly_)
                 );
     auto const cur = tell();
     seek(0, SEEK_END);

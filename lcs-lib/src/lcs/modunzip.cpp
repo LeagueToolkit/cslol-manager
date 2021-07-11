@@ -10,7 +10,7 @@ ModUnZip::ModUnZip(fs::path path)
     : path_(fs::absolute(path)), zip_archive{}, infile_(std::make_unique<InFile>(path))
 {
     lcs_trace_func(
-                lcs_trace_var(this->path_)
+                lcs_trace_var(path_)
                 );
     lcs_assert_msg("Invalid zip file!", mz_zip_reader_init_cfile(&zip_archive, infile_->raw(), 0, 0));
     mz_uint numFiles = mz_zip_reader_get_num_files(&zip_archive);
@@ -20,19 +20,16 @@ ModUnZip::ModUnZip(fs::path path)
         if (stat.m_is_directory || !stat.m_is_supported) {
             continue;
         }
-        std::u8string spath = reinterpret_cast<char8_t const*>(stat.m_filename);
+        std::u8string spath = to_u8string(&stat.m_filename[0]);
         for (auto& c: spath) {
             if (c == '\\') {
                 c = '/';
             }
         }
         fs::path fpath = fs::path(spath).lexically_normal();
+        size_ += stat.m_uncomp_size;
         files_.push_back(CopyFile { fpath, i, stat.m_uncomp_size });
     }
-    size_ += std::accumulate(files_.begin(), files_.end(), std::uint64_t{0},
-                            [](std::uint64_t old, auto const& copy) -> std::uint64_t {
-                                return old + copy.size;
-                            });
 }
 
 ModUnZip::~ModUnZip() {
@@ -41,7 +38,7 @@ ModUnZip::~ModUnZip() {
 
 void ModUnZip::extract(fs::path const& dstpath, ProgressMulti& progress) {
     lcs_trace_func(
-                lcs_trace_var(this->path_),
+                lcs_trace_var(path_),
                 lcs_trace_var(dstpath)
                 );
     progress.startMulti(files_.size(), size_);

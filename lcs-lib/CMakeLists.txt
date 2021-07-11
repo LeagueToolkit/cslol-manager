@@ -49,6 +49,7 @@ add_library(lcs-lib STATIC
     src/lcs/progress.cpp
     src/lcs/progress.hpp
     src/lcs/string.hpp
+    src/lcs/string.cpp
     src/lcs/utility.cpp
     src/lcs/utility.hpp
     src/lcs/wad.cpp

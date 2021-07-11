@@ -8,7 +8,7 @@ using namespace LCS;
 
 WadMakeQueue::WadMakeQueue(WadIndex const& index) : index_(index) {
     lcs_trace_func(
-                lcs_trace_var(this->index_.path())
+                lcs_trace_var(index_.path())
                 );
 }
 

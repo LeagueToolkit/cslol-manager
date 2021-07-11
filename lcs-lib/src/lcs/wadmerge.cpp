@@ -28,8 +28,8 @@ static void copyStream(InFile& source, std::int64_t offset, OutFile& dest,
 WadMerge::WadMerge(fs::path const& path, Wad const* original)
  : path_(fs::absolute(path)), original_(original) {
     lcs_trace_func(
-                lcs_trace_var(this->path_),
-                lcs_trace_var(this->original_->name())
+                lcs_trace_var(path_),
+                lcs_trace_var(original_->name())
                 );
     lcs_assert_msg("Using league installation with 3.0 wads!", !original->is_oldchecksum());
     fs::create_directories(path_.parent_path());
@@ -42,8 +42,8 @@ WadMerge::WadMerge(fs::path const& path, Wad const* original)
 
 void WadMerge::addWad(const Wad* source, Conflict conflict) {
     lcs_trace_func(
-                lcs_trace_var(this->path_),
-                lcs_trace_var(this->original_->name()),
+                lcs_trace_var(path_),
+                lcs_trace_var(original_->name()),
                 lcs_trace_var(source->path())
                 );
     lcs_assert_msg("Mods using 3.0 wads need to be re-installed!", !source->is_oldchecksum());
@@ -54,8 +54,8 @@ void WadMerge::addWad(const Wad* source, Conflict conflict) {
 
 void WadMerge::addExtraEntry(const Wad::Entry& entry, const Wad* source, Conflict conflict) {
     lcs_trace_func(
-                lcs_trace_var(this->path_),
-                lcs_trace_var(this->original_->name()),
+                lcs_trace_var(path_),
+                lcs_trace_var(original_->name()),
                 lcs_trace_var(source->path())
                 );
     lcs_assert_msg("Mods using 3.0 wads need to be re-installed!", !source->is_oldchecksum());
@@ -66,8 +66,8 @@ void WadMerge::addWadEntry(Wad::Entry const& entry, Wad const* source,
                            Conflict conflict, EntryKind kind) {
     lcs_assert_msg("Mods using 3.0 wads need to be re-installed!", !source->is_oldchecksum());
     lcs_trace_func(
-                lcs_trace_var(this->path_),
-                lcs_trace_var(this->original_->name()),
+                lcs_trace_var(path_),
+                lcs_trace_var(original_->name()),
                 lcs_trace_var(source->path())
                 );
     if (auto o = orgchecksum_.find(entry.xxhash); o != orgchecksum_.end() && o->second == entry.checksum) {
@@ -103,8 +103,8 @@ std::uint64_t WadMerge::size() const noexcept {
 
 void WadMerge::write(Progress& progress) const {
     lcs_trace_func(
-                lcs_trace_var(this->path_),
-                lcs_trace_var(this->original_->name())
+                lcs_trace_var(path_),
+                lcs_trace_var(original_->name())
                 );
     auto const totalSize = size();
     progress.startItem(path_, totalSize);
