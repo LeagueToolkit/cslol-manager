@@ -136,19 +136,20 @@ Dialog {
                 Layout.fillWidth: true
                 RowLayout {
                     width: parent.width
+                    Button {
+                        text: qsTr("Browse")
+                        onClicked: dialogImage.open()
+                    }
                     TextField {
                         id: fieldImage
                         Layout.fillWidth: true
                         placeholderText: ""
                         readOnly: true
                     }
-                    Button {
-                        text: qsTr("Remove")
+                    ToolButton {
+                        text: "\uf00d"
+                        font.family: "FontAwesome"
                         onClicked: fieldImage.text = ""
-                    }
-                    Button {
-                        text: qsTr("Browse")
-                        onClicked: dialogImage.open()
                     }
                 }
             }
@@ -181,7 +182,7 @@ Dialog {
                                 elide: Text.ElideLeft
                             }
                             ToolButton {
-                                text: qsTr("\uf00d")
+                                text: "\uf00d"
                                 font.family: "FontAwesome"
                                 onClicked: {
                                     let modName = model.Path

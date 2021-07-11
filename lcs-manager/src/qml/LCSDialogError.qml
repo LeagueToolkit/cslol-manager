@@ -56,9 +56,10 @@ Dialog {
     footer: RowLayout {
         Layout.fillWidth: true
         Label {
-            text: " Please use copy button to report your errors"
+            text: qsTr("Please use copy button to report your errors")
             font.italic: true
             Layout.fillWidth: true
+            leftPadding: 10
         }
         DialogButtonBox {
             id: dialogButtonBox
@@ -69,8 +70,10 @@ Dialog {
                     logTextArea.copy()
                     logTextArea.deselect()
                 }
-                ToolTip.visible: hovered
-                ToolTip.text: qsTr("Puts log contents in your clipboard")
+                ToolTip {
+                    text: qsTr("Puts log contents in your clipboard")
+                    visible: parent.hovered
+                }
                 DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
             }
             ToolButton {

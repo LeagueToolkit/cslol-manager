@@ -28,6 +28,10 @@ ToolBar {
             text: "\uf013"
             font.family: "FontAwesome"
             onClicked: lcsToolBar.openSideMenu()
+            ToolTip {
+                text: qsTr("Open settings dialog")
+                visible: parent.hovered
+            }
         }
         ComboBox {
             id: profilesComboBox
@@ -35,36 +39,46 @@ ToolBar {
             currentIndex: 0
             enabled: !isBussy
             model: lcsToolBar.profilesModel
-            ToolTip.visible: hovered
-            ToolTip.text: qsTr("Select a profile to save, load or remove")
+            ToolTip {
+                text: qsTr("Select a profile to save, load or remove")
+                visible: parent.hovered
+            }
         }
         ToolButton {
             text: qsTr("Save")
             onClicked: lcsToolBar.saveProfileAndRun(false)
             enabled: !isBussy
-            ToolTip.visible: hovered
-            ToolTip.text: qsTr("Save enabled mods for selected profile")
+            ToolTip {
+                text: qsTr("Save enabled mods for selected profile")
+                visible: parent.hovered
+            }
         }
         ToolButton {
             text: qsTr("Load")
             onClicked: lcsToolBar.loadProfile()
             enabled: !isBussy
-            ToolTip.visible: hovered
-            ToolTip.text: qsTr("Load enabled mods for selected profile")
+            ToolTip {
+                text: qsTr("Load enabled mods for selected profile")
+                visible: parent.hovered
+            }
         }
         ToolButton {
             text: qsTr("Delete")
             onClicked: lcsToolBar.removeProfile()
             enabled: !isBussy
-            ToolTip.visible: hovered
-            ToolTip.text: qsTr("Delete selected profile")
+            ToolTip {
+                text: qsTr("Delete selected profile")
+                visible: parent.hovered
+            }
         }
         ToolButton {
             text: qsTr("New")
             onClicked: lcsToolBar.newProfile()
             enabled: !isBussy
-            ToolTip.visible: hovered
-            ToolTip.text: qsTr("Create new profile")
+            ToolTip {
+                text: qsTr("Create new profile")
+                visible: parent.hovered
+            }
         }
         ToolButton {
             text: patcherRunning ? qsTr("Stop") : qsTr("Run")
@@ -76,8 +90,10 @@ ToolBar {
                 }
             }
             enabled: !isBussy || patcherRunning
-            ToolTip.visible: hovered
-            ToolTip.text: qsTr("Runs patcher for currently selected mods")
+            ToolTip {
+                text: qsTr("Runs patcher for currently selected mods")
+                visible: parent.hovered
+            }
         }
     }
 }
