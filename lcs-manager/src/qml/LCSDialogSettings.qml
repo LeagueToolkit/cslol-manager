@@ -61,15 +61,15 @@ Dialog {
             width: settingsStackLayout.width
 
             TabButton {
-                text: "Game"
+                text: qsTr("Game")
                 width: settingsStackLayout.width / 3
             }
             TabButton {
-                text: "Theme"
+                text: qsTr("Theme")
                 width: settingsStackLayout.width / 3
             }
             TabButton {
-                text: "Misc"
+                text: qsTr("Misc")
                 width: settingsStackLayout.width / 3
             }
         }

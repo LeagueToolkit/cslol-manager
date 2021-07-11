@@ -103,14 +103,14 @@ Dialog {
             Layout.fillWidth: true
             Layout.fillHeight: true
             GroupBox {
-                title: "Info"
+                title: qsTr("Info")
                 Layout.fillWidth: true
                 ColumnLayout {
                     width: parent.width
                     RowLayout {
                         Layout.fillWidth: true
                         Label {
-                            text: "Name: "
+                            text: qsTr("Name: ")
                         }
                         TextField {
                             id: fieldName
@@ -125,7 +125,7 @@ Dialog {
                     RowLayout {
                         Layout.fillWidth: true
                         Label {
-                            text: "Author: "
+                            text: qsTr("Author: ")
                         }
                         TextField {
                             id: fieldAuthor
@@ -140,7 +140,7 @@ Dialog {
                     RowLayout {
                         Layout.fillWidth: true
                         Label {
-                            text: "Version: "
+                            text: qsTr("Version: ")
                         }
                         TextField {
                             id: fieldVersion
@@ -155,7 +155,7 @@ Dialog {
                     RowLayout {
                         Layout.fillWidth: true
                         Label {
-                            text: "Description: "
+                            text: qsTr("Description: ")
                         }
                         TextField {
                             id: fieldDescription
@@ -169,39 +169,38 @@ Dialog {
                             Layout.fillWidth: true
                         }
                         Button {
-                            text: "Apply"
+                            text: qsTr("Apply")
                             onClicked: lcsDialogEditMod.changeInfoData(lcsDialogEditMod.buildInfoData())
                         }
                     }
                 }
             }
             GroupBox {
-                title: "Image"
+                title: qsTr("Image")
                 Layout.fillWidth: true
                 RowLayout {
                     width: parent.width
+                    Button {
+                        text: qsTr("Browse")
+                        onClicked: dialogImage.open()
+                    }
                     TextField {
                         id: fieldImage
                         Layout.fillWidth: true
                         placeholderText: ""
                         readOnly: true
                     }
-
-                    Button {
-                        text: "Remove"
+                    ToolButton {
+                        text: "\uf00d"
+                        font.family: "FontAwesome"
                         onClicked: lcsDialogEditMod.removeImage()
-                    }
-
-                    Button {
-                        text: "Browse"
-                        onClicked: dialogImage.open()
                     }
                 }
             }
         }
 
         GroupBox {
-            title: "Files"
+            title: qsTr("Files")
             Layout.fillWidth: true
             Layout.fillHeight: true
             ColumnLayout {
@@ -226,7 +225,7 @@ Dialog {
                                 elide: Text.ElideLeft
                             }
                             ToolButton {
-                                text: qsTr("\uf00d")
+                                text: "\uf00d"
                                 font.family: "FontAwesome"
                                 onClicked: {
                                     let modName = model.Name
@@ -254,11 +253,11 @@ Dialog {
                 RowLayout {
                     width: parent.width
                     Button {
-                        text: "Add WAD"
+                        text: qsTr("Add WAD")
                         onClicked: dialogWadFiles.open()
                     }
                     Button {
-                        text: "Add RAW"
+                        text: qsTr("Add RAW")
                         onClicked: dialogRawFolder.open()
                     }
                 }

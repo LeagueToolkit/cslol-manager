@@ -147,8 +147,10 @@ ColumnLayout {
                                 lcsModsViewModel.setProperty(index, "Enabled", checked)
                             }
                         }
-                        ToolTip.visible: hovered
-                        ToolTip.text: qsTr("Enable this mod")
+                        ToolTip {
+                            text: qsTr("Enable this mod")
+                            visible: parent.hovered
+                        }
                     }
 
                     Column {
@@ -176,35 +178,41 @@ ColumnLayout {
                         layoutDirection: Qt.RightToLeft
                         anchors.verticalCenter: parent.verticalCenter
                         ToolButton {
-                            text: qsTr("\uf00d")
+                            text: "\uf00d"
                             font.family: "FontAwesome"
                             onClicked: {
                                 let modName = model.FileName
                                 lcsModsViewModel.remove(index, 1)
                                 lcsModsView.modRemoved(modName)
                             }
-                            ToolTip.visible: hovered
-                            ToolTip.text: qsTr("Remove this mod")
+                            ToolTip {
+                                text: qsTr("Remove this mod")
+                                visible: parent.hovered
+                            }
                         }
                         ToolButton {
-                            text: qsTr("\uf1c6")
+                            text: "\uf1c6"
                             font.family: "FontAwesome"
                             onClicked: {
                                 let modName = model.FileName
                                 lcsModsView.modExport(modName)
                             }
-                            ToolTip.visible: hovered
-                            ToolTip.text: qsTr("Export this mod")
+                            ToolTip {
+                                text: qsTr("Export this mod")
+                                visible: parent.hovered
+                            }
                         }
                         ToolButton {
-                            text: qsTr("\uf044")
+                            text: "\uf044"
                             font.family: "FontAwesome"
                             onClicked: {
                                 let modName = model.FileName
                                 lcsModsView.modEdit(modName)
                             }
-                            ToolTip.visible: hovered
-                            ToolTip.text: qsTr("Edit this mod")
+                            ToolTip {
+                                text: qsTr("Edit this mod")
+                                visible: parent.hovered
+                            }
                         }
                     }
                 }
@@ -218,16 +226,20 @@ ColumnLayout {
             font.family: "FontAwesome"
             onClicked: lcsModsView.createNewMod()
             Material.background: Material.primaryColor
-            ToolTip.visible: hovered
-            ToolTip.text: qsTr("Create new mod")
+            ToolTip {
+                text: qsTr("Create new mod")
+                visible: parent.hovered
+            }
         }
         RoundButton {
             text: "\uf1c6"
             font.family: "FontAwesome"
             onClicked: lcsModsView.installFantomeZip()
             Material.background: Material.primaryColor
-            ToolTip.visible: hovered
-            ToolTip.text: qsTr("Import new mod")
+            ToolTip {
+                text: qsTr("Import new mod")
+                visible: parent.hovered
+            }
         }
     }
 }

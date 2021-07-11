@@ -21,7 +21,7 @@ Dialog {
     RowLayout {
         width: parent.width
         Label {
-            text: "You will be redirected to download page after pressing OK button.\n" + update_url
+            text: qsTr("You will be redirected to download page after pressing OK button.\n") + update_url
             Layout.fillWidth: true
             wrapMode: Text.Wrap
         }
