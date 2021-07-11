@@ -34,7 +34,7 @@
 #define lcs_trace_var(name) u8"\n\t" #name " = ", name
 #define lcs_trace_func(...) ::LCS::ErrorTrace lcs_paste(trace_,__LINE__) {                      \
     [&, func = __PRETTY_FUNCTION__, line = __LINE__] () {                                       \
-        ::LCS::push_error_msg(to_u8string(func), u8":", line, u8":", __VA_ARGS__); \
+        ::LCS::push_error_msg(func_to_u8string(func), u8":", line, u8":", __VA_ARGS__);         \
     }                                                                                           \
 }
 #define lcs_hint(msg) \
@@ -52,8 +52,9 @@ namespace LCS {
     template<typename...Args>
     inline void push_error_msg(Args&&...args) noexcept {
         auto& stack = error_stack();
-        stack += u8'\n';
-        ((stack += ::LCS::to_u8string(std::forward<Args>(args))), ...);
+        std::u8string msg = u8"\n";
+        ((msg += ::LCS::to_u8string(std::forward<Args>(args))), ...);
+        stack.insert(stack.begin(), msg.begin(), msg.end());
     }
 
     template<typename...Args>

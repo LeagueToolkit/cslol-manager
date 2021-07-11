@@ -10,8 +10,6 @@ namespace LCS {
     struct WadMakeQueue {
         WadMakeQueue(WadIndex const& index);
 
-        void addItem(std::unique_ptr<WadMakeBase> item, Conflict conflict);
-
         void addItem(fs::path const& srcpath, Conflict conflict);
 
         void write(fs::path const& dstpath, ProgressMulti& progress) const;
@@ -30,6 +28,8 @@ namespace LCS {
         std::map<fs::path, std::unique_ptr<WadMakeBase>> items_;
         mutable std::uint64_t size_ = 0;
         mutable bool sizeCalculated_ = false;
+
+        void addItemWad(std::unique_ptr<WadMakeBase> item, Conflict conflict);
     };
 }
 

@@ -21,8 +21,8 @@ static bool is_blacklisted(std::u8string filename) noexcept {
 WadIndex::WadIndex(fs::path const& path, bool blacklist, bool ignorebad) :
     path_(fs::absolute(path)), blacklist_(blacklist) {
     lcs_trace_func(
-                lcs_trace_var(path_),
-                lcs_trace_var(blacklist_),
+                lcs_trace_var(path),
+                lcs_trace_var(blacklist),
                 lcs_trace_var(ignorebad)
                 );
     last_write_time_ = fs::last_write_time(path_ / "DATA" / "FINAL");
@@ -70,10 +70,6 @@ WadIndex::WadIndex(fs::path const& path, bool blacklist, bool ignorebad) :
 }
 
 bool WadIndex::is_uptodate() const {
-    lcs_trace_func(
-                lcs_trace_var(path_),
-                lcs_trace_var(blacklist_)
-                );
     auto new_last_write_time = fs::last_write_time(path_ / "DATA" / "FINAL");
     for (auto const& file : fs::recursive_directory_iterator(path_ / "DATA" / "FINAL")) {
         if (file.is_regular_file()) {

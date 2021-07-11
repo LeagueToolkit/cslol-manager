@@ -10,7 +10,7 @@ ModUnZip::ModUnZip(fs::path path)
     : path_(fs::absolute(path)), zip_archive{}, infile_(std::make_unique<InFile>(path))
 {
     lcs_trace_func(
-                lcs_trace_var(path_)
+                lcs_trace_var(path)
                 );
     lcs_assert_msg("Invalid zip file!", mz_zip_reader_init_cfile(&zip_archive, infile_->raw(), 0, 0));
     mz_uint numFiles = mz_zip_reader_get_num_files(&zip_archive);
@@ -38,7 +38,6 @@ ModUnZip::~ModUnZip() {
 
 void ModUnZip::extract(fs::path const& dstpath, ProgressMulti& progress) {
     lcs_trace_func(
-                lcs_trace_var(path_),
                 lcs_trace_var(dstpath)
                 );
     progress.startMulti(files_.size(), size_);
@@ -53,12 +52,18 @@ void ModUnZip::extractFile(fs::path const& outpath, CopyFile const& file, Progre
                 lcs_trace_var(file.path)
                 );
     progress.startItem(outpath, file.size);
-    lcs_rethrow(fs::create_directories(outpath.parent_path()));
-    OutFile outfile(outpath);
-    lcs_assert(mz_zip_reader_extract_to_cfile(&zip_archive,
-                                              file.index,
-                                              outfile.raw(),
-                                              0));
-    progress.consumeData(file.size);
+    fs::create_directories(outpath.parent_path());
+    struct CallbackCtx {
+        OutFile outfile;
+        Progress& progress;
+    } ctx = { outpath, progress };
+    auto callback = [] (void* opaq, mz_uint64 file_ofs, const void *pBuf, size_t n) -> size_t {
+        CallbackCtx* ctx = (CallbackCtx*)opaq;
+        ctx->outfile.seek(file_ofs, SEEK_SET);
+        ctx->outfile.write(pBuf, n);
+        ctx->progress.consumeData(n);
+        return n;
+    };
+    lcs_assert(mz_zip_reader_extract_to_callback(&zip_archive, file.index, callback, &ctx, 0));
     progress.finishItem();
 }

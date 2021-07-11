@@ -11,7 +11,7 @@ using namespace LCS;
 
 Mod::Mod(fs::path path) : path_(fs::absolute(path)), filename_(path_.filename()) {
     lcs_trace_func(
-                lcs_trace_var(path_)
+                lcs_trace_var(path)
                 );
 
     lcs_assert(fs::exists(path_ / "META" / "info.json"));
@@ -37,7 +37,6 @@ Mod::Mod(fs::path path) : path_(fs::absolute(path)), filename_(path_.filename())
 
 void Mod::write_zip(fs::path dstpath, ProgressMulti& progress) const {
     lcs_trace_func(
-                lcs_trace_var(path_),
                 lcs_trace_var(dstpath)
                 );
     std::uint64_t sizeTotal = std::accumulate(wads_.begin(), wads_.end(), std::uint64_t{0},
@@ -99,7 +98,6 @@ void Mod::write_zip(fs::path dstpath, ProgressMulti& progress) const {
 
 void Mod::remove_wad(fs::path const& name) {
     lcs_trace_func(
-                lcs_trace_var(path_),
                 lcs_trace_var(name)
                 );
     auto i = wads_.find(name);
@@ -110,9 +108,6 @@ void Mod::remove_wad(fs::path const& name) {
 }
 
 void Mod::change_info(std::u8string const& infoData) {
-    lcs_trace_func(
-                lcs_trace_var(path_)
-                );
     auto outfile = OutFile(path_ / "META" / "info.json");
     outfile.write(infoData.data(), infoData.size());
     info_ = infoData;
@@ -120,7 +115,6 @@ void Mod::change_info(std::u8string const& infoData) {
 
 void Mod::change_image(fs::path const& srcpath) {
     lcs_trace_func(
-                lcs_trace_var(path_),
                 lcs_trace_var(srcpath)
                 );
     fs::copy_file(srcpath, path_ / "META" / "image.png", fs::copy_options::overwrite_existing);
@@ -128,17 +122,11 @@ void Mod::change_image(fs::path const& srcpath) {
 }
 
 void Mod::remove_image() {
-    lcs_trace_func(
-                lcs_trace_var(path_)
-                );
     fs::remove(path_ / "META" / "image.png");
     image_ = "";
 }
 
 std::vector<Wad const*> Mod::add_wads(WadMakeQueue& wads, ProgressMulti& progress, Conflict conflict) {
-    lcs_trace_func(
-                lcs_trace_var(path_)
-                );
     std::vector<fs::path> removeExisting;
     std::vector<fs::path> skipNew;
     std::vector<Wad const*> added;
@@ -156,7 +144,7 @@ std::vector<Wad const*> Mod::add_wads(WadMakeQueue& wads, ProgressMulti& progres
                 continue;
             } else  if(conflict == Conflict::Abort) {
                 lcs_hint("This mod would modify same wad multiple time!");
-                throw ConflictError(name, orgpath, newpath);
+                raise_wad_conflict(name, orgpath, newpath);
             }
         }
     }
