@@ -4,6 +4,7 @@
 #include <QJsonDocument>
 #include <QMetaEnum>
 #include <QThread>
+#include <QStandardPaths>
 #include <fstream>
 
 LCSToolsImpl::LCSToolsImpl(QObject *parent)
@@ -185,6 +186,7 @@ void LCSToolsImpl::changeLeaguePath(QString newLeaguePath) {
             path = "";
         }
         if (leaguePath_ != path) {
+            LCS::path_remap()[u8"<LOL>"] = path.generic_u8string();
             leaguePath_ = path;
             wadIndex_ = nullptr;
             emit leaguePathChanged(QString::fromStdU16String(leaguePath_.generic_u16string()));
@@ -234,6 +236,18 @@ void LCSToolsImpl::init() {
     if (state_ == LCSState::StateUnitialized) {
         setState(LCSState::StateBusy);
         setStatus("Acquire lock");
+        constexpr auto remap_location = [] (std::u8string name, QStandardPaths::StandardLocation type) {
+            if (LCS::fs::path path = QStandardPaths::writableLocation(type).toStdU16String(); !path.empty()) {
+                LCS::path_remap()[name] = path.generic_u8string();
+            }
+        };
+        LCS::path_remap()[u8"<LCS>"] = progDirPath_.generic_u8string();
+        LCS::path_remap()[u8"<PWD>"] = LCS::fs::current_path().generic_u8string();
+        remap_location(u8"<Desktop>", QStandardPaths::DesktopLocation);
+        remap_location(u8"<Documents>", QStandardPaths::DocumentsLocation);
+        remap_location(u8"<Downloads>", QStandardPaths::DownloadLocation);
+        remap_location(u8"<Home>", QStandardPaths::HomeLocation);
+
         auto lockpath = QString::fromStdU16String((progDirPath_/ "lockfile").generic_u16string());
         lockfile_ = new QLockFile(lockpath);
         try {

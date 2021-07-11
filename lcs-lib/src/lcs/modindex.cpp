@@ -17,7 +17,7 @@ ModIndex::ModIndex(fs::path path)
 {
     lcs_hint("If this error persists try re-installing mods in new installation!");
     lcs_trace_func(
-                lcs_trace_var(this->path_)
+                lcs_trace_var(path_)
                 );
     fs::create_directories(path_);
     clean_tmp_make();
@@ -57,7 +57,7 @@ fs::path ModIndex::create_tmp_extract() {
 
 bool ModIndex::remove(fs::path const& filename) noexcept {
     lcs_trace_func(
-                lcs_trace_var(this->path_),
+                lcs_trace_var(path_),
                 lcs_trace_var(filename)
                 );
     if (auto i = mods_.find(filename); i != mods_.end()) {
@@ -73,7 +73,7 @@ bool ModIndex::remove(fs::path const& filename) noexcept {
 
 bool ModIndex::refresh() noexcept {
     lcs_trace_func(
-                lcs_trace_var(this->path_)
+                lcs_trace_var(path_)
                 );
     bool found = false;
     for (auto const& file : fs::directory_iterator(path_)) {
@@ -92,7 +92,7 @@ bool ModIndex::refresh() noexcept {
 
 Mod* ModIndex::install_from_folder(fs::path srcpath, WadIndex const& index, ProgressMulti& progress) {
     lcs_trace_func(
-        lcs_trace_var(this->path_),
+        lcs_trace_var(path_),
         lcs_trace_var(srcpath)
         );
     fs::path filename = srcpath.filename();
@@ -104,7 +104,7 @@ Mod* ModIndex::install_from_folder(fs::path srcpath, WadIndex const& index, Prog
 
 Mod* ModIndex::install_from_fantome(fs::path srcpath, WadIndex const& index, ProgressMulti& progress) {
     lcs_trace_func(
-        lcs_trace_var(this->path_),
+        lcs_trace_var(path_),
         lcs_trace_var(srcpath)
         );
     fs::path filename = srcpath.filename().replace_extension();
@@ -119,7 +119,7 @@ Mod* ModIndex::install_from_fantome(fs::path srcpath, WadIndex const& index, Pro
 
 Mod* ModIndex::install_from_wxy(fs::path srcpath, WadIndex const& index, ProgressMulti& progress) {
     lcs_trace_func(
-        lcs_trace_var(this->path_),
+        lcs_trace_var(path_),
         lcs_trace_var(srcpath)
         );
     fs::path filename = srcpath.filename().replace_extension();
@@ -170,7 +170,7 @@ Mod* ModIndex::install_from_folder_impl(fs::path srcpath, WadIndex const& index,
 
 Mod* ModIndex::install_from_wad(fs::path srcpath, WadIndex const& index, ProgressMulti& progress) {
     lcs_trace_func(
-        lcs_trace_var(this->path_),
+        lcs_trace_var(path_),
         lcs_trace_var(srcpath)
         );
     lcs_assert_msg("Wad mod does not exist!", fs::exists(srcpath));
@@ -202,7 +202,7 @@ Mod* ModIndex::make(fs::path const& fileName,
                     ProgressMulti& progress)
 {
     lcs_trace_func(
-                lcs_trace_var(this->path_),
+                lcs_trace_var(path_),
                 lcs_trace_var(fileName),
                 lcs_trace_var(image)
                 );
@@ -229,7 +229,7 @@ Mod* ModIndex::make(fs::path const& fileName,
 
 void ModIndex::export_zip(fs::path const& filename, fs::path dstpath, ProgressMulti& progress) {
     lcs_trace_func(
-                lcs_trace_var(this->path_),
+                lcs_trace_var(path_),
                 lcs_trace_var(filename),
                 lcs_trace_var(dstpath)
                 );
@@ -240,7 +240,7 @@ void ModIndex::export_zip(fs::path const& filename, fs::path dstpath, ProgressMu
 
 void ModIndex::remove_mod_wad(fs::path const& modFileName, fs::path const& wadName) {
     lcs_trace_func(
-                lcs_trace_var(this->path_),
+                lcs_trace_var(path_),
                 lcs_trace_var(modFileName),
                 lcs_trace_var(wadName)
                 );
@@ -251,7 +251,7 @@ void ModIndex::remove_mod_wad(fs::path const& modFileName, fs::path const& wadNa
 
 void ModIndex::change_mod_info(fs::path const& modFileName, std::u8string const& infoData) {
     lcs_trace_func(
-                lcs_trace_var(this->path_),
+                lcs_trace_var(path_),
                 lcs_trace_var(modFileName)
                 );
     auto i = mods_.find(modFileName);
@@ -261,7 +261,7 @@ void ModIndex::change_mod_info(fs::path const& modFileName, std::u8string const&
 
 void ModIndex::change_mod_image(fs::path const& modFileName, fs::path const& dstpath) {
     lcs_trace_func(
-                lcs_trace_var(this->path_),
+                lcs_trace_var(path_),
                 lcs_trace_var(modFileName),
                 lcs_trace_var(dstpath)
                 );
@@ -272,7 +272,7 @@ void ModIndex::change_mod_image(fs::path const& modFileName, fs::path const& dst
 
 void ModIndex::remove_mod_image(fs::path const& modFileName) {
     lcs_trace_func(
-                lcs_trace_var(this->path_),
+                lcs_trace_var(path_),
                 lcs_trace_var(modFileName)
                 );
     auto i = mods_.find(modFileName);
@@ -284,7 +284,7 @@ std::vector<Wad const*> ModIndex::add_mod_wads(fs::path const& modFileName, WadM
                                                ProgressMulti& progress, Conflict conflict)
 {
     lcs_trace_func(
-                lcs_trace_var(this->path_),
+                lcs_trace_var(path_),
                 lcs_trace_var(modFileName)
                 );
     auto i = mods_.find(modFileName);

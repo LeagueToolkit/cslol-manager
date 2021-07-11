@@ -32,11 +32,10 @@
 #endif
 
 #define lcs_trace_var(name) u8"\n\t" #name " = ", name
-// #define lcs_trace_var(name) u8""
-#define lcs_trace_func(...) ::LCS::ErrorTrace lcs_paste(trace_,__LINE__) {  \
-    [&, func = __PRETTY_FUNCTION__, line = __LINE__] () {                   \
-        ::LCS::push_error_msg((char8_t const*)func, u8":", line, u8":", __VA_ARGS__); \
-    }                                                                       \
+#define lcs_trace_func(...) ::LCS::ErrorTrace lcs_paste(trace_,__LINE__) {                      \
+    [&, func = __PRETTY_FUNCTION__, line = __LINE__] () {                                       \
+        ::LCS::push_error_msg(to_u8string(func), u8":", line, u8":", __VA_ARGS__); \
+    }                                                                                           \
 }
 #define lcs_hint(msg) \
     ::LCS::ErrorTrace lcs_paste(trace_,__LINE__) { [] { ::LCS::push_hint_msg(u8"" msg); } }

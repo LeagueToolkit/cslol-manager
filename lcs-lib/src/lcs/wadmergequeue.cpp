@@ -9,14 +9,14 @@ using namespace LCS;
 WadMergeQueue::WadMergeQueue(fs::path const& path, WadIndex const& index) :
     path_(fs::absolute(path)), index_(index) {
     lcs_trace_func(
-                lcs_trace_var(this->path_)
+                lcs_trace_var(path_)
                 );
     fs::create_directories(path_);
 }
 
 void WadMergeQueue::addMod(Mod const* mod, Conflict conflict) {
     lcs_trace_func(
-                lcs_trace_var(this->path_),
+                lcs_trace_var(path_),
                 lcs_trace_var(mod->path())
                 );
     for(auto const& [name, source]: mod->wads()) {
@@ -26,7 +26,7 @@ void WadMergeQueue::addMod(Mod const* mod, Conflict conflict) {
 
 void WadMergeQueue::addWad(Wad const* source, Conflict conflict) {
     lcs_trace_func(
-                lcs_trace_var(this->path_),
+                lcs_trace_var(path_),
                 lcs_trace_var(source->path())
                 );
     auto baseWad = index_.findOriginal(source->name(), source->entries());
@@ -45,7 +45,7 @@ void WadMergeQueue::addWad(Wad const* source, Conflict conflict) {
 
 void WadMergeQueue::write(ProgressMulti& progress) const {
     lcs_trace_func(
-                lcs_trace_var(this->path_)
+                lcs_trace_var(path_)
                 );
     std::size_t itemTotal = 0;
     std::uint64_t dataTotal = 0;
@@ -63,7 +63,7 @@ void WadMergeQueue::write(ProgressMulti& progress) const {
 
 void WadMergeQueue::cleanup() {
     lcs_trace_func(
-                lcs_trace_var(this->path_)
+                lcs_trace_var(path_)
                 );
     std::set<fs::path> good = {};
     for(auto const& [wad, merge]: items_) {
@@ -81,7 +81,7 @@ void WadMergeQueue::cleanup() {
 
 WadMerge* WadMergeQueue::findOrAddItem(Wad const* original) {
     lcs_trace_func(
-                lcs_trace_var(this->path_),
+                lcs_trace_var(path_),
                 lcs_trace_var(original->name())
                 );
     if (auto i = items_.find(original); i != items_.end()) {

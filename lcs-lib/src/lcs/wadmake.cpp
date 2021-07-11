@@ -37,7 +37,7 @@ WadMakeCopy::WadMakeCopy(fs::path const& path)
       name_(path_.filename())
 {
     lcs_trace_func(
-                lcs_trace_var(this->path_)
+                lcs_trace_var(path_)
                 );
     auto wad = Wad(path_);
     entries_ = wad.entries();
@@ -49,7 +49,7 @@ WadMakeCopy::WadMakeCopy(fs::path const& path)
 
 void WadMakeCopy::write(fs::path const& dstpath, Progress& progress, WadIndex const* index) const {
     lcs_trace_func(
-                lcs_trace_var(this->path_),
+                lcs_trace_var(path_),
                 lcs_trace_var(dstpath)
                 );
     progress.startItem(dstpath, size_);
@@ -103,7 +103,7 @@ WadMake::WadMake(fs::path const& path)
     : path_(fs::absolute(path)),
       name_(path_.filename()) {
     lcs_trace_func(
-                lcs_trace_var(this->path_)
+                lcs_trace_var(path_)
                 );
     lcs_assert(fs::is_directory(path_));
     for(auto const& entry: fs::recursive_directory_iterator(path_)) {
@@ -120,7 +120,7 @@ WadMake::WadMake(fs::path const& path)
 
 void WadMake::write(fs::path const& dstpath, Progress& progress, WadIndex const* index) const {
     lcs_trace_func(
-                lcs_trace_var(this->path_),
+                lcs_trace_var(path_),
                 lcs_trace_var(dstpath)
                 );
     progress.startItem(dstpath, size_);
