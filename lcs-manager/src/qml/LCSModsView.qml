@@ -100,7 +100,7 @@ ColumnLayout {
             DropArea {
                 id: fileDropArea
                 anchors.fill: parent
-                onDropped: {
+                onDropped: function(drop) {
                     if (drop.hasUrls) {
                         let urls = []
                         for(let i = 0; i < drop.urls.length; ++i) {

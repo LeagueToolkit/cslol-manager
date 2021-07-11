@@ -198,7 +198,7 @@ Dialog {
                         DropArea {
                             id: fileDropArea
                             anchors.fill: parent
-                            onDropped: {
+                            onDropped: function(drop) {
                                 if (drop.hasUrls) {
                                     let files = drop.urls
                                     for(let i in drop.urls) {
