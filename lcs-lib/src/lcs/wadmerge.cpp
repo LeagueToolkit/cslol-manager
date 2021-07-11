@@ -10,21 +10,6 @@
 
 using namespace LCS;
 
-template<std::size_t S>
-static void copyStream(InFile& source, std::int64_t offset, OutFile& dest,
-                       std::size_t size, char (&buffer)[S],
-                       Progress& progress) {
-    source.seek(offset, SEEK_SET);
-    for (std::size_t i = 0; i != size;) {
-        std::size_t count = std::min(S, size - i);
-        source.read(buffer, count);
-        dest.write(buffer, count);
-        // progress.consumeData(count);
-        i += count;
-    }
-    progress.consumeData(size);
-}
-
 WadMerge::WadMerge(fs::path const& path, Wad const* original)
  : path_(fs::absolute(path)), original_(original) {
     lcs_trace_func(
@@ -97,17 +82,40 @@ void WadMerge::write(Progress& progress) const {
                 );
     auto const totalSize = size();
     progress.startItem(path_, totalSize);
+    auto wadMap = std::map<Wad const*, std::map<uint32_t, std::map<uint64_t, Wad::Entry const*>>> {};
     auto newHeader = original_->header();
-    newHeader.filecount = static_cast<std::uint32_t>(entries_.size());
+    auto newEntries = std::vector<Wad::Entry> {};
     {
-        auto sha256_hasher = picosha2::hash256_one_by_one{};
-        for(auto const& [xxhash, entry]: entries_) {
-            auto const beg = (char const*)(&entry);
-            auto const end = beg + sizeof(Wad::Entry);
-            sha256_hasher.process(beg, end);
+        for (auto const& [xxhash, entry]: entries_) {
+            wadMap[entry.wad_][entry.dataOffset][entry.xxhash] = &entry;
         }
+        auto dataOffset = (std::uint64_t)(sizeof(Wad::Header) + entries_.size() * sizeof(Wad::Entry));
+        for (auto const& [wad, offsetMap]: wadMap) {
+            for (auto const& [offset, xxhashMap]: offsetMap) {
+                Wad::Entry newEntry = {};
+                for (auto const& [xxhash, entry]: xxhashMap) {
+                    newEntry = *entry;
+                    newEntry.dataOffset = static_cast<uint32_t>(dataOffset);
+                    constexpr auto GB = static_cast<std::uint64_t>(1024 * 1024 * 1024);
+                    lcs_assert(dataOffset <= 2 * GB);
+                    newEntries.push_back(newEntry);
+                }
+                dataOffset += newEntry.sizeCompressed;
+            }
+        }
+        lcs_trace_func(
+                    lcs_trace_var(entries_.size()),
+                    lcs_trace_var(newEntries.size())
+                    );
+        lcs_assert(entries_.size() == newEntries.size());
+        std::sort(newEntries.begin(), newEntries.end(), [] (auto const& lhs, auto const& rhs) {
+            return lhs.xxhash < rhs.xxhash;
+        });
+        auto sha256_hasher = picosha2::hash256_one_by_one{};
+        sha256_hasher.process((char const*)newEntries.data(), (char const*)(newEntries.data() + newEntries.size()));
         sha256_hasher.finish();
         sha256_hasher.get_hash_bytes(newHeader.signature.begin(), newHeader.signature.end());
+        newHeader.filecount = static_cast<std::uint32_t>(entries_.size());
     }
     if (fs::exists(path_)) {
         try {
@@ -126,22 +134,26 @@ void WadMerge::write(Progress& progress) const {
         fs::create_directories(path_.parent_path());
     }
     auto outfile = OutFile(path_);
-    auto newEntries = std::vector<Wad::Entry>(entries_.size());
-    auto dataOffset = (std::uint64_t)(sizeof(Wad::Header) + entries_.size() * sizeof(Wad::Entry));
-    std::transform(entries_.begin(), entries_.end(), newEntries.begin(),
-                   [&dataOffset](std::pair<uint64_t,Wad::Entry> kvp) {
-        kvp.second.dataOffset = static_cast<uint32_t>(dataOffset);
-        dataOffset += kvp.second.sizeCompressed;
-        constexpr auto GB = static_cast<std::uint64_t>(1024 * 1024 * 1024);
-        lcs_assert(dataOffset <= 2 * GB);
-        return kvp.second;
-    });
     outfile.write((char const*)&newHeader, sizeof(Wad::Header));
     outfile.write((char const*)newEntries.data(), newEntries.size() * sizeof(Wad::Entry));
-    char buffer[64 * 1024];
-    for(auto const& [xxhash, entry]: entries_) {
-        InFile infile(entry.wad_->path());
-        copyStream(infile, entry.dataOffset, outfile, entry.sizeCompressed, buffer, progress);
+    char buffer[64 * 1024] = {};
+    for (auto const& [wad, offsetMap]: wadMap) {
+        InFile infile(wad->path());
+        std::int64_t currentOffset = 0;
+        for (auto const& [offset, xxhashMap]: offsetMap) {
+            auto const size = xxhashMap.begin()->second->sizeCompressed;
+            if (offset > currentOffset) {
+                infile.seek(offset - currentOffset, SEEK_CUR);
+            }
+            currentOffset = offset + size;
+            for (std::size_t remain = size; remain; ) {
+                std::size_t n = std::min(sizeof(buffer), remain);
+                infile.read(buffer, n);
+                outfile.write(buffer, n);
+                remain -= n;
+            }
+            progress.consumeData(size);
+        }
     }
     progress.finishItem();
 }
