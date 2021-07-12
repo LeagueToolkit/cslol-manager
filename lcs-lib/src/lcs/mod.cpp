@@ -25,11 +25,13 @@ Mod::Mod(fs::path path) : path_(fs::absolute(path)), filename_(path_.filename())
         image_ = "";
     }
 
-    for (auto const& file : fs::directory_iterator(path_ / "WAD")) {
-        if (file.is_regular_file()) {
-            if (auto filepath = file.path(); filepath.extension() == ".client") {
-                auto wad = new Wad { filepath };
-                wads_.insert_or_assign(wad->name(),  std::unique_ptr<Wad>{wad});
+    if (fs::exists(path_ / "WAD")) {
+        for (auto const& file : fs::directory_iterator(path_ / "WAD")) {
+            if (file.is_regular_file()) {
+                if (auto filepath = file.path(); filepath.extension() == ".client") {
+                    auto wad = new Wad { filepath };
+                    wads_.insert_or_assign(wad->name(),  std::unique_ptr<Wad>{wad});
+                }
             }
         }
     }
@@ -114,16 +116,22 @@ void Mod::change_info(std::u8string const& infoData) {
 }
 
 void Mod::change_image(fs::path const& srcpath) {
+    fs::path dstpath = path_ / "META" / "image.png";
     lcs_trace_func(
-                lcs_trace_var(srcpath)
+                lcs_trace_var(srcpath),
+                lcs_trace_var(dstpath)
                 );
-    fs::copy_file(srcpath, path_ / "META" / "image.png", fs::copy_options::overwrite_existing);
-    image_ = path_ / "META" / "image.png";
-}
-
-void Mod::remove_image() {
-    fs::remove(path_ / "META" / "image.png");
-    image_ = "";
+    if (srcpath.empty()) {
+        if (fs::exists(dstpath)) {
+            fs::remove(dstpath);
+        }
+        image_ = "";
+    } else {
+        if (srcpath != dstpath) {
+            fs::copy_file(srcpath, dstpath, fs::copy_options::overwrite_existing);
+        }
+        image_ = path_ / "META" / "image.png";
+    }
 }
 
 std::vector<Wad const*> Mod::add_wads(WadMakeQueue& wads, ProgressMulti& progress, Conflict conflict) {

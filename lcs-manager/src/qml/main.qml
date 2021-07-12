@@ -29,9 +29,6 @@ ApplicationWindow {
         property alias themeAccentColor: lcsDialogSettings.themeAccentColor
 
         property alias lastZipDirectory: lcsDialogOpenZipFantome.folder
-        property alias lastImageFolder: lcsDialogNewMod.lastImageFolder
-        property alias lastWadFileFolder: lcsDialogNewMod.lastWadFileFolder
-        property alias lastRawFolder: lcsDialogNewMod.lastRawFolder
 
         property alias windowHeight: window.height
         property alias windowWidth: window.width
@@ -210,8 +207,8 @@ ApplicationWindow {
 
     LCSDialogNewMod {
         id: lcsDialogNewMod
-        onSave: function(fileName, image, infoData, items) {
-            lcsTools.makeMod(fileName, image, infoData, items)
+        onSave: function(fileName, infoData, image) {
+            lcsTools.makeMod(fileName, infoData, image)
         }
     }
 
@@ -220,21 +217,15 @@ ApplicationWindow {
         visible: false
         isBussy: window.isBussy
 
-        onChangeInfoData: function(infoData) {
-            lcsTools.changeModInfo(fileName, infoData)
-        }
-        onChangeImage: function(image) {
-            lcsTools.changeModImage(fileName, image)
-        }
-        onRemoveImage: function() {
-            lcsTools.removeModImage(fileName)
+        onChangeInfoData: function(infoData, image) {
+            lcsTools.changeModInfo(infoData, image)
         }
         onRemoveWads: function(wads) {
             lcsTools.removeModWads(fileName, wads)
         }
-        onAddWads: function(wads) {
+        onAddWads: function(wads, removeUnknownNames, removeUnchangedEntries) {
             if (checkGamePath()) {
-                lcsTools.addModWads(fileName, wads)
+                lcsTools.addModWads(fileName, wads, removeUnknownNames, removeUnchangedEntries)
             }
         }
     }
@@ -345,19 +336,18 @@ ApplicationWindow {
         onUpdateProfileStatus: function(message) {
             log_data += message
         }
-        onModEditStarted: function(fileName, infoData, image, wads) {
-            lcsDialogEditMod.load(fileName, infoData, image, wads)
+        onModCreated: function(fileName, infoData, image) {
+            lcsModsView.addMod(fileName, infoData, false)
+            lcsDialogEditMod.load(fileName, infoData, image, [], true)
             lcsDialogEditMod.open()
         }
-        onModInfoChanged: function(fileName, infoData) {
+        onModEditStarted: function(fileName, infoData, image, wads) {
+            lcsDialogEditMod.load(fileName, infoData, image, wads, false)
+            lcsDialogEditMod.open()
+        }
+        onModInfoChanged: function(fileName, infoData, image) {
             lcsModsView.updateModInfo(fileName, infoData)
-            lcsDialogEditMod.infoDataChanged(infoData)
-        }
-        onModImageChanged: function(fileName, image) {
-            lcsDialogEditMod.imageChanged(image)
-        }
-        onModImageRemoved: function(fileName) {
-            lcsDialogEditMod.imageRemoved()
+            lcsDialogEditMod.infoDataChanged(infoData, image)
         }
         onModWadsAdded: function(fileName, wads) {
             lcsDialogEditMod.wadsAdded(wads)

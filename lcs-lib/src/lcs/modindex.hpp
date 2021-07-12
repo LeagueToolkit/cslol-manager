@@ -28,6 +28,9 @@ namespace LCS {
         bool refresh() noexcept;
 
         // Throws std::runtime_error
+        Mod* install_from_auto(fs::path srcpath, WadIndex const& index, ProgressMulti& progress);
+
+        // Throws std::runtime_error
         Mod* install_from_folder(fs::path srcpath, WadIndex const& index, ProgressMulti& progress);
 
         // Throws std::runtime_error
@@ -39,24 +42,10 @@ namespace LCS {
         // Throws std::runtime_error
         Mod* install_from_wad(fs::path srcpath, WadIndex const& index, ProgressMulti& progress);
 
-        Mod* make(fs::path const& fileName,
-                  std::u8string const& info,
-                  fs::path const& image,
-                  WadMakeQueue const& mergequeue,
-                  ProgressMulti& progress);
+        Mod* make(fs::path const& fileName, std::u8string const& info, fs::path const& image);
 
-        void export_zip(fs::path const& name, fs::path dstpath, ProgressMulti& progress);
-
-        void remove_mod_wad(fs::path const& modFileName, fs::path const& wadName);
-
-        void change_mod_info(fs::path const& modFileName, std::u8string const& infoData);
-
-        void change_mod_image(fs::path const& modFileName, fs::path const& dstpath);
-
-        void remove_mod_image(fs::path const& modFileName);
-
-        std::vector<Wad const*> add_mod_wads(fs::path const& modFileName, WadMakeQueue& wads,
-                                             ProgressMulti& progress, Conflict conflict);
+        // Throws std::runtime_error
+        Mod* get_mod(fs::path const& modFileName);
     private:
         fs::path path_;
         std::map<fs::path, std::unique_ptr<Mod>> mods_;

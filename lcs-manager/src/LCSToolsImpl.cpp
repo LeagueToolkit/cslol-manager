@@ -308,7 +308,8 @@ void LCSToolsImpl::exportMod(QString name, QString dest) {
         setState(LCSState::StateBusy);
         setStatus("Export mod");
         try {
-            modIndex_->export_zip(name.toStdU16String(), dest.toStdU16String(), *dynamic_cast<LCS::ProgressMulti*>(this));
+            auto const mod = modIndex_->get_mod(name.toStdU16String());
+            mod->write_zip(dest.toStdU16String(), *dynamic_cast<LCS::ProgressMulti*>(this));
         } catch(std::runtime_error const& error) {
             emit_reportError("Export mod", error);
         }
@@ -325,23 +326,7 @@ void LCSToolsImpl::installFantomeZip(QStringList paths) {
             for (QString path: paths) {
                 path = path.replace('\\', '/');
                 auto& progress = *dynamic_cast<LCS::ProgressMulti*>(this);
-                LCS::Mod* mod = nullptr;
-                // TODO: gezi skin
-                if (path.endsWith(".wad.client")
-                    || path.endsWith(".wad.client/")
-                    || path.endsWith(".wad")
-                    || path.endsWith(".wad/")) {
-                    mod = modIndex_->install_from_wad(path.toStdU16String(), index, progress);
-                } else if (path.endsWith(".fantome") || path.endsWith(".zip")) {
-                    mod = modIndex_->install_from_fantome(path.toStdU16String(), index, progress);
-                } else if (path.endsWith(".wxy")) {
-                    mod = modIndex_->install_from_wxy(path.toStdU16String(), index, progress);
-                } else {
-                    lcs_hint("Make sure you have: \n"
-                             "\t-META folder with info.json file!\n"
-                             "\t-Either RAW or WAD folder!\n");
-                    mod = modIndex_->install_from_folder(path.toStdU16String(), index, progress);
-                }
+                LCS::Mod* mod = modIndex_->install_from_auto(path.toStdU16String(), index, progress);
                 emit installedMod(QString::fromStdU16String(mod->filename().generic_u16string()),
                                   parseInfoData(mod->filename(), mod->info()));
             }
@@ -352,23 +337,18 @@ void LCSToolsImpl::installFantomeZip(QStringList paths) {
     }
 }
 
-void LCSToolsImpl::makeMod(QString fileName, QString image, QJsonObject infoData, QJsonArray items) {
+void LCSToolsImpl::makeMod(QString fileName, QJsonObject infoData, QString image) {
     if (state_ == LCSState::StateIdle) {
         setState(LCSState::StateBusy);
         setStatus("Make mod");
         try {
-            auto const& index = wadIndex();
-            LCS::WadMakeQueue queue(index, false, false); // TODO: expose options
-            for(auto item: items) {
-                queue.addItem(LCS::fs::path(item.toString().toStdU16String()), LCS::Conflict::Abort);
-            }
             infoData = validateAndCorrect(fileName, infoData);
             auto mod = modIndex_->make(fileName.toStdU16String(),
                                        dumpInfoData(infoData),
-                                       image.toStdU16String(),
-                                       queue,
-                                       *dynamic_cast<LCS::ProgressMulti*>(this));
-            emit installedMod(QString::fromStdU16String(mod->filename().generic_u16string()), infoData);
+                                       image.toStdU16String());
+            emit modCreated(QString::fromStdU16String(mod->filename().generic_u16string()),
+                            infoData,
+                            QString::fromStdU16String(mod->image().generic_u16string()));
         } catch(std::runtime_error const& error) {
             emit_reportError("Make mod", error);
         }
@@ -521,44 +501,19 @@ void LCSToolsImpl::startEditMod(QString fileName) {
     }
 }
 
-void LCSToolsImpl::changeModInfo(QString fileName, QJsonObject infoData) {
+void LCSToolsImpl::changeModInfo(QString fileName, QJsonObject infoData, QString image) {
     if (state_ == LCSState::StateIdle) {
         setState(LCSState::StateBusy);
         setStatus("Change mod info");
         try {
+            auto const mod = modIndex_->get_mod(fileName.toStdU16String());
             infoData = validateAndCorrect(fileName, infoData);
-            modIndex_->change_mod_info(fileName.toStdU16String(), dumpInfoData(infoData));
-            emit modInfoChanged(fileName, infoData);
+            mod->change_info(dumpInfoData(infoData));
+            mod->change_image(image.toStdU16String());
+            image = QString::fromStdU16String(mod->image().generic_u16string());
+            emit modInfoChanged(fileName, infoData, image);
         } catch(std::runtime_error const& error) {
             emit_reportError("Change mod info", error);
-        }
-        setState(LCSState::StateIdle);
-    }
-}
-
-void LCSToolsImpl::changeModImage(QString fileName, QString image) {
-    if (state_ == LCSState::StateIdle) {
-        setState(LCSState::StateBusy);
-        setStatus("Change mod image");
-        try {
-            modIndex_->change_mod_image(fileName.toStdU16String(), image.toStdU16String());
-            emit modImageChanged(fileName, image);
-        } catch(std::runtime_error const& error) {
-            emit_reportError("Change mod image", error);
-        }
-        setState(LCSState::StateIdle);
-    }
-}
-
-void LCSToolsImpl::removeModImage(QString fileName) {
-    if (state_ == LCSState::StateIdle) {
-        setState(LCSState::StateBusy);
-        setStatus("Remove mod image");
-        try {
-            modIndex_->remove_mod_image(fileName.toStdU16String());
-            emit modImageRemoved(fileName);
-        } catch(std::runtime_error const& error) {
-            emit_reportError("Remove mod image", error);
         }
         setState(LCSState::StateIdle);
     }
@@ -569,8 +524,9 @@ void LCSToolsImpl::removeModWads(QString fileName, QJsonArray wads) {
         setState(LCSState::StateBusy);
         setStatus("Remove mod wads");
         try {
+            auto const mod = modIndex_->get_mod(fileName.toStdU16String());
             for(auto wadName: wads) {
-                modIndex_->remove_mod_wad(fileName.toStdU16String(), wadName.toString().toStdU16String());
+                mod->remove_wad(wadName.toString().toStdU16String());
             }
             emit modWadsRemoved(fileName, wads);
         } catch(std::runtime_error const& error) {
@@ -580,19 +536,21 @@ void LCSToolsImpl::removeModWads(QString fileName, QJsonArray wads) {
     }
 }
 
-void LCSToolsImpl::addModWads(QString fileName, QJsonArray wads) {
+void LCSToolsImpl::addModWads(QString fileName, QJsonArray wads, bool removeUnknownNames,
+                              bool removeUnchangedEntries) {
     if (state_ == LCSState::StateIdle) {
         setState(LCSState::StateBusy);
         setStatus("Add mod wads");
         try {
             auto const& index = wadIndex();
-            LCS::WadMakeQueue wadMake(index, false, false); // TODO: expose options
+            LCS::WadMakeQueue wadMake(index, removeUnknownNames, removeUnchangedEntries);
             for(auto wadPath: wads) {
                 wadMake.addItem(LCS::fs::path(wadPath.toString().toStdU16String()), LCS::Conflict::Abort);
             }
-            auto added = modIndex_->add_mod_wads(fileName.toStdU16String(), wadMake,
-                                                 *dynamic_cast<LCS::ProgressMulti*>(this),
-                                                 LCS::Conflict::Abort);
+            auto const mod = modIndex_->get_mod(fileName.toStdU16String());
+            auto added = mod->add_wads(wadMake,
+                                       *dynamic_cast<LCS::ProgressMulti*>(this),
+                                       LCS::Conflict::Abort);
             QJsonArray names;
             for(auto const& wad: added) {
                 names.push_back(QString::fromStdU16String(wad->name().generic_u16string()));
