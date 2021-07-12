@@ -8,7 +8,7 @@ Dialog {
     standardButtons: Dialog.Close
     closePolicy: Popup.NoAutoClose
     visible: false
-    title: "Edit " + fileName
+    title: qsTr("Edit mod: ") + fileName
     width: parent.width * 0.9
     height: parent.height * 0.9
     x: (parent.width - width) / 2
@@ -87,108 +87,125 @@ Dialog {
             height: parent.height - dialogEditModToolbar.height - 10
             currentIndex: dialogEditModToolbar.currentIndex
             // Info tab
-            ColumnLayout {
+            LCSModInfoEdit {
                 width: parent.width
                 height: parent.height
-                LCSModInfoEdit {
-                    id: lcsModInfoEdit
-                }
-                RowLayout {
-                    Layout.fillWidth: true
-                    Item {
-                        Layout.fillWidth: true
+                id: lcsModInfoEdit
+            }
+            // Files tab
+            ScrollView {
+                width: parent.width
+                height: parent.height
+                padding: 5
+                ListView {
+                    id: itemsView
+                    model: itemsModel
+                    flickableDirection: ListView.HorizontalAndVerticalFlick
+                    clip: true
+                    spacing: 5
+                    delegate: RowLayout{
+                        width: itemsView.width
+                        Label {
+                            Layout.fillWidth: true
+                            text: model.Name
+                            elide: Text.ElideLeft
+                        }
+                        ToolButton {
+                            text: "\uf00d"
+                            font.family: "FontAwesome"
+                            onClicked: {
+                                let modName = model.Name
+                                lcsDialogEditMod.removeWads([modName])
+                            }
+                        }
                     }
-                    Button {
-                        text: qsTr("Apply")
-                        onClicked: {
-                            let infoData = lcsModInfoEdit.getInfoData();
-                            let image = lcsModInfoEdit.image;
-                            lcsDialogEditMod.changeInfoData(infoData, image)
+                    DropArea {
+                        id: fileDropArea
+                        anchors.fill: parent
+                        onDropped: function(drop) {
+                            if (drop.hasUrls) {
+                                let files = drop.urls
+                                let wads = []
+                                for(let i in drop.urls) {
+                                    wads[wads.length] = lcsTools.fromFile(files[i])
+                                }
+                                lcsDialogEditMod.addWads(wads,
+                                                         checkBoxRemoveUnknownNames.checked,
+                                                         checkBoxRemoveUnchangedEntries.checked)
+                            }
                         }
                     }
                 }
             }
-            // Files tab
-            ColumnLayout {
-                width: parent.width
-                height: parent.height
-                ScrollView {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    padding: 5
-                    ListView {
-                        id: itemsView
-                        model: itemsModel
-                        flickableDirection: ListView.HorizontalAndVerticalFlick
-                        clip: true
-                        spacing: 5
-                        delegate: RowLayout{
-                            width: itemsView.width
-                            Label {
-                                Layout.fillWidth: true
-                                text: model.Name
-                                elide: Text.ElideLeft
-                            }
-                            ToolButton {
-                                text: "\uf00d"
-                                font.family: "FontAwesome"
-                                onClicked: {
-                                    let modName = model.Name
-                                    lcsDialogEditMod.removeWads([modName])
-                                }
-                            }
-                        }
-                        DropArea {
-                            id: fileDropArea
-                            anchors.fill: parent
-                            onDropped: function(drop) {
-                                if (drop.hasUrls) {
-                                    let files = drop.urls
-                                    let wads = []
-                                    for(let i in drop.urls) {
-                                        wads[wads.length] = lcsTools.fromFile(files[i])
-                                    }
-                                    lcsDialogEditMod.addWads(wads,
-                                                             checkBoxRemoveUnknownNames.checked,
-                                                             checkBoxRemoveUnchangedEntries.checked)
-                                }
-                            }
-                        }
+        }
+    }
+
+    footer: StackLayout {
+        Layout.fillWidth: true
+        currentIndex: dialogEditModToolbar.currentIndex
+        RowLayout {
+            Layout.fillWidth: true
+            Item {
+                Layout.fillWidth: true
+            }
+            DialogButtonBox {
+                ToolButton {
+                    text: qsTr("Close")
+                    DialogButtonBox.buttonRole: DialogButtonBox.DestructiveRole
+                    onClicked: lcsDialogEditMod.close()
+                }
+                ToolButton {
+                    text: qsTr("Apply")
+                    DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
+                    onClicked: {
+                        let infoData = lcsModInfoEdit.getInfoData();
+                        let image = lcsModInfoEdit.image;
+                        lcsDialogEditMod.changeInfoData(infoData, image)
                     }
                 }
-                RowLayout {
-                    width: parent.width
-                    CheckBox {
-                        id: checkBoxRemoveUnknownNames
-                        checkable: true
-                        checked: true
-                        text: qsTr("Remove unknown")
-                        ToolTip {
-                            text: qsTr("Uncheck this if you are adding new files to game!")
-                            visible: parent.hovered
-                        }
-                    }
-                    CheckBox {
-                        id: checkBoxRemoveUnchangedEntries
-                        checkable: true
-                        checked: true
-                        text: qsTr("Remove unchanged")
-                        ToolTip {
-                            text: qsTr("Uncheck this if you are forcing existing files into different wad!")
-                            visible: parent.hovered
-                        }
-                    }
-                    Item {
-                        Layout.fillWidth: true
-                    }
-                    Button {
-                        text: qsTr("Add WAD")
-                        onClicked: dialogWadFiles.open()
-                    }
-                    Button {
-                        text: qsTr("Add RAW")
-                        onClicked: dialogRawFolder.open()
-                    }
+            }
+        }
+        RowLayout {
+            Layout.fillWidth: true
+            CheckBox {
+                id: checkBoxRemoveUnknownNames
+                checkable: true
+                checked: true
+                text: qsTr("Remove unknown")
+                Layout.leftMargin: 5
+                ToolTip {
+                    text: qsTr("Uncheck this if you are adding new files to game!")
+                    visible: parent.hovered
+                }
+            }
+            CheckBox {
+                id: checkBoxRemoveUnchangedEntries
+                checkable: true
+                checked: true
+                text: qsTr("Remove unchanged")
+                ToolTip {
+                    text: qsTr("Uncheck this if you are forcing existing files into different wad!")
+                    visible: parent.hovered
+                }
+            }
+            Item {
+                Layout.fillWidth: true
+            }
+            DialogButtonBox {
+                ToolButton {
+                    text: qsTr("Close")
+                    DialogButtonBox.buttonRole: DialogButtonBox.DestructiveRole
+                    onClicked: lcsDialogEditMod.close()
+                }
+                ToolButton {
+                    text: qsTr("Add WAD")
+                    DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
+                    onClicked: dialogWadFiles.open()
+                }
+                ToolButton {
+                    text: qsTr("Add RAW")
+                    DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
+                    onClicked: dialogRawFolder.open()
                 }
             }
         }
