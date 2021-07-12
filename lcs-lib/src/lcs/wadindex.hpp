@@ -107,7 +107,10 @@ namespace LCS{
         std::unordered_multimap<uint64_t, Wad const*> lookup_;
         std::unordered_map<uint64_t, uint64_t> checksums_;
         bool blacklist_;
+        bool ignorebad_;
         fs::file_time_type last_write_time_ = {};
+
+        void add_wad(fs::path const& wadpath);
     };
 }
 

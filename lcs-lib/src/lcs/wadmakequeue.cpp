@@ -40,7 +40,7 @@ void WadMakeQueue::addItemWad(std::unique_ptr<WadMakeBase> item, Conflict confli
         } else if(conflict == Conflict::Overwrite) {
             i->second = std::move(item);
         } else  if(conflict == Conflict::Abort) {
-            lcs_hint("This mod would modify same wad multiple time!");
+            lcs_hint(u8"This mod would modify same wad multiple time!");
             raise_wad_conflict(name, orgpath, newpath);
         }
     } else {

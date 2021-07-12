@@ -22,6 +22,8 @@ namespace LCS {
 
     extern std::u8string to_u8string(fs::path const& from);
 
+    extern std::u8string to_u8string(fs::filesystem_error const& err);
+
     inline std::u8string const& to_u8string(std::u8string const& from) {
         return from;
     }

@@ -37,7 +37,7 @@ File::File(fs::path const& path, bool readonly)
         if (auto error_details = strerror(error)) {
             msg += error_details;
         }
-        lcs_hint("\nMAKE SURE:\n"
+        lcs_hint(u8"\nMAKE SURE:\n"
                "\t1. its not opened by something else already (for example: another modding tool)!\n"
                "\t2. league is NOT patching (restart both league and LCS)!\n"
                "\t3. you have sufficient priviliges (for example: run as Administrator)");

@@ -15,7 +15,7 @@ using json = nlohmann::json;
 ModIndex::ModIndex(fs::path path)
     : path_(fs::absolute(path))
 {
-    lcs_hint("If this error persists try re-installing mods in new installation!");
+    lcs_hint(u8"If this error persists try re-installing mods in new installation!");
     lcs_trace_func(
                 lcs_trace_var(path)
                 );
@@ -86,7 +86,10 @@ bool ModIndex::refresh() noexcept {
     return found;
 }
 
-Mod* ModIndex::install_from_auto(fs::path srcpath, WadIndex const& index, ProgressMulti& progress) {
+Mod* ModIndex::install(fs::path srcpath, WadIndex const& index, ProgressMulti& progress) {
+    lcs_trace_func(
+        lcs_trace_var(srcpath)
+        );
     std::u8string filename = srcpath.filename().generic_u8string();
     if (fs::is_directory(srcpath)) {
         if (fs::exists(srcpath / "META")) {
@@ -115,20 +118,20 @@ Mod* ModIndex::install_from_auto(fs::path srcpath, WadIndex const& index, Progre
 }
 
 Mod* ModIndex::install_from_folder(fs::path srcpath, WadIndex const& index, ProgressMulti& progress) {
-    lcs_trace_func(
-        lcs_trace_var(srcpath)
-        );
     fs::path filename = srcpath.filename();
+    lcs_trace_func(
+        lcs_trace_var(filename)
+        );
     lcs_assert_msg("Mod already exists!", !fs::exists(path_ / filename));
     lcs_assert_msg("Not a valid mod file!", fs::exists(srcpath) && fs::is_directory(srcpath));
     return install_from_folder_impl(srcpath, index, progress, filename);
 }
 
 Mod* ModIndex::install_from_fantome(fs::path srcpath, WadIndex const& index, ProgressMulti& progress) {
-    lcs_trace_func(
-        lcs_trace_var(srcpath)
-        );
     fs::path filename = srcpath.filename().replace_extension();
+    lcs_trace_func(
+        lcs_trace_var(filename)
+        );
     lcs_assert_msg("Mod already exists!", !fs::exists(path_ / filename));
     fs::path tmp_extract = create_tmp_extract();
     ModUnZip zip(srcpath);
@@ -139,10 +142,10 @@ Mod* ModIndex::install_from_fantome(fs::path srcpath, WadIndex const& index, Pro
 }
 
 Mod* ModIndex::install_from_wxy(fs::path srcpath, WadIndex const& index, ProgressMulti& progress) {
-    lcs_trace_func(
-        lcs_trace_var(srcpath)
-        );
     fs::path filename = srcpath.filename().replace_extension();
+    lcs_trace_func(
+        lcs_trace_var(filename)
+        );
     lcs_assert_msg("Mod already exists!", !fs::exists(path_ / filename));
     fs::path tmp_extract = create_tmp_extract();
     WxyExtract wxy(srcpath);
@@ -189,14 +192,14 @@ Mod* ModIndex::install_from_folder_impl(fs::path srcpath,
 }
 
 Mod* ModIndex::install_from_wad(fs::path srcpath, WadIndex const& index, ProgressMulti& progress) {
-    lcs_trace_func(
-        lcs_trace_var(srcpath)
-        );
-    lcs_assert_msg("Wad mod source does not exist!", fs::exists(srcpath));
     fs::path filename = srcpath.filename().replace_extension();
     if (filename.extension().generic_u8string() == u8".wad") {
         filename = filename.replace_extension();
     }
+    lcs_trace_func(
+        lcs_trace_var(filename)
+        );
+    lcs_assert_msg("Wad mod source does not exist!", fs::exists(srcpath));
     fs::path dest = path_ / filename;
     lcs_assert_msg("Mod already exists!", !fs::exists(dest));
     fs::path tmp_make = create_tmp_make();

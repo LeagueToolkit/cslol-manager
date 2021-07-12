@@ -62,6 +62,14 @@ Dialog {
         checkBoxRemoveUnchangedEntries.checked = true
     }
 
+    function addWadsFromUrls(files) {
+        let wads = []
+        for(let i = 0; i < files.length; i++) {
+            wads[wads.length] = lcsTools.fromFile(files[i])
+        }
+        lcsDialogEditMod.addWads(wads, checkBoxRemoveUnknownNames.checked, checkBoxRemoveUnchangedEntries.checked)
+    }
+
     ListModel {
         id: itemsModel
     }
@@ -126,14 +134,7 @@ Dialog {
                         anchors.fill: parent
                         onDropped: function(drop) {
                             if (drop.hasUrls) {
-                                let files = drop.urls
-                                let wads = []
-                                for(let i in drop.urls) {
-                                    wads[wads.length] = lcsTools.fromFile(files[i])
-                                }
-                                lcsDialogEditMod.addWads(wads,
-                                                         checkBoxRemoveUnknownNames.checked,
-                                                         checkBoxRemoveUnchangedEntries.checked)
+                                lcsDialogEditMod.addWadsFromUrls(drop.urls)
                             }
                         }
                     }
@@ -215,19 +216,11 @@ Dialog {
 
     LCSDialogNewModWadFiles {
         id: dialogWadFiles
-        onAccepted: {
-            let wads = []
-            for(let i = 0; i < files.length; i++) {
-                wads[wads.length] = lcsTools.fromFile(files[i])
-            }
-            lcsDialogEditMod.addWads(wads)
-        }
+        onAccepted: lcsDialogEditMod.addWadsFromUrls(files)
     }
 
     LCSDialogNewModRAWFolder {
         id: dialogRawFolder
-        onAccepted: {
-            lcsDialogEditMod.addWads([lcsTools.fromFile(folder)])
-        }
+        onAccepted: lcsDialogEditMod.addWadsFromUrls([folder])
     }
 }
