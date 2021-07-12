@@ -358,7 +358,7 @@ void LCSToolsImpl::makeMod(QString fileName, QString image, QJsonObject infoData
         setStatus("Make mod");
         try {
             auto const& index = wadIndex();
-            LCS::WadMakeQueue queue(index);
+            LCS::WadMakeQueue queue(index, false, false); // TODO: expose options
             for(auto item: items) {
                 queue.addItem(LCS::fs::path(item.toString().toStdU16String()), LCS::Conflict::Abort);
             }
@@ -586,7 +586,7 @@ void LCSToolsImpl::addModWads(QString fileName, QJsonArray wads) {
         setStatus("Add mod wads");
         try {
             auto const& index = wadIndex();
-            LCS::WadMakeQueue wadMake(index);
+            LCS::WadMakeQueue wadMake(index, false, false); // TODO: expose options
             for(auto wadPath: wads) {
                 wadMake.addItem(LCS::fs::path(wadPath.toString().toStdU16String()), LCS::Conflict::Abort);
             }
