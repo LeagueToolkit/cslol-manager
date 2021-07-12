@@ -12,6 +12,7 @@ ColumnLayout {
         fieldAuthor.text = ""
         fieldVersion.text = ""
         fieldDescription.text = ""
+        fieldImage.text = ""
     }
 
     function getInfoData() {
