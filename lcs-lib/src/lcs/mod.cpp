@@ -128,6 +128,9 @@ void Mod::change_image(fs::path const& srcpath) {
         image_ = "";
     } else {
         if (srcpath != dstpath) {
+            if (fs::exists(dstpath)) {
+                fs::remove(dstpath);
+            }
             fs::copy_file(srcpath, dstpath, fs::copy_options::overwrite_existing);
         }
         image_ = path_ / "META" / "image.png";

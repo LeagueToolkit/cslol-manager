@@ -28,7 +28,7 @@ Dialog {
     signal addWads(var wads, bool removeUnknownNames, bool removeUnchangedEntries)
 
     function infoDataChanged(infoData, image) {
-        lcsModInfoEdit.setInfoData(info)
+        lcsModInfoEdit.setInfoData(infoData)
         lcsModInfoEdit.image = image
     }
 
@@ -57,23 +57,39 @@ Dialog {
         for(let i in wads) {
             itemsModel.append({ "Name": wads[i] })
         }
+        dialogEditModToolbar.currentIndex = isnew ? 1 : 0
     }
 
     ListModel {
         id: itemsModel
     }
 
-    GridLayout {
-        width: parent.width
-        height: parent.height
-        columns: height > width ? 1 : 2
-        enabled: !isBussy
-        GroupBox {
-            title: qsTr("Info")
-            Layout.fillWidth: true
-            Layout.fillHeight: true
+    Column {
+        id: dialogEditModLayout
+        anchors.fill: parent
+        spacing: 5
+        TabBar {
+            id: dialogEditModToolbar
+            width: dialogEditModStackLayout.width
+
+            TabButton {
+                text: qsTr("Info")
+                width: dialogEditModStackLayout.width / 2
+            }
+            TabButton {
+                text: qsTr("Files")
+                width: dialogEditModStackLayout.width / 2
+            }
+        }
+        StackLayout {
+            id: dialogEditModStackLayout
+            width: parent.width
+            height: parent.height - dialogEditModToolbar.height - 10
+            currentIndex: dialogEditModToolbar.currentIndex
+            // Info tab
             ColumnLayout {
                 width: parent.width
+                height: parent.height
                 LCSModInfoEdit {
                     id: lcsModInfoEdit
                 }
@@ -84,15 +100,15 @@ Dialog {
                     }
                     Button {
                         text: qsTr("Apply")
-                        onClicked: lcsDialogEditMod.changeInfoData(lcsModInfoEdit.buildInfoData())
+                        onClicked: {
+                            let infoData = lcsModInfoEdit.getInfoData();
+                            let image = lcsModInfoEdit.image;
+                            lcsDialogEditMod.changeInfoData(infoData, image)
+                        }
                     }
                 }
             }
-        }
-        GroupBox {
-            title: qsTr("Files")
-            Layout.fillWidth: true
-            Layout.fillHeight: true
+            // Files tab
             ColumnLayout {
                 width: parent.width
                 height: parent.height
@@ -162,9 +178,9 @@ Dialog {
                             visible: parent.hovered
                         }
                     }
-                }
-                RowLayout {
-                    width: parent.width
+                    Item {
+                        Layout.fillWidth: true
+                    }
                     Button {
                         text: qsTr("Add WAD")
                         onClicked: dialogWadFiles.open()
@@ -177,7 +193,6 @@ Dialog {
             }
         }
     }
-
 
     LCSDialogNewModWadFiles {
         id: dialogWadFiles

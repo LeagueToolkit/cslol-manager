@@ -99,12 +99,14 @@ ColumnLayout {
             placeholderText: "Description"
             Layout.fillWidth: true
             selectByMouse: true
+            // textFormat: Text.MarkdownText
         }
     }
+
     RowLayout {
         Layout.fillWidth: true
         Button {
-            text: qsTr("Image")
+            text: qsTr("Select Image")
             onClicked: dialogImage.open()
         }
         TextField {

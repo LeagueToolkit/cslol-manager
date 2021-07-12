@@ -218,7 +218,7 @@ ApplicationWindow {
         isBussy: window.isBussy
 
         onChangeInfoData: function(infoData, image) {
-            lcsTools.changeModInfo(infoData, image)
+            lcsTools.changeModInfo(fileName, infoData, image)
         }
         onRemoveWads: function(wads) {
             lcsTools.removeModWads(fileName, wads)
