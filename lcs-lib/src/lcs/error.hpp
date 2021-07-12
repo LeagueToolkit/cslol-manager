@@ -37,8 +37,10 @@
         ::LCS::push_error_msg(func_to_u8string(func), u8":", line, u8":", __VA_ARGS__);         \
     }                                                                                           \
 }
-#define lcs_hint(msg) \
-    ::LCS::ErrorTrace lcs_paste(trace_,__LINE__) { [] { ::LCS::push_hint_msg(u8"" msg); } }
+#define lcs_hint(...) \
+    ::LCS::ErrorTrace lcs_paste(hint_,__LINE__) { [&] { ::LCS::push_hint_msg(__VA_ARGS__); } }
+
+#define lcs_trace_func_hint(...) lcs_trace_func(__VA_ARGS__); lcs_hint(__VA_ARGS__)
 
 namespace LCS {
     [[noreturn]] extern void throw_error(char const* msg);
@@ -60,8 +62,9 @@ namespace LCS {
     template<typename...Args>
     inline void push_hint_msg(Args&&...args) noexcept {
         auto& stack = hint_stack();
-        stack += u8'\n';
-        ((stack += ::LCS::to_u8string(std::forward<Args>(args))), ...);
+        std::u8string msg = u8"\n";
+        ((msg += ::LCS::to_u8string(std::forward<Args>(args))), ...);
+        stack.insert(stack.begin(), msg.begin(), msg.end());
     }
 
     template<typename Func>

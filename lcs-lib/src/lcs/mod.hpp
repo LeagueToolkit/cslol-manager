@@ -18,7 +18,7 @@ namespace LCS {
         }
 
         inline auto const& filename() const& noexcept {
-            return filename_;
+            return modename_;
         }
 
         inline auto const& info() const& noexcept {
@@ -44,7 +44,7 @@ namespace LCS {
         std::vector<Wad const*> add_wads(WadMakeQueue& wads, ProgressMulti& progress, Conflict conflict);
     private:
         fs::path path_;
-        fs::path filename_;
+        fs::path modename_;
         std::u8string info_;
         fs::path image_;
         std::map<fs::path, std::unique_ptr<Wad>> wads_;

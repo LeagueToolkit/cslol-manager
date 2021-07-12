@@ -19,7 +19,7 @@ Dialog {
     }
 
     property string category: ""
-    property alias message: logErrorMessageTextArea.text
+    property string message: ""
     onOpened: {
         let scrollbar = logTextScroll.ScrollBar;
         scrollbar.horizontal.position = 0
@@ -31,12 +31,15 @@ Dialog {
         spacing: 5
         width: parent.width
         height: parent.height
-        TextArea {
-            id: logErrorMessageTextArea
-            readOnly: true
-            text: message
-            width: parent.width
+        ScrollView {
             Layout.fillWidth: true
+            TextArea {
+                id: logErrorMessageTextArea
+                readOnly: true
+                text: message
+                Layout.fillWidth: true
+                font.pointSize: 11
+            }
         }
         ScrollView {
             id: logTextScroll

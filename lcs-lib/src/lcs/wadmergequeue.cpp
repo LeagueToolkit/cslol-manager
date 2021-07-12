@@ -18,6 +18,7 @@ void WadMergeQueue::addMod(Mod const* mod, Conflict conflict) {
     lcs_trace_func(
                 lcs_trace_var(mod->path())
                 );
+    lcs_hint(u8"Problem in mod: ", mod->filename());
     for(auto const& [name, source]: mod->wads()) {
         addWad(source.get(), conflict);
     }
@@ -55,8 +56,10 @@ void WadMergeQueue::write(ProgressMulti& progress) const {
     progress.finishMulti();
 }
 
-
 void WadMergeQueue::cleanup() {
+    lcs_trace_func(
+                lcs_trace_var(path_)
+                );
     std::set<fs::path> good = {};
     for(auto const& [wad, merge]: items_) {
         good.insert(merge.get()->path());

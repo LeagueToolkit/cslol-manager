@@ -9,7 +9,7 @@
 
 using namespace LCS;
 
-Mod::Mod(fs::path path) : path_(fs::absolute(path)), filename_(path_.filename()) {
+Mod::Mod(fs::path path) : path_(fs::absolute(path)), modename_(path_.filename()) {
     lcs_trace_func(
                 lcs_trace_var(path)
                 );
@@ -100,6 +100,7 @@ void Mod::write_zip(fs::path dstpath, ProgressMulti& progress) const {
 
 void Mod::remove_wad(fs::path const& name) {
     lcs_trace_func(
+                lcs_trace_var(modename_),
                 lcs_trace_var(name)
                 );
     auto i = wads_.find(name);
@@ -110,6 +111,9 @@ void Mod::remove_wad(fs::path const& name) {
 }
 
 void Mod::change_info(std::u8string const& infoData) {
+    lcs_trace_func(
+                lcs_trace_var(modename_)
+                );
     auto outfile = OutFile(path_ / "META" / "info.json");
     outfile.write(infoData.data(), infoData.size());
     info_ = infoData;
@@ -118,6 +122,7 @@ void Mod::change_info(std::u8string const& infoData) {
 void Mod::change_image(fs::path const& srcpath) {
     fs::path dstpath = path_ / "META" / "image.png";
     lcs_trace_func(
+                lcs_trace_var(modename_),
                 lcs_trace_var(srcpath),
                 lcs_trace_var(dstpath)
                 );
@@ -138,6 +143,9 @@ void Mod::change_image(fs::path const& srcpath) {
 }
 
 std::vector<Wad const*> Mod::add_wads(WadMakeQueue& wads, ProgressMulti& progress, Conflict conflict) {
+    lcs_trace_func(
+                lcs_trace_var(modename_)
+                );
     std::vector<fs::path> removeExisting;
     std::vector<fs::path> skipNew;
     std::vector<Wad const*> added;
@@ -154,7 +162,7 @@ std::vector<Wad const*> Mod::add_wads(WadMakeQueue& wads, ProgressMulti& progres
                 removeExisting.push_back(name);
                 continue;
             } else  if(conflict == Conflict::Abort) {
-                lcs_hint("This mod would modify same wad multiple time!");
+                lcs_hint(u8"This mod would modify same wad multiple time!");
                 raise_wad_conflict(name, orgpath, newpath);
             }
         }

@@ -53,7 +53,6 @@ void WadMerge::addWadEntry(Wad::Entry const& entry, Wad const* source,
             if (conflict == Conflict::Skip) {
                 return;
             } else if(conflict == Conflict::Abort) {
-                lcs_hint("Trying to modify same file from multiple mods/wads!");
                 raise_hash_conflict(entry.xxhash, i->second.wad_->path(), source->path());
             }
         }
