@@ -58,6 +58,8 @@ Dialog {
             itemsModel.append({ "Name": wads[i] })
         }
         dialogEditModToolbar.currentIndex = isnew ? 1 : 0
+        checkBoxRemoveUnknownNames.checked = true
+        checkBoxRemoveUnchangedEntries.checked = true
     }
 
     ListModel {
