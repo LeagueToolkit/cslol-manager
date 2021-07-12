@@ -31,6 +31,7 @@ ApplicationWindow {
                 textFormat: Text.MarkdownText
                 font.pointSize: 10
                 Layout.fillWidth: true
+                selectByMouse: true
             }
         }
         RowLayout {

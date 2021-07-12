@@ -41,8 +41,6 @@ namespace LCS {
 
         void change_image(fs::path const& srcpath);
 
-        void remove_image();
-
         std::vector<Wad const*> add_wads(WadMakeQueue& wads, ProgressMulti& progress, Conflict conflict);
     private:
         fs::path path_;

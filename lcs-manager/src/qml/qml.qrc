@@ -21,5 +21,6 @@
         <file>qtquickcontrols2.conf</file>
         <file>fontawesome-webfont.ttf</file>
         <file>LCSDialogSettings.qml</file>
+        <file>LCSModInfoEdit.qml</file>
     </qresource>
 </RCC>

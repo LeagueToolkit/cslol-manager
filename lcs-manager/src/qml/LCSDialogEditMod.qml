@@ -20,47 +20,16 @@ Dialog {
 
     property string fileName: ""
     property bool isBussy: false
-    property alias lastImageFolder: dialogImage.folder
     property alias lastWadFileFolder: dialogWadFiles.folder
     property alias lastRawFolder: dialogRawFolder.folder
 
-    signal changeInfoData(var infoData)
-    signal changeImage(string image)
-    signal removeImage()
+    signal changeInfoData(var infoData, string image)
     signal removeWads(var wads)
-    signal addWads(var wads)
+    signal addWads(var wads, bool removeUnknownNames, bool removeUnchangedEntries)
 
-    function buildInfoData() {
-        if (fieldName.text === "") {
-            window.logUserError("Edit mod", "Mod name can't be empty!")
-            return
-        }
-        let name = fieldName.text == "" ? "UNKNOWN" : fieldName.text
-        let author = fieldAuthor.text == "" ? "UNKNOWN" : fieldAuthor.text
-        let version = fieldVersion.text == "" ? "1.0" : fieldVersion.text
-        let description = fieldDescription.text
-        let info = {
-            "Name": name,
-            "Author": author,
-            "Version": version,
-            "Description": description
-        }
-        return info
-    }
-
-    function infoDataChanged(info) {
-        fieldName.text = info["Name"]
-        fieldAuthor.text = info["Author"]
-        fieldVersion.text = info["Version"]
-        fieldDescription.text = info["Description"]
-    }
-
-    function imageChanged(image) {
-        fieldImage.text = image
-    }
-
-    function imageRemoved() {
-        fieldImage.text = ""
+    function infoDataChanged(infoData, image) {
+        lcsModInfoEdit.setInfoData(info)
+        lcsModInfoEdit.image = image
     }
 
     function wadsRemoved(wads) {
@@ -80,10 +49,10 @@ Dialog {
         }
     }
 
-    function load(fileName, info, image, wads) {
+    function load(fileName, info, image, wads, isnew) {
         lcsDialogEditMod.fileName = fileName
-        infoDataChanged(info)
-        imageChanged(image)
+        lcsModInfoEdit.setInfoData(info)
+        lcsModInfoEdit.image = image
         itemsModel.clear()
         for(let i in wads) {
             itemsModel.append({ "Name": wads[i] })
@@ -99,106 +68,27 @@ Dialog {
         height: parent.height
         columns: height > width ? 1 : 2
         enabled: !isBussy
-        ColumnLayout {
+        GroupBox {
+            title: qsTr("Info")
             Layout.fillWidth: true
             Layout.fillHeight: true
-            GroupBox {
-                title: qsTr("Info")
-                Layout.fillWidth: true
-                ColumnLayout {
-                    width: parent.width
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Label {
-                            text: qsTr("Name: ")
-                        }
-                        TextField {
-                            id: fieldName
-                            Layout.fillWidth: true
-                            placeholderText: "Name"
-                            validator: RegularExpressionValidator {
-                                regularExpression: window.validName
-                            }
-                        }
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Label {
-                            text: qsTr("Author: ")
-                        }
-                        TextField {
-                            id: fieldAuthor
-                            Layout.fillWidth: true
-                            placeholderText: "Author"
-                            validator: RegularExpressionValidator {
-                                regularExpression: window.validName
-                            }
-                        }
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Label {
-                            text: qsTr("Version: ")
-                        }
-                        TextField {
-                            id: fieldVersion
-                            Layout.fillWidth: true
-                            placeholderText: "0.0.0"
-                            validator: RegularExpressionValidator {
-                                regularExpression: /([0-9]{1,3})(\.[0-9]{1,3}){0,3}/
-                            }
-                        }
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Label {
-                            text: qsTr("Description: ")
-                        }
-                        TextField {
-                            id: fieldDescription
-                            Layout.fillWidth: true
-                            placeholderText: "Description"
-                        }
-                    }
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Item {
-                            Layout.fillWidth: true
-                        }
-                        Button {
-                            text: qsTr("Apply")
-                            onClicked: lcsDialogEditMod.changeInfoData(lcsDialogEditMod.buildInfoData())
-                        }
-                    }
+            ColumnLayout {
+                width: parent.width
+                LCSModInfoEdit {
+                    id: lcsModInfoEdit
                 }
-            }
-            GroupBox {
-                title: qsTr("Image")
-                Layout.fillWidth: true
                 RowLayout {
-                    width: parent.width
-                    Button {
-                        text: qsTr("Browse")
-                        onClicked: dialogImage.open()
-                    }
-                    TextField {
-                        id: fieldImage
+                    Layout.fillWidth: true
+                    Item {
                         Layout.fillWidth: true
-                        placeholderText: ""
-                        readOnly: true
                     }
-                    ToolButton {
-                        text: "\uf00d"
-                        font.family: "FontAwesome"
-                        onClicked: lcsDialogEditMod.removeImage()
+                    Button {
+                        text: qsTr("Apply")
+                        onClicked: lcsDialogEditMod.changeInfoData(lcsModInfoEdit.buildInfoData())
                     }
                 }
             }
         }
-
         GroupBox {
             title: qsTr("Files")
             Layout.fillWidth: true
@@ -206,7 +96,6 @@ Dialog {
             ColumnLayout {
                 width: parent.width
                 height: parent.height
-
                 ScrollView {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
@@ -243,13 +132,37 @@ Dialog {
                                     for(let i in drop.urls) {
                                         wads[wads.length] = lcsTools.fromFile(files[i])
                                     }
-                                    lcsDialogEditMod.addWads(wads)
+                                    lcsDialogEditMod.addWads(wads,
+                                                             checkBoxRemoveUnknownNames.checked,
+                                                             checkBoxRemoveUnchangedEntries.checked)
                                 }
                             }
                         }
                     }
                 }
-
+                RowLayout {
+                    width: parent.width
+                    CheckBox {
+                        id: checkBoxRemoveUnknownNames
+                        checkable: true
+                        checked: true
+                        text: qsTr("Remove unknown")
+                        ToolTip {
+                            text: qsTr("Uncheck this if you are adding new files to game!")
+                            visible: parent.hovered
+                        }
+                    }
+                    CheckBox {
+                        id: checkBoxRemoveUnchangedEntries
+                        checkable: true
+                        checked: true
+                        text: qsTr("Remove unchanged")
+                        ToolTip {
+                            text: qsTr("Uncheck this if you are forcing existing files into different wad!")
+                            visible: parent.hovered
+                        }
+                    }
+                }
                 RowLayout {
                     width: parent.width
                     Button {
@@ -265,10 +178,6 @@ Dialog {
         }
     }
 
-    LCSDialogNewModImage {
-        id: dialogImage
-        onAccepted: lcsDialogEditMod.changeImage(lcsTools.fromFile(file))
-    }
 
     LCSDialogNewModWadFiles {
         id: dialogWadFiles

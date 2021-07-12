@@ -58,10 +58,9 @@ signals:
     void profileLoaded(QString name, QJsonObject profileMods);
     void profileDeleted(QString name);
     void updateProfileStatus(QString message);
+    void modCreated(QString fileName, QJsonObject infoData, QString image);
     void modEditStarted(QString fileName, QJsonObject infoData, QString image, QJsonArray wads);
-    void modInfoChanged(QString fileName, QJsonObject infoData);
-    void modImageChanged(QString fileName, QString image);
-    void modImageRemoved(QString fileName);
+    void modInfoChanged(QString fileName, QJsonObject infoData, QString image);
     void modWadsAdded(QString modFileName, QJsonArray wads);
     void modWadsRemoved(QString modFileName, QJsonArray wads);
     void reportError(QString category, QString stack_trace, QString message);
@@ -79,14 +78,12 @@ public slots:
     void deleteProfile(QString name);
     void runProfile(QString name);
     void stopProfile();
-    void makeMod(QString fileName, QString image, QJsonObject infoData, QJsonArray items);
+    void makeMod(QString fileName, QJsonObject infoData, QString image);
 
     void startEditMod(QString fileName);
-    void changeModInfo(QString fileName, QJsonObject infoData);
-    void changeModImage(QString fileName, QString image);
-    void removeModImage(QString fileName);
+    void changeModInfo(QString fileName, QJsonObject infoData, QString image);
     void removeModWads(QString modFileName, QJsonArray wadNames);
-    void addModWads(QString modFileName, QJsonArray wadPaths);
+    void addModWads(QString modFileName, QJsonArray wadPaths, bool removeUnknownNames, bool removeUnchangedEntries);
 
     LCSState getState();
     QString getLeaguePath();

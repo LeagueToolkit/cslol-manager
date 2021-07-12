@@ -28,10 +28,9 @@ LCSTools::LCSTools(QObject *parent) : QObject(parent)
     connect(worker_, &LCSToolsImpl::profileLoaded, this, &LCSTools::profileLoaded);
     connect(worker_, &LCSToolsImpl::profileDeleted, this, &LCSTools::profileDeleted);
     connect(worker_, &LCSToolsImpl::updateProfileStatus, this, &LCSTools::updateProfileStatus);
+    connect(worker_, &LCSToolsImpl::modCreated, this, &LCSTools::modCreated);
     connect(worker_, &LCSToolsImpl::modEditStarted, this, &LCSTools::modEditStarted);
     connect(worker_, &LCSToolsImpl::modInfoChanged, this, &LCSTools::modInfoChanged);
-    connect(worker_, &LCSToolsImpl::modImageChanged, this, &LCSTools::modImageChanged);
-    connect(worker_, &LCSToolsImpl::modImageRemoved, this, &LCSTools::modImageRemoved);
     connect(worker_, &LCSToolsImpl::modWadsAdded, this, &LCSTools::modWadsAdded);
     connect(worker_, &LCSToolsImpl::modWadsRemoved, this, &LCSTools::modWadsRemoved);
 
@@ -50,8 +49,6 @@ LCSTools::LCSTools(QObject *parent) : QObject(parent)
     connect(this, &LCSTools::makeMod, worker_, &LCSToolsImpl::makeMod);
     connect(this, &LCSTools::startEditMod, worker_, &LCSToolsImpl::startEditMod);
     connect(this, &LCSTools::changeModInfo, worker_, &LCSToolsImpl::changeModInfo);
-    connect(this, &LCSTools::changeModImage, worker_, &LCSToolsImpl::changeModImage);
-    connect(this, &LCSTools::removeModImage, worker_, &LCSToolsImpl::removeModImage);
     connect(this, &LCSTools::addModWads, worker_, &LCSToolsImpl::addModWads);
     connect(this, &LCSTools::removeModWads, worker_, &LCSToolsImpl::removeModWads);
 

@@ -20,7 +20,8 @@ Dialog {
         TextField {
             Layout.fillWidth: true
             id: newProfileName
-            placeholderText: qsTr("Profile name");
+            placeholderText: qsTr("Profile name")
+            selectByMouse: true
             validator: RegularExpressionValidator {
                 regularExpression: /[\w ]{3,50}/
             }
