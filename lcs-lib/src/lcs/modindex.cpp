@@ -143,7 +143,7 @@ Mod* ModIndex::install_from_folder_impl(fs::path srcpath, WadIndex const& index,
             image = srcpath / "META" / img_name;
         }
     }
-    auto queue = WadMakeQueue(index);
+    auto queue = WadMakeQueue(index, false, false); // TODO: expose options
     if (fs::exists(srcpath / "WAD")) {
         for (auto const& entry: fs::directory_iterator(srcpath / "WAD")) {
             queue.addItem(entry.path(), Conflict::Abort);
@@ -167,7 +167,7 @@ Mod* ModIndex::install_from_wad(fs::path srcpath, WadIndex const& index, Progres
         filename = filename.replace_extension();
     }
     lcs_assert_msg("Mod already exists!", !fs::exists(path_ / filename));
-    auto queue = WadMakeQueue(index);
+    auto queue = WadMakeQueue(index, false, false); // TODO: expose options
     queue.addItem(srcpath, Conflict::Abort);
     json j = {
         { "Name", filename.generic_u8string() },

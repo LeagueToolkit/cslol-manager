@@ -34,10 +34,10 @@ make_main({
         fs::create_directories(dest.parent_path());
 
         print_path("Reading", source);
-        WadMake wadmake(source);
+        WadMake wadmake(source, nullptr, false, false);
         print_path("Packing", dest);
         Progress progress = {};
-        wadmake.write(dest, progress, nullptr);
+        wadmake.write(dest, progress);
         printf("Finished!\n");
     } catch(std::runtime_error const& error) {
         error_print(error);

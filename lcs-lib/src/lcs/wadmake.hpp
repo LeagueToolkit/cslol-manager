@@ -10,7 +10,7 @@
 namespace LCS {
     struct WadMakeBase {
         virtual ~WadMakeBase() noexcept = 0;
-        virtual void write(fs::path const& path, Progress& progress, WadIndex const* index) const = 0;
+        virtual void write(fs::path const& path, Progress& progress) const = 0;
         virtual std::uint64_t size() const noexcept = 0;
         virtual fs::path const& name() const& noexcept = 0;
         virtual fs::path const& path() const& noexcept = 0;
@@ -18,9 +18,10 @@ namespace LCS {
     };
 
     struct WadMakeCopy : WadMakeBase {
-        WadMakeCopy(fs::path const& path);
+        WadMakeCopy(fs::path const& path, WadIndex const* index,
+                    bool removeUnknownNames, bool removeUnchangedEntries);
 
-        void write(fs::path const& dstpath, Progress& progress, WadIndex const* index) const override;
+        void write(fs::path const& dstpath, Progress& progress) const override;
 
         inline std::uint64_t size() const noexcept override {
             return size_;
@@ -47,15 +48,19 @@ namespace LCS {
     private:
         fs::path path_;
         fs::path name_;
+        WadIndex const* index_;
         std::vector<Wad::Entry> entries_;
         std::uint64_t size_ = 0;
         bool is_oldchecksum_ = false;
+        bool remove_unknown_names_ = false;
+        bool remove_unchanged_entries_ = false;
     };
 
     struct WadMake : WadMakeBase {
-        WadMake(fs::path const& path);
+        WadMake(fs::path const& path, WadIndex const* index,
+                bool removeUnknownNames, bool removeUnchangedEntries);
 
-        void write(fs::path const& dstpath, Progress& progress, WadIndex const* index) const override;
+        void write(fs::path const& dstpath, Progress& progress) const override;
 
         inline std::uint64_t size() const noexcept override {
             return size_;
@@ -82,8 +87,11 @@ namespace LCS {
     private:
         fs::path path_;
         fs::path name_;
+        WadIndex const* index_;
         std::map<uint64_t, fs::path> entries_;
         std::uint64_t size_ = 0;
+        bool remove_unknown_names_ = false;
+        bool remove_unchanged_entries_ = false;
     };
 }
 

@@ -6,16 +6,26 @@
 
 using namespace LCS;
 
-WadMakeQueue::WadMakeQueue(WadIndex const& index) : index_(index) {}
+WadMakeQueue::WadMakeQueue(WadIndex const& index, bool removeUnknownNames, bool removeUnchangedEntries)
+    : index_(index),
+      remove_unknown_names_(removeUnknownNames),
+      remove_unchanged_entries_(removeUnchangedEntries)
+{}
 
 void WadMakeQueue::addItem(fs::path const& srcpath, Conflict conflict) {
     lcs_trace_func(
                 lcs_trace_var(srcpath)
                 );
     if (fs::is_directory(srcpath)) {
-        addItemWad(std::make_unique<WadMake>(srcpath), conflict);
+        addItemWad(std::make_unique<WadMake>(srcpath,
+                                             &index_,
+                                             remove_unknown_names_,
+                                             remove_unchanged_entries_), conflict);
     } else {
-        addItemWad(std::make_unique<WadMakeCopy>(srcpath), conflict);
+        addItemWad(std::make_unique<WadMakeCopy>(srcpath,
+                                                 &index_,
+                                                 remove_unknown_names_,
+                                                 remove_unchanged_entries_), conflict);
     }
 }
 
@@ -43,7 +53,7 @@ void WadMakeQueue::write(fs::path const& dstpath, ProgressMulti& progress) const
     for(auto const& kvp: items_) {
         auto const& name = kvp.first;
         auto const& item = kvp.second;
-        item->write(dstpath / name, progress, &index_);
+        item->write(dstpath / name, progress);
     }
     progress.finishMulti();
 }

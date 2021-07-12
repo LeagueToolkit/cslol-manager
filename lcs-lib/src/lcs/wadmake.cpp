@@ -32,22 +32,36 @@ static uint64_t pathhash(fs::path const& path) noexcept {
 }
 
 /// Copies a .wad from filesystem
-WadMakeCopy::WadMakeCopy(fs::path const& path)
+WadMakeCopy::WadMakeCopy(fs::path const& path, WadIndex const* index,
+                         bool removeUnknownNames, bool removeUnchangedEntries)
     : path_(fs::absolute(path)),
-      name_(path_.filename())
+      name_(path_.filename()),
+      index_(index),
+      remove_unknown_names_(removeUnknownNames),
+      remove_unchanged_entries_(removeUnchangedEntries)
 {
     lcs_trace_func(
-                lcs_trace_var(path)
+                lcs_trace_var(path),
+                lcs_trace_var(removeUnknownNames),
+                lcs_trace_var(removeUnchangedEntries)
                 );
+    if (removeUnknownNames || removeUnchangedEntries) {
+        lcs_assert(index);
+    }
     auto wad = Wad(path_);
     entries_ = wad.entries();
     is_oldchecksum_ = wad.is_oldchecksum();
+    if (removeUnknownNames) {
+        std::erase_if(entries_, [&checksums = index->checksums()] (auto const& entry) -> bool {
+            return !checksums.contains(entry.xxhash);
+        });
+    }
     for (auto const& entry: entries_) {
         size_ += entry.sizeCompressed;
     }
 }
 
-void WadMakeCopy::write(fs::path const& dstpath, Progress& progress, WadIndex const* index) const {
+void WadMakeCopy::write(fs::path const& dstpath, Progress& progress) const {
     lcs_trace_func(
                 lcs_trace_var(dstpath)
                 );
@@ -68,9 +82,9 @@ void WadMakeCopy::write(fs::path const& dstpath, Progress& progress, WadIndex co
             if (is_oldchecksum_) {
                 entry.checksum = XXH3_64bits(buffer.data(), entry.sizeCompressed);
             }
-            if (index) {
-                auto const i = index->checksums().find(entry.xxhash);
-                if (i != index->checksums().end() && i->second == entry.checksum) {
+            if (remove_unchanged_entries_) {
+                auto const i = index_->checksums().find(entry.xxhash);
+                if (i != index_->checksums().end() && i->second == entry.checksum) {
                     progress.consumeData(entry.sizeCompressed);
                     continue;
                 }
@@ -98,26 +112,38 @@ void WadMakeCopy::write(fs::path const& dstpath, Progress& progress, WadIndex co
 }
 
 /// Makes a .wad from folder on a filesystem
-WadMake::WadMake(fs::path const& path)
+WadMake::WadMake(fs::path const& path, WadIndex const* index,
+                 bool removeUnknownNames, bool removeUnchangedEntries)
     : path_(fs::absolute(path)),
-      name_(path_.filename()) {
+      name_(path_.filename()),
+      index_(index),
+      remove_unknown_names_(removeUnknownNames),
+      remove_unchanged_entries_(removeUnchangedEntries) {
     lcs_trace_func(
-                lcs_trace_var(path)
+                lcs_trace_var(path),
+                lcs_trace_var(removeUnknownNames),
+                lcs_trace_var(removeUnchangedEntries)
                 );
     lcs_assert(fs::is_directory(path_));
+    if (removeUnknownNames || removeUnchangedEntries) {
+        lcs_assert(index);
+    }
     for(auto const& entry: fs::recursive_directory_iterator(path_)) {
         if(entry.is_regular_file()) {
             auto xxhash = pathhash(fs::relative(entry.path(), path_));
+            if (removeUnknownNames && !index->checksums().contains(xxhash)) {
+                continue;
+            }
             entries_.insert_or_assign(xxhash, entry.path());
         }
     }
-    size_ = std::accumulate(entries_.begin(), entries_.end(), std::uint64_t{0},
-                            [](std::uint64_t old, auto const& kvp) -> std::uint64_t {
-        return old + fs::file_size(kvp.second);
-    });
+    size_ = 0;
+    for (auto const& kvp: entries_) {
+        size_ += fs::file_size(kvp.second);
+    }
 }
 
-void WadMake::write(fs::path const& dstpath, Progress& progress, WadIndex const* index) const {
+void WadMake::write(fs::path const& dstpath, Progress& progress) const {
     lcs_trace_func(
                 lcs_trace_var(dstpath)
                 );
@@ -166,9 +192,9 @@ void WadMake::write(fs::path const& dstpath, Progress& progress, WadIndex const*
                                            3);
         }
         entry.checksum = XXH3_64bits(compressedBuffer.data(), compressedSize);
-        if (index) {
-            auto const i = index->checksums().find(entry.xxhash);
-            if (i != index->checksums().end() && i->second == entry.checksum) {
+        if (remove_unchanged_entries_) {
+            auto const i = index_->checksums().find(entry.xxhash);
+            if (i != index_->checksums().end() && i->second == entry.checksum) {
                 progress.consumeData(uncompressedSize);
                 continue;
             }
