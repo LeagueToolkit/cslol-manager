@@ -23,18 +23,22 @@ if (WIN32)
         src/LCSTools.cpp
         src/LCSToolsImpl.h
         src/LCSToolsImpl.cpp
+        src/LCSUtils.h
+        src/LCSUtils.cpp
         src/main.cpp
         src/qml/qml.qrc
         src/qml/rc.rc
         src/lcs-manager.exe.manifest
     )
-    target_link_libraries(lcs-manager PRIVATE lcs-lib lolcustomskin-lib)
+    target_link_libraries(lcs-manager PRIVATE user32 lolcustomskin-lib)
 else()
     add_executable(lcs-manager
         src/LCSTools.h
         src/LCSTools.cpp
         src/LCSToolsImpl.h
         src/LCSToolsImpl.cpp
+        src/LCSUtils.h
+        src/LCSUtils.cpp
         src/main.cpp
         src/qml/qml.qrc
         src/qml/rc.rc

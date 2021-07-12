@@ -26,6 +26,7 @@ Dialog {
     property alias themePrimaryColor: themePrimaryColorBox.currentIndex
     property alias themeAccentColor: themeAccentColorBox.currentIndex
     property alias suppressInstallConflicts: suppressInstallConflictsCheck.checked
+    property alias allowSSOnError: allowSSOnErrorCheck.checked
 
     property var colors_LIST: [
         "Red",
@@ -147,6 +148,12 @@ Dialog {
                 Button {
                     text: qsTr("Log window")
                     onClicked: lcsDialogSettings.showLogs()
+                    Layout.fillWidth: true
+                }
+                Switch {
+                    id: allowSSOnErrorCheck
+                    text: qsTr("Allow error screenshots")
+                    checked: false
                     Layout.fillWidth: true
                 }
                 Switch {
