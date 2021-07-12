@@ -87,20 +87,25 @@ ColumnLayout {
         }
     }
 
-    Label {
-        text: qsTr("Description: ")
+    RowLayout {
         Layout.fillWidth: true
-    }
-    ScrollView {
-        Layout.fillWidth: true
-        Layout.fillHeight: true
-        TextArea {
+        Label {
+            text: qsTr("Description: ")
+        }
+        TextField {
             id: fieldDescription
             placeholderText: "Description"
             Layout.fillWidth: true
             selectByMouse: true
-            // textFormat: Text.MarkdownText
         }
+    }
+
+    Image {
+        id: imagePreview
+        Layout.fillHeight: true
+        Layout.fillWidth: true
+        fillMode: Image.PreserveAspectFit
+        source: lcsTools.toFile(fieldImage.text)
     }
 
     RowLayout {

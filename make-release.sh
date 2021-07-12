@@ -12,6 +12,9 @@ copy2folder() {
     cp "$1/lcs-wxyextract/lcs-wxyextract.exe" "$2"
 }
 
+VERSION=$(git log --format="%as-%h" -1)
+echo "Version: $VERSION"
+
 if [ "$#" -gt 1 ] && [ -d "$2" ]; then
     copy2folder "$2" "lolcustomskin-tools-32"
 fi;

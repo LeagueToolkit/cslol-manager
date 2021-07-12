@@ -8,7 +8,7 @@ Dialog {
     standardButtons: Dialog.Save | Dialog.Close
     closePolicy: Popup.NoAutoClose
     visible: false
-    title: "New Mod"
+    title: qsTr("New mod")
     width: parent.width * 0.9
     height: parent.height * 0.9
     x: (parent.width - width) / 2
