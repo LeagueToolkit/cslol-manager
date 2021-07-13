@@ -24,7 +24,6 @@ ApplicationWindow {
         property alias ignorebad: lcsDialogSettings.ignorebad
         property alias suppressInstallConflicts: lcsDialogSettings.suppressInstallConflicts
         property alias disableUpdates: lcsDialogSettings.disableUpdates
-        property alias allowSSOnError: lcsDialogSettings.allowSSOnError
         property alias themeDarkMode: lcsDialogSettings.themeDarkMode
         property alias themePrimaryColor: lcsDialogSettings.themePrimaryColor
         property alias themeAccentColor: lcsDialogSettings.themeAccentColor
@@ -267,8 +266,6 @@ ApplicationWindow {
 
     LCSDialogError {
         id: lcsDialogError
-        onOpened: LCSUtils.disableSS(window, !settings.allowSSOnError);
-        onClosed: LCSUtils.disableSS(window, false);
     }
 
     LCSDialogErrorUser {
