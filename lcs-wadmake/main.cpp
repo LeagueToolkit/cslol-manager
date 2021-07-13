@@ -34,7 +34,7 @@ make_main({
         fs::create_directories(dest.parent_path());
 
         print_path("Reading", source);
-        WadMake wadmake(source, nullptr, false, false);
+        WadMake wadmake(source, nullptr, false);
         print_path("Packing", dest);
         Progress progress = {};
         wadmake.write(dest, progress);

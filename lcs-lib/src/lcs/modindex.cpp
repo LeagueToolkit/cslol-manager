@@ -172,7 +172,7 @@ Mod* ModIndex::install_from_folder_impl(fs::path srcpath,
     }
     // Write wads
     {
-        auto queue = WadMakeQueue(index, false, false); // TODO: expose options
+        auto queue = WadMakeQueue(index, false); // TODO: expose options
         if (fs::exists(srcpath / "WAD")) {
             for (auto const& entry: fs::directory_iterator(srcpath / "WAD")) {
                 queue.addItem(entry.path(), Conflict::Abort);
@@ -217,7 +217,7 @@ Mod* ModIndex::install_from_wad(fs::path srcpath, WadIndex const& index, Progres
     }
     // Write wads
     {
-        auto queue = WadMakeQueue(index, false, false); // TODO: expose options
+        auto queue = WadMakeQueue(index, false); // TODO: expose options
         queue.addItem(srcpath, Conflict::Abort);
         queue.write(tmp_make / "WAD", progress);
     }

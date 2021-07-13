@@ -8,8 +8,11 @@
 #include <picosha2.hpp>
 #include <zstd.h>
 #include <miniz.h>
+#include <span>
 
 using namespace LCS;
+
+inline constexpr auto GB = static_cast<std::uint64_t>(1024 * 1024 * 1024);
 
 WadMakeBase::~WadMakeBase() noexcept {
 
@@ -20,11 +23,13 @@ static uint64_t pathhash(fs::path const& path) noexcept {
     fs::path noextension = path;
     noextension.replace_extension();
     auto name = noextension.generic_u8string();
-    auto const start = reinterpret_cast<char const*>(name.data());
-    auto const end = start + name.size();
-    auto const result = std::from_chars(start, end, h, 16);
-    if (result.ptr == end && result.ec == std::errc{}) {
-        return h;
+    if (name.size() == 16) {
+        auto const start = reinterpret_cast<char const*>(name.data());
+        auto const end = start + name.size();
+        auto const result = std::from_chars(start, end, h, 16);
+        if (result.ptr == end && result.ec == std::errc{}) {
+            return h;
+        }
     }
     name = path.generic_u8string();
     std::transform(name.begin(), name.end(), name.begin(), ::tolower);
@@ -32,20 +37,16 @@ static uint64_t pathhash(fs::path const& path) noexcept {
 }
 
 /// Copies a .wad from filesystem
-WadMakeCopy::WadMakeCopy(fs::path const& path, WadIndex const* index,
-                         bool removeUnknownNames, bool removeUnchangedEntries)
+WadMakeCopy::WadMakeCopy(fs::path const& path, WadIndex const* index, bool removeUnknownNames)
     : path_(fs::absolute(path)),
       name_(path_.filename()),
-      index_(index),
-      remove_unknown_names_(removeUnknownNames),
-      remove_unchanged_entries_(removeUnchangedEntries)
+      index_(index)
 {
     lcs_trace_func(
                 lcs_trace_var(path),
-                lcs_trace_var(removeUnknownNames),
-                lcs_trace_var(removeUnchangedEntries)
+                lcs_trace_var(removeUnknownNames)
                 );
-    if (removeUnknownNames || removeUnchangedEntries) {
+    if (removeUnknownNames) {
         lcs_assert(index);
     }
     auto wad = Wad(path_);
@@ -59,6 +60,7 @@ WadMakeCopy::WadMakeCopy(fs::path const& path, WadIndex const* index,
     for (auto const& entry: entries_) {
         size_ += entry.sizeCompressed;
     }
+    can_copy_ = !is_oldchecksum_ && (entries_.size() == wad.entries().size());
 }
 
 void WadMakeCopy::write(fs::path const& dstpath, Progress& progress) const {
@@ -66,13 +68,19 @@ void WadMakeCopy::write(fs::path const& dstpath, Progress& progress) const {
                 lcs_trace_var(dstpath)
                 );
     progress.startItem(dstpath, size_);
-    InFile infile(path_);
     fs::create_directories(dstpath.parent_path());
+    if (can_copy_) {
+        fs::copy_file(path_, dstpath, fs::copy_options::overwrite_existing);
+        progress.consumeData(size_);
+        progress.finishItem();
+        return;
+    }
     OutFile outfile(dstpath);
     std::vector<char> buffer;
     std::vector<Wad::Entry> entries = {};
     entries.reserve(entries_.size());
     std::uint32_t dataOffset = sizeof(Wad::Header) + entries_.size() * sizeof(Wad::Entry);
+    InFile infile(path_);
     outfile.seek(dataOffset, SEEK_SET);
     for(auto entry: entries_) {
         buffer.reserve(entry.sizeCompressed);
@@ -81,13 +89,6 @@ void WadMakeCopy::write(fs::path const& dstpath, Progress& progress) const {
         if (entry.type != Wad::Entry::Type::FileRedirection) {
             if (is_oldchecksum_) {
                 entry.checksum = XXH3_64bits(buffer.data(), entry.sizeCompressed);
-            }
-            if (remove_unchanged_entries_) {
-                auto const i = index_->checksums().find(entry.xxhash);
-                if (i != index_->checksums().end() && i->second == entry.checksum) {
-                    progress.consumeData(entry.sizeCompressed);
-                    continue;
-                }
             }
         }
         entry.dataOffset = dataOffset;
@@ -107,25 +108,20 @@ void WadMakeCopy::write(fs::path const& dstpath, Progress& progress) const {
     progress.consumeData(sizeof(header));
     outfile.write(entries.data(), entries.size() * sizeof(Wad::Entry));
     progress.consumeData(entries.size() * sizeof(Wad::Entry));
-
     progress.finishItem();
 }
 
 /// Makes a .wad from folder on a filesystem
-WadMake::WadMake(fs::path const& path, WadIndex const* index,
-                 bool removeUnknownNames, bool removeUnchangedEntries)
+WadMake::WadMake(fs::path const& path, WadIndex const* index, bool removeUnknownNames)
     : path_(fs::absolute(path)),
       name_(path_.filename()),
-      index_(index),
-      remove_unknown_names_(removeUnknownNames),
-      remove_unchanged_entries_(removeUnchangedEntries) {
+      index_(index) {
     lcs_trace_func(
                 lcs_trace_var(path),
-                lcs_trace_var(removeUnknownNames),
-                lcs_trace_var(removeUnchangedEntries)
+                lcs_trace_var(removeUnknownNames)
                 );
     lcs_assert(fs::is_directory(path_));
-    if (removeUnknownNames || removeUnchangedEntries) {
+    if (removeUnknownNames) {
         lcs_assert(index);
     }
     for(auto const& entry: fs::recursive_directory_iterator(path_)) {
@@ -152,18 +148,14 @@ void WadMake::write(fs::path const& dstpath, Progress& progress) const {
     OutFile outfile(dstpath);
     std::vector<Wad::Entry> entries;
     entries.reserve(entries_.size());
-    std::vector<char> uncompressedBuffer;
-    std::vector<char> compressedBuffer;
+    std::vector<char> inbuffer;
+    std::vector<char> outbuffer;
     uint64_t dataOffset = sizeof(Wad::Header) + sizeof(Wad::Entry) * entries_.size();
     outfile.seek(dataOffset, SEEK_SET);
     for(auto const& [xxhash, path]: entries_) {
-        std::uint64_t uncompressedSize = fs::file_size(path);
-        std::uint64_t compressedSize = {};
-        uncompressedBuffer.reserve(uncompressedSize);
-        {
-            InFile infile(path);
-            infile.read(uncompressedBuffer.data(), uncompressedSize);
-        }
+        InFile infile(path);
+        std::uint64_t uncompressedSize = infile.size();
+        lcs_assert(uncompressedSize < 2 * GB);
         Wad::Entry entry = {
             xxhash,
             static_cast<uint32_t>(dataOffset),
@@ -174,38 +166,32 @@ void WadMake::write(fs::path const& dstpath, Progress& progress) const {
             {},
             {}
         };
+        inbuffer.clear();
+        inbuffer.resize((size_t)uncompressedSize);
+        infile.read(inbuffer.data(), inbuffer.size());
         std::u8string extension = path.extension().generic_u8string();
         if (extension.empty()) {
-            extension = u8"." + ScanExtension(uncompressedBuffer.data(), (size_t)uncompressedSize);
+            extension = u8"." + ScanExtension(inbuffer.data(), inbuffer.size());
         }
-        if (extension == u8".wpk") {
+        if (extension == u8".wpk" || extension == u8".bnk") {
             entry.type = Wad::Entry::Uncompressed;
-            compressedSize = uncompressedSize;
-            compressedBuffer.reserve((size_t)compressedSize);
-            memcpy(compressedBuffer.data(), uncompressedBuffer.data(), (size_t)compressedSize);
+            outbuffer = inbuffer;
         } else {
             entry.type = Wad::Entry::ZStandardCompressed;
-            size_t const estimate = ZSTD_compressBound(uncompressedSize);
-            compressedBuffer.reserve(estimate);
-            compressedSize = ZSTD_compress(compressedBuffer.data(), estimate,
-                                           uncompressedBuffer.data(), uncompressedSize,
-                                           3);
+            outbuffer.clear();
+            outbuffer.resize(ZSTD_compressBound(inbuffer.size()));
+            size_t zstd_out_size = ZSTD_compress(outbuffer.data(), outbuffer.size(),
+                                                 inbuffer.data(), inbuffer.size(), 0);
+            lcs_assert(!ZSTD_isError(zstd_out_size));
+            outbuffer.resize(zstd_out_size);
         }
-        entry.checksum = XXH3_64bits(compressedBuffer.data(), compressedSize);
-        if (remove_unchanged_entries_) {
-            auto const i = index_->checksums().find(entry.xxhash);
-            if (i != index_->checksums().end() && i->second == entry.checksum) {
-                progress.consumeData(uncompressedSize);
-                continue;
-            }
-        }
-        entry.sizeCompressed = (uint32_t)compressedSize;
+        entry.checksum = XXH3_64bits(outbuffer.data(), outbuffer.size());
+        outfile.write(outbuffer.data(), outbuffer.size());
+        entry.sizeCompressed = (uint32_t)outbuffer.size();
         entry.dataOffset = static_cast<uint32_t>(dataOffset);
         dataOffset += entry.sizeCompressed;
-        constexpr auto GB = static_cast<std::uint64_t>(1024 * 1024 * 1024);
         lcs_assert(dataOffset <= 2 * GB);
         entries.push_back(entry);
-        outfile.write((char const*)compressedBuffer.data(), compressedSize);
         progress.consumeData(uncompressedSize);
     }
     outfile.seek(0, SEEK_SET);

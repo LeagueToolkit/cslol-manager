@@ -83,7 +83,7 @@ public slots:
     void startEditMod(QString fileName);
     void changeModInfo(QString fileName, QJsonObject infoData, QString image);
     void removeModWads(QString modFileName, QJsonArray wadNames);
-    void addModWads(QString modFileName, QJsonArray wadPaths, bool removeUnknownNames, bool removeUnchangedEntries);
+    void addModWads(QString modFileName, QJsonArray wadPaths, bool removeUnknownNames);
 
     LCSState getState();
     QString getLeaguePath();
