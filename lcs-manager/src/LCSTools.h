@@ -70,7 +70,7 @@ signals:
     void makeMod(QString fileName, QJsonObject infoData, QString image);
     void startEditMod(QString fileName);
     void changeModInfo(QString fileName, QJsonObject infoData, QString image);
-    void addModWads(QString modFileName, QJsonArray wads, bool removeUnknownNames, bool removeUnchangedEntries);
+    void addModWads(QString modFileName, QJsonArray wads, bool removeUnknownNames);
     void removeModWads(QString modFileName, QJsonArray wads);
 public slots:
     LCSState getState();

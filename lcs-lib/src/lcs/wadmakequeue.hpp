@@ -8,7 +8,7 @@
 
 namespace LCS {
     struct WadMakeQueue {
-        WadMakeQueue(WadIndex const& index, bool removeUnknownNames, bool removeUnchangedEntries);
+        WadMakeQueue(WadIndex const& index, bool removeUnknownNames);
 
         void addItem(fs::path const& srcpath, Conflict conflict);
 
@@ -29,7 +29,6 @@ namespace LCS {
         mutable std::uint64_t size_ = 0;
         mutable bool sizeCalculated_ = false;
         bool remove_unknown_names_ = false;
-        bool remove_unchanged_entries_ = false;
 
         void addItemWad(std::unique_ptr<WadMakeBase> item, Conflict conflict);
     };

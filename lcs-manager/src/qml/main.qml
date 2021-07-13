@@ -207,6 +207,7 @@ ApplicationWindow {
 
     LCSDialogNewMod {
         id: lcsDialogNewMod
+        enabled: !isBussy
         onSave: function(fileName, infoData, image) {
             lcsTools.makeMod(fileName, infoData, image)
         }
@@ -215,7 +216,7 @@ ApplicationWindow {
     LCSDialogEditMod {
         id: lcsDialogEditMod
         visible: false
-        isBussy: window.isBussy
+        enabled: !isBussy
 
         onChangeInfoData: function(infoData, image) {
             lcsTools.changeModInfo(fileName, infoData, image)
@@ -223,15 +224,16 @@ ApplicationWindow {
         onRemoveWads: function(wads) {
             lcsTools.removeModWads(fileName, wads)
         }
-        onAddWads: function(wads, removeUnknownNames, removeUnchangedEntries) {
+        onAddWads: function(wads, removeUnknownNames) {
             if (checkGamePath()) {
-                lcsTools.addModWads(fileName, wads, removeUnknownNames, removeUnchangedEntries)
+                lcsTools.addModWads(fileName, wads, removeUnknownNames)
             }
         }
     }
 
     LCSDialogNewProfile {
         id: lcsDialogNewProfile
+        enabled: !isBussy
         onAccepted: {
             for(let i in  lcsToolBar.profilesModel) {
                 if (text.toLowerCase() ===  lcsToolBar.profilesModel[i].toLowerCase()) {

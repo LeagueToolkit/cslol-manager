@@ -18,8 +18,7 @@ namespace LCS {
     };
 
     struct WadMakeCopy : WadMakeBase {
-        WadMakeCopy(fs::path const& path, WadIndex const* index,
-                    bool removeUnknownNames, bool removeUnchangedEntries);
+        WadMakeCopy(fs::path const& path, WadIndex const* index, bool removeUnknownNames);
 
         void write(fs::path const& dstpath, Progress& progress) const override;
 
@@ -52,13 +51,11 @@ namespace LCS {
         std::vector<Wad::Entry> entries_;
         std::uint64_t size_ = 0;
         bool is_oldchecksum_ = false;
-        bool remove_unknown_names_ = false;
-        bool remove_unchanged_entries_ = false;
+        bool can_copy_ = false;
     };
 
     struct WadMake : WadMakeBase {
-        WadMake(fs::path const& path, WadIndex const* index,
-                bool removeUnknownNames, bool removeUnchangedEntries);
+        WadMake(fs::path const& path, WadIndex const* index, bool removeUnknownNames);
 
         void write(fs::path const& dstpath, Progress& progress) const override;
 
@@ -90,8 +87,6 @@ namespace LCS {
         WadIndex const* index_;
         std::map<uint64_t, fs::path> entries_;
         std::uint64_t size_ = 0;
-        bool remove_unknown_names_ = false;
-        bool remove_unchanged_entries_ = false;
     };
 }
 

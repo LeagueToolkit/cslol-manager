@@ -557,14 +557,13 @@ void LCSToolsImpl::removeModWads(QString fileName, QJsonArray wads) {
     }
 }
 
-void LCSToolsImpl::addModWads(QString fileName, QJsonArray wads, bool removeUnknownNames,
-                              bool removeUnchangedEntries) {
+void LCSToolsImpl::addModWads(QString fileName, QJsonArray wads, bool removeUnknownNames) {
     if (state_ == LCSState::StateIdle) {
         setState(LCSState::StateBusy);
         setStatus("Add mod wads");
         try {
             auto const& index = wadIndex();
-            LCS::WadMakeQueue wadMake(index, removeUnknownNames, removeUnchangedEntries);
+            LCS::WadMakeQueue wadMake(index, removeUnknownNames);
             for(auto wadPath: wads) {
                 wadMake.addItem(LCS::fs::path(wadPath.toString().toStdU16String()), LCS::Conflict::Abort);
             }

@@ -19,13 +19,12 @@ Dialog {
     }
 
     property string fileName: ""
-    property bool isBussy: false
     property alias lastWadFileFolder: dialogWadFiles.folder
     property alias lastRawFolder: dialogRawFolder.folder
 
     signal changeInfoData(var infoData, string image)
     signal removeWads(var wads)
-    signal addWads(var wads, bool removeUnknownNames, bool removeUnchangedEntries)
+    signal addWads(var wads, bool removeUnknownNames)
 
     function infoDataChanged(infoData, image) {
         lcsModInfoEdit.setInfoData(infoData)
@@ -59,7 +58,6 @@ Dialog {
         }
         dialogEditModToolbar.currentIndex = isnew ? 1 : 0
         checkBoxRemoveUnknownNames.checked = true
-        checkBoxRemoveUnchangedEntries.checked = true
     }
 
     function addWadsFromUrls(files) {
@@ -67,7 +65,7 @@ Dialog {
         for(let i = 0; i < files.length; i++) {
             wads[wads.length] = lcsTools.fromFile(files[i])
         }
-        lcsDialogEditMod.addWads(wads, checkBoxRemoveUnknownNames.checked, checkBoxRemoveUnchangedEntries.checked)
+        lcsDialogEditMod.addWads(wads, checkBoxRemoveUnknownNames.checked)
     }
 
     ListModel {
@@ -178,16 +176,6 @@ Dialog {
                 Layout.leftMargin: 5
                 ToolTip {
                     text: qsTr("Uncheck this if you are adding new files to game!")
-                    visible: parent.hovered
-                }
-            }
-            CheckBox {
-                id: checkBoxRemoveUnchangedEntries
-                checkable: true
-                checked: true
-                text: qsTr("Remove unchanged")
-                ToolTip {
-                    text: qsTr("Uncheck this if you are forcing existing files into different wad!")
                     visible: parent.hovered
                 }
             }

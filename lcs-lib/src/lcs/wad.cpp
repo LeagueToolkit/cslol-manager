@@ -84,7 +84,9 @@ void Wad::extract(fs::path const& dstpath, HashTable const& hashtable, Progress&
             } else {
                 char hex[16];
                 auto result = std::to_chars(hex, hex + sizeof(hex), entry.xxhash, 16);
-                outpath /= std::u8string(hex, result.ptr);
+                auto hex_str = std::u8string(hex, result.ptr);
+                hex_str.insert(hex_str.begin(), 16 - hex_str.size(), u8'0');
+                outpath /= hex_str;
                 outpath.replace_extension(ScanExtension(uncompressedBuffer.data(), entry.sizeUncompressed));
             }
             lcs_trace_func(

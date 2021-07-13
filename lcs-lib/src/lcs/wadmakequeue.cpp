@@ -6,10 +6,9 @@
 
 using namespace LCS;
 
-WadMakeQueue::WadMakeQueue(WadIndex const& index, bool removeUnknownNames, bool removeUnchangedEntries)
+WadMakeQueue::WadMakeQueue(WadIndex const& index, bool removeUnknownNames)
     : index_(index),
-      remove_unknown_names_(removeUnknownNames),
-      remove_unchanged_entries_(removeUnchangedEntries)
+      remove_unknown_names_(removeUnknownNames)
 {}
 
 void WadMakeQueue::addItem(fs::path const& srcpath, Conflict conflict) {
@@ -17,15 +16,9 @@ void WadMakeQueue::addItem(fs::path const& srcpath, Conflict conflict) {
                 lcs_trace_var(srcpath)
                 );
     if (fs::is_directory(srcpath)) {
-        addItemWad(std::make_unique<WadMake>(srcpath,
-                                             &index_,
-                                             remove_unknown_names_,
-                                             remove_unchanged_entries_), conflict);
+        addItemWad(std::make_unique<WadMake>(srcpath, &index_, remove_unknown_names_), conflict);
     } else {
-        addItemWad(std::make_unique<WadMakeCopy>(srcpath,
-                                                 &index_,
-                                                 remove_unknown_names_,
-                                                 remove_unchanged_entries_), conflict);
+        addItemWad(std::make_unique<WadMakeCopy>(srcpath, &index_, remove_unknown_names_), conflict);
     }
 }
 
