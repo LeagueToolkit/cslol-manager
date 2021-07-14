@@ -7,7 +7,6 @@ import QtQuick.Controls.Material 2.15
 
 ColumnLayout {
     id: lcsModsView
-    enabled: !isBussy
     layoutDirection: Qt.RightToLeft
     spacing: 5
 
@@ -100,6 +99,7 @@ ColumnLayout {
             DropArea {
                 id: fileDropArea
                 anchors.fill: parent
+                enabled: !isBussy
                 onDropped: function(drop) {
                     if (drop.hasUrls) {
                         let urls = []
@@ -118,6 +118,7 @@ ColumnLayout {
             }
 
             delegate: Pane {
+                enabled: !isBussy
                 width: lcsModsViewView.width / lcsModsView.columnCount - 5
                 Component.onCompleted: {
                     let newCellHeight = height + 5
@@ -220,6 +221,7 @@ ColumnLayout {
         }
     }
     Row {
+        enabled: !isBussy
         spacing: 5
         RoundButton {
             text: "\uf067"

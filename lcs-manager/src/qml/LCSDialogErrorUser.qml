@@ -4,7 +4,7 @@ import QtQuick.Controls 2.15
 
 Dialog {
     id: lcsDialogUserError
-    width: parent.width * 0.5
+    width: parent.width * 0.9
     x: (parent.width - width) / 2
     y: (parent.height - height) / 2
     standardButtons: Dialog.Ok
@@ -12,18 +12,18 @@ Dialog {
     modal: true
     title: "\uf071 Warning"
     font.family: "FontAwesome"
-
-    property alias text: warningTextLabel.text
-
     Overlay.modal: Rectangle {
         color: "#aa333333"
     }
+
+    property alias text: warningTextLabel.text
 
     RowLayout {
         width: parent.width
         Label {
             id: warningTextLabel
             Layout.fillWidth: true
+            maximumLineCount: 3
             text: "Oopsie!"
         }
     }

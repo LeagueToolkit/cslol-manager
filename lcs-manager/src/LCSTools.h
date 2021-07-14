@@ -27,6 +27,7 @@ public:
     ~LCSTools();
     Q_INVOKABLE QString fromFile(QString file);
     Q_INVOKABLE QString toFile(QString file);
+    Q_INVOKABLE QString checkGamePath(QString path);
 
 signals:
     void stateChanged(LCSState state);
