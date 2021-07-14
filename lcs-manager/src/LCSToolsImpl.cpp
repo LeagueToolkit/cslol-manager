@@ -193,16 +193,6 @@ void LCSToolsImpl::changeLeaguePath(QString newLeaguePath) {
             setStatus("Change League Path");
         }
         LCS::fs::path path = newLeaguePath.toStdU16String();
-        if (path.extension() == ".exe") {
-            path.remove_filename();
-        }
-        if (LCS::fs::exists(path / "Game" / "League of Legends.exe")) {
-            path /= "Game";
-        }
-        if (LCS::fs::exists(path / "League of Legends" / "Game" / "League of Legends.exe")) {
-            path /= "League of Legends";
-            path /= "Game";
-        }
         if (!LCS::fs::exists(path / "League of Legends.exe")) {
             path = "";
         }

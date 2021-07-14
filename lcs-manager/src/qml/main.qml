@@ -82,7 +82,7 @@ ApplicationWindow {
     }
     function checkGamePath() {
         if (lcsTools.leaguePath === "") {
-            lcsDialogLolPath.open();
+            lcsDialogGame.open();
             return false;
         }
         return true;
@@ -128,7 +128,7 @@ ApplicationWindow {
         id: lcsDialogSettings
 
         onChangeGamePath: function() {
-            lcsDialogLolPath.open()
+            lcsDialogGame.open()
         }
 
         onBlacklistChanged: function() {
@@ -248,22 +248,24 @@ ApplicationWindow {
         }
     }
 
-    LCSDialogLoLPath {
-        id: lcsDialogLolPath
-        folder: lcsTools.toFile(lcsTools.leaguePath)
-        onAccepted: lcsTools.leaguePath = lcsTools.fromFile(folder)
-        onRejected:  {
-            if (lcsTools.leaguePath === "") {
-                lcsDialogLolPath.open()
-            }
-        }
-    }
-
     LCSDialogLog {
         id: lcsDialogLog
         width: 640
         height: 480
         visible: false
+    }
+
+    LCSDialogGame {
+        id: lcsDialogGame
+        onSelected: function(orgPath) {
+            let path = lcsTools.checkGamePath(orgPath)
+            if (path === "") {
+                window.logUserError("Bad game directory",  "There is no \"League of Legends.exe\" in " + orgPath)
+            } else {
+                lcsTools.leaguePath = lcsTools.fromFile(selected)
+                lcsDialogGame.close()
+            }
+        }
     }
 
     LCSDialogError {
@@ -310,7 +312,7 @@ ApplicationWindow {
                 lcsModsView.addMod(fileName, mods[fileName], fileName in profileMods)
             }
             if(lcsTools.leaguePath == "") {
-                lcsDialogLolPath.open()
+                lcsDialogGame.open()
             }
         }
         onModDeleted: {}
@@ -360,11 +362,6 @@ ApplicationWindow {
         onReportError: function(category, stack_trace, message) {
             logError(category, stack_trace, message)
             lcsStatusBar.isCopying = false
-        }
-        onLeaguePathChanged: function(path) {
-            if (path === "") {
-                lcsDialogLolPath.open()
-            }
         }
     }
 
