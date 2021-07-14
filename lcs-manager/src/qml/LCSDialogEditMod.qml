@@ -63,7 +63,7 @@ Dialog {
     function addWadsFromUrls(files) {
         let wads = []
         for(let i = 0; i < files.length; i++) {
-            wads[wads.length] = lcsTools.fromFile(files[i])
+            wads[wads.length] = LCSUtils.fromFile(files[i])
         }
         lcsDialogEditMod.addWads(wads, checkBoxRemoveUnknownNames.checked)
     }

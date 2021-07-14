@@ -23,24 +23,28 @@ if (WIN32)
         src/LCSTools.cpp
         src/LCSToolsImpl.h
         src/LCSToolsImpl.cpp
+        src/LCSUtils.h
+        src/LCSUtils.cpp
         src/main.cpp
         src/qml/qml.qrc
         src/qml/rc.rc
         src/lcs-manager.exe.manifest
     )
-    target_link_libraries(lcs-manager PRIVATE lcs-lib lolcustomskin-lib)
+    target_link_libraries(lcs-manager PRIVATE lolcustomskin-lib)
 else()
     add_executable(lcs-manager
         src/LCSTools.h
         src/LCSTools.cpp
         src/LCSToolsImpl.h
         src/LCSToolsImpl.cpp
+        src/LCSUtils.h
+        src/LCSUtils.cpp
         src/main.cpp
         src/qml/qml.qrc
         src/qml/rc.rc
     )
 endif()
 target_compile_definitions(lcs-manager PRIVATE $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>)
-target_link_libraries(lcs-manager PRIVATE lcs-lib Qt::Core Qt::Gui Qt::Quick Threads::Threads)
+target_link_libraries(lcs-manager PRIVATE user32 lcs-lib Qt::Core Qt::Gui Qt::Quick Threads::Threads)
 target_include_directories(lcs-manager PRIVATE lolcustomskin/src)
 qt_import_qml_plugins(lcs-manager)

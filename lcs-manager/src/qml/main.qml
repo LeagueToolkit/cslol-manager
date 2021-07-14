@@ -194,14 +194,14 @@ ApplicationWindow {
     LCSDialogOpenZipFantome {
         id: lcsDialogOpenZipFantome
         onAccepted: function() {
-            lcsTools.installFantomeZip([ lcsTools.fromFile(file) ])
+            lcsTools.installFantomeZip([ LCSUtils.fromFile(file) ])
         }
     }
 
     LCSDialogSaveZipFantome {
         id: lcsDialogSaveZipFantome
         onAccepted: function() {
-            lcsTools.exportMod(modName, lcsTools.fromFile(file))
+            lcsTools.exportMod(modName, LCSUtils.fromFile(file))
         }
     }
 
@@ -258,11 +258,11 @@ ApplicationWindow {
     LCSDialogGame {
         id: lcsDialogGame
         onSelected: function(orgPath) {
-            let path = lcsTools.checkGamePath(orgPath)
+            let path = LCSUtils.checkGamePath(orgPath)
             if (path === "") {
                 window.logUserError("Bad game directory",  "There is no \"League of Legends.exe\" in " + orgPath)
             } else {
-                lcsTools.leaguePath = lcsTools.fromFile(selected)
+                lcsTools.leaguePath = path
                 lcsDialogGame.close()
             }
         }

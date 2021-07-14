@@ -104,7 +104,7 @@ ColumnLayout {
                     if (drop.hasUrls) {
                         let urls = []
                         for(let i = 0; i < drop.urls.length; ++i) {
-                            urls[i] = lcsTools.fromFile(drop.urls[i]);
+                            urls[i] = LCSUtils.fromFile(drop.urls[i]);
                         }
                         lcsModsView.importFile(urls)
                     }

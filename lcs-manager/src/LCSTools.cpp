@@ -60,22 +60,6 @@ LCSTools::LCSTools(QObject *parent) : QObject(parent)
 
 LCSTools::~LCSTools(){}
 
-QString LCSTools::fromFile(QString file) {
-    if (file.isNull() || file.isEmpty()) {
-        return "";
-    }
-    QUrl url = file;
-    return url.toLocalFile();
-}
-
-QString LCSTools::toFile(QString file) {
-    if (file.isNull() || file.isEmpty()) {
-        return "";
-    }
-    QUrl url = QUrl::fromLocalFile(file);
-    return url.toString();
-}
-
 LCSToolsImpl::LCSState LCSTools::getState() {
     return state_;
 }
@@ -109,27 +93,3 @@ void LCSTools::setLeaguePath(QString value) {
     }
 }
 
-static QString try_game_path(LCS::fs::path path) {
-    path = path.lexically_normal();
-    if (!LCS::fs::exists(path / "League of Legends.exe")) {
-        path = "";
-    }
-    return QString::fromStdU16String(path.generic_u16string());
-}
-
-QString LCSTools::checkGamePath(QString pathRaw) {
-    if (pathRaw.isEmpty()) {
-        return pathRaw;
-    }
-    LCS::fs::path path = pathRaw.toStdU16String();
-    if (pathRaw = try_game_path(path); !pathRaw.isEmpty()) {
-        return pathRaw;
-    }
-    if (pathRaw = try_game_path(path / "Game"); !pathRaw.isEmpty()) {
-        return pathRaw;
-    }
-    if (pathRaw = try_game_path(path / ".."); !pathRaw.isEmpty()) {
-        return pathRaw;
-    }
-    return "";
-}
