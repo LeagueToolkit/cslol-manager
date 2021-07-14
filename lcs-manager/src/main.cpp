@@ -6,6 +6,7 @@
 #include <QFontDatabase>
 #include <QFile>
 #include "LCSTools.h"
+#include "LCSUtils.h"
 #include "lcs/common.hpp"
 
 int main(int argc, char *argv[])
@@ -27,6 +28,7 @@ int main(int argc, char *argv[])
     QSettings::setDefaultFormat(QSettings::Format::IniFormat);
 
     QQmlApplicationEngine engine;
+    engine.rootContext()->setContextProperty("LCSUtils", new LCSUtils(&engine));
     engine.rootContext()->setContextProperty("LCS_VERSION", LCS::VERSION);
     engine.rootContext()->setContextProperty("LCS_COMMIT", LCS::COMMIT);
     engine.rootContext()->setContextProperty("LCS_DATE", LCS::DATE);

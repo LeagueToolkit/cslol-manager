@@ -106,7 +106,7 @@ ColumnLayout {
         Layout.fillHeight: true
         Layout.fillWidth: true
         fillMode: Image.PreserveAspectFit
-        source: lcsTools.toFile(fieldImage.text)
+        source: LCSUtils.toFile(fieldImage.text)
     }
 
     RowLayout {
@@ -131,6 +131,6 @@ ColumnLayout {
 
     LCSDialogNewModImage {
         id: dialogImage
-        onAccepted: fieldImage.text = lcsTools.fromFile(file)
+        onAccepted: fieldImage.text = LCSUtils.fromFile(file)
     }
 }

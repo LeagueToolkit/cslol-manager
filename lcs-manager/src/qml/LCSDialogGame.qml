@@ -31,7 +31,7 @@ Dialog {
             anchors.fill: parent
             onDropped: function(drop) {
                 if (drop.hasUrls) {
-                    lcsDialogGame.selected(lcsTools.fromFile(drop.urls[0]))
+                    lcsDialogGame.selected(LCSUtils.fromFile(drop.urls[0]))
                 }
             }
         }
@@ -58,9 +58,9 @@ Dialog {
 
     LCSDialogLoLPath {
         id: lcsDialogLolPath
-        folder: lcsTools.toFile(lcsTools.leaguePath)
+        folder: LCSUtils.toFile(lcsTools.leaguePath)
         onAccepted: {
-            lcsDialogGame.selected(lcsTools.fromFile(file))
+            lcsDialogGame.selected(LCSUtils.fromFile(file))
         }
     }
 }
