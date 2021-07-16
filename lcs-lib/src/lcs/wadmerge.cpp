@@ -93,13 +93,20 @@ void WadMerge::write(Progress& progress) const {
             for (auto const& [offset, xxhashMap]: offsetMap) {
                 Wad::Entry newEntry = {};
                 for (auto const& [xxhash, entry]: xxhashMap) {
-                    newEntry = *entry;
-                    newEntry.dataOffset = static_cast<uint32_t>(dataOffset);
-                    constexpr auto GB = static_cast<std::uint64_t>(1024 * 1024 * 1024);
-                    lcs_assert(dataOffset <= 2 * GB);
+                    newEntry.xxhash = entry->xxhash;
+                    if (!newEntry.isDuplicate) {
+                        newEntry.dataOffset = dataOffset;
+                        newEntry.sizeCompressed = entry->sizeCompressed;
+                        newEntry.sizeUncompressed = entry->sizeUncompressed;
+                        newEntry.type = entry->type;
+                        newEntry.checksum = entry->checksum;
+                    }
                     newEntries.push_back(newEntry);
+                    newEntry.isDuplicate = true;
                 }
                 dataOffset += newEntry.sizeCompressed;
+                constexpr auto GB = static_cast<std::uint64_t>(1024 * 1024 * 1024);
+                lcs_assert(dataOffset <= 2 * GB);
             }
         }
         lcs_trace_func(
