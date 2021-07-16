@@ -31,7 +31,7 @@ std::u8string LCS::to_u8string(fs::path const& from) {
             continue;
         }
         if (result.starts_with(remap_from)) {
-            return remap_to + result.substr(remap_from.size());
+            return remap_to + u8"/" + result.substr(remap_from.size());
         }
     }
     return result;
