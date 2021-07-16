@@ -26,7 +26,7 @@ Dialog {
 
     onAccepted: {
         let infoData = lcsModInfoEdit.getInfoData()
-        let fileName = infoData.Name + " - " + infoData.Version + " (by " + infoData.Version + ")"
+        let fileName = infoData.Name + " V" + infoData.Version + " by " + infoData.Author
         lcsDialogNewMod.save(fileName, infoData, lcsModInfoEdit.image)
     }
 

@@ -166,7 +166,7 @@ ColumnLayout {
 
                         Label {
                             horizontalAlignment: Text.AlignHCenter
-                            text: model.Description
+                            text: model.Description ? model.Description : ""
                             wrapMode: Text.Wrap
                             elide: Text.ElideRight
                             maximumLineCount: 2
