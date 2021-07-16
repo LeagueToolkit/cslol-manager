@@ -52,7 +52,9 @@ void WadIndex::add_wad(fs::path const& wadpath) {
             throw_error("Game contains duplicated wads!");
         } else {
             auto wad = std::make_unique<Wad>(wadpath, filename);
-            lcs_assert_msg("Legacy wad in Game folder!", !wad->is_oldchecksum());
+            if (wad->is_oldchecksum()) {
+                return;
+            }
             for(auto const& entry: wad->entries()) {
                 lookup_.insert(std::make_pair(entry.xxhash, wad.get()));
                 if (auto i = checksums_.find(entry.checksum); i != checksums_.end()) {

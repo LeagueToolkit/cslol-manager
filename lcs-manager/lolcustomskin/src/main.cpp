@@ -30,8 +30,9 @@ make_main({
            "Config format: %s\n"
            "Config: %s\n",
            LCS::ModOverlay::INFO, overlay.to_string().c_str());
-    print_path("Prefix", prefix);
     try {
+        prefix = fs::absolute(prefix);
+        print_path("Prefix", prefix);
         for (;;) {
             puts("===============================================================================");
             std::optional<LCS::Process> process = {};
