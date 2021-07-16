@@ -197,7 +197,7 @@ void LCSToolsImpl::changeLeaguePath(QString newLeaguePath) {
             path = "";
         }
         if (leaguePath_ != path) {
-            LCS::path_remap()[u8"<LOL>"] = path.generic_u8string();
+            LCS::path_remap()[u8"<Game>"] = path.generic_u8string();
             leaguePath_ = path;
             wadIndex_ = nullptr;
             emit leaguePathChanged(to_qstring(leaguePath_));

@@ -56,7 +56,9 @@ Dialog {
         for(let i in wads) {
             itemsModel.append({ "Name": wads[i] })
         }
-        dialogEditModToolbar.currentIndex = isnew ? 1 : 0
+        if (isnew) {
+            dialogEditModToolbar.currentIndex = 1
+        }
         checkBoxRemoveUnknownNames.checked = true
     }
 
