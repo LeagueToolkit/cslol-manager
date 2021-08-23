@@ -37,6 +37,21 @@ namespace LCS {
             std::uint32_t flags;
         };
 
+        struct Section {
+            char sectname[16];
+            char segname[16];
+            std::uint64_t addr;
+            std::uint64_t size;
+            std::uint32_t offset;
+            std::uint32_t align;
+            std::uint32_t reloff;
+            std::uint32_t nreloc;
+            std::uint32_t flags;
+            std::uint32_t reserved1;
+            std::uint32_t reserved2;
+            std::uint32_t reserved3;
+        };
+
         struct DyldInfo {
             std::uint32_t rebase_off;
             std::uint32_t rebase_size;
@@ -48,6 +63,13 @@ namespace LCS {
             std::uint32_t lazy_bind_size;
             std::uint32_t export_off;
             std::uint32_t export_size;
+        };
+
+        struct Symtab {
+            std::uint32_t symoff;
+            std::uint32_t nsyms;
+            std::uint32_t stroff;
+            std::uint32_t strsize;
         };
 
         struct Export {
@@ -84,18 +106,23 @@ namespace LCS {
         void parse_file(char const* filename);
         std::uint64_t find_export(char const* func_name) const;
         std::uint64_t find_import_ptr(char const* func_name) const;
+        std::uint64_t find_stub_refs(std::uint64_t address) const;
     private:
         struct Stream;
+        void read_stubs(Stream const& org_stream, std::uint64_t address);
         void read_exports(Stream const& org_stream);
         void read_binding_lazy(Stream const& org_stream);
 
         std::vector<Segment> segments;
         std::unordered_map<std::string, Export> exports;
         std::unordered_map<std::string, BindingLazy> binding_lazy;
+        std::unordered_map<std::uint64_t, std::uint64_t> stub_refs;
     };
 }
 
-/// Implementation
+/*************************************************************************************************/
+/* Implementation                                                                                */
+/*************************************************************************************************/
 #include <cstring>
 #include <unistd.h>
 #include <fcntl.h>
@@ -191,24 +218,32 @@ namespace LCS {
         segments.clear();
         exports.clear();
         binding_lazy.clear();
-        auto stream = Stream { data, data_size };
+        stub_refs.clear();
+        auto const file_stream = Stream { data, data_size };
+        auto stream = file_stream.copy();
         auto const header = stream.read_raw<Header>();
         for (auto count = header.ncmds; count; --count) {
-            auto const command = stream.read_raw<Command>();
+            auto cmd_stream = stream.copy();
+            auto const command = cmd_stream.read_raw<Command>();
             if (command.cmd == 0x19) {
-                auto const segment = stream.copy().read_raw<Segment>();
+                auto const segment = cmd_stream.read_raw<Segment>();
                 this->segments.push_back(segment);
-            } else if ((command.cmd & ~0x80000000u) == 0x22) {
-                auto const info = stream.copy().read_raw<DyldInfo>();
-                read_exports(Stream { data, data_size }.copy(info.export_off, info.export_size));
-                read_binding_lazy(Stream { data, data_size }.copy(info.lazy_bind_off, info.lazy_bind_size));
+                for (auto count = segment.nsects; count; --count) {
+                    auto const section = cmd_stream.read_raw<Section>();
+                    if (std::string_view{section.sectname} == "__stubs") {
+                        read_stubs(file_stream.copy(segment.fileoff + section.offset, section.size), section.addr);
+                    }
+                }
             }
-            if (command.cmdsize < sizeof(Command)) {
-                throw "Command too small!";
+            if ((command.cmd & ~0x80000000u) == 0x22) {
+                auto const info = cmd_stream.read_raw<DyldInfo>();
+                read_exports(file_stream.copy(info.export_off, info.export_size));
+                read_binding_lazy(file_stream.copy(info.lazy_bind_off, info.lazy_bind_size));
             }
-            stream.skip(command.cmdsize - sizeof(Command));
+            stream.skip(command.cmdsize);
         }
     }
+
 
     inline void MachO::parse_file(char const* filename) {
         auto result = std::vector<unsigned char> {};
@@ -225,6 +260,20 @@ namespace LCS {
             throw "Failed to read the file!";
         }
         parse_data(result.data(), result.size());
+    }
+
+
+    inline void MachO::read_stubs(const Stream &org_stream, std::uint64_t address) {
+        auto stream = org_stream.copy();
+        while (!stream.empty()) {
+            auto const opcode = stream.read_raw<std::uint16_t>();
+            if (opcode != 0x25FF) {
+                // throw error here
+            }
+            auto const relative = stream.read_raw<std::int32_t>();
+            stub_refs[(address + 6) + relative] = address + 2;
+            address += 6;
+        }
     }
 
     inline void MachO::read_exports(Stream const& org_stream) {
@@ -339,6 +388,13 @@ namespace LCS {
             if (i->second.binding_type == 1) {
                 return segments.at(i->second.segment).vmaddr + i->second.address;
             }
+        }
+        return {};
+    }
+
+    inline std::uint64_t MachO::find_stub_refs(std::uint64_t address) const {
+        if (auto i = stub_refs.find(address); i != stub_refs.end()) {
+            return i->second;
         }
         return {};
     }
