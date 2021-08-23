@@ -228,7 +228,7 @@ void ModOverlay::run(std::function<bool(Message)> update, std::filesystem::path 
         auto process = Process::Find("/LeagueofLegends");
         if (!process) {
             if (!update(M_NONE)) return;
-            LCS::SleepMS(150);
+            LCS::SleepMS(125);
             continue;
         }
         if (!update(M_FOUND)) return;
@@ -238,6 +238,7 @@ void ModOverlay::run(std::function<bool(Message)> update, std::filesystem::path 
                 if (process->WaitInitialized(5)) {
                     break;
                 }
+                if (!update(M_NONE)) return;
             }
             if (!update(M_SCAN)) return;
             config_->scan(*process);
@@ -248,13 +249,16 @@ void ModOverlay::run(std::function<bool(Message)> update, std::filesystem::path 
                 if (config_->is_patchable()) {
                     break;
                 }
+                if (!update(M_NONE)) return;
             }
         }
         if (!update(M_PATCH)) return;
         config_->patch(*process, profilePath);
-        while (!process->WaitExit(0)) {
+        for (std::uint32_t timeout = 3 * 60 * 60 * 1000; timeout; timeout -= 250) {
+            if (process->WaitExit(250)) {
+                break;
+            }
             if (!update(M_NONE)) return;
-            LCS::SleepMS(500);
         }
         if (!update(M_DONE)) return;
     }

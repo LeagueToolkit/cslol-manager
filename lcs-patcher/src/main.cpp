@@ -27,16 +27,19 @@ make_main({
     LCS::ModOverlay overlay = {};
     int message_type = argc > 2;
     overlay.load(configfile);
-    printf("Source: https://github.com/moonshadow565/lolcustomskin\n"
+    printf("Source: https://github.com/LoL-Fantome/lolcustomskin-tools\n"
            "Schema: %s\n"
            "Config: %s\n",
            LCS::ModOverlay::INFO, overlay.to_string().c_str());
+    fflush(stdout);
     try {
         prefix = fs::absolute(prefix);
         print_path("Prefix: ", prefix);
+        fflush(stdout);
         overlay.run([&](LCS::ModOverlay::Message m) -> bool {
             if (m) {
                 puts(LCS::ModOverlay::STATUS_MSG[message_type][m]);
+                fflush(stdout);
             }
             if (m == LCS::ModOverlay::M_NEED_SAVE) {
                 overlay.save(configfile);
@@ -45,6 +48,7 @@ make_main({
         }, prefix);
     } catch (std::runtime_error const &error) {
         printf("Error: %s\n", error.what());
+        fflush(stdout);
         if (!message_type) {
             return EXIT_FAILURE;
         }
