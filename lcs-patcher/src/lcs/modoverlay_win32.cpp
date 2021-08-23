@@ -1,12 +1,13 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include "modoverlay.hpp"
+#include "process.hpp"
+#include "ppp.hpp"
 #include <array>
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <span>
-#include "win32/process.hpp"
-#include "win32/ppp.hpp"
+#include <filesystem>
 
 using namespace LCS;
 
@@ -137,14 +138,24 @@ struct ModOverlay::Config {
         char16_t prefix_open_data[0x400] = {};
     };
 
-    void wait_patchable(const Process &process, uint32_t timeout) {
-        auto ptr_open = process.Rebase(off_open);
-        auto ptr_open_ref = process.Rebase(off_open_ref);
-        process.WaitPtrEq(ptr_open_ref, PtrStorage(ptr_open), 1, timeout);
-        auto ptr_free = process.Rebase(off_free_ptr);
-        process.WaitPtrNotEq(ptr_free, PtrStorage(0), 1, timeout);
-        auto ptr_wopen = process.Rebase(off_wopen);
-        process.WaitPtrNotEq(ptr_wopen, PtrStorage(0), 1, timeout);
+    bool is_patchable(const Process &process) {
+        try {
+            auto const ptr_open_ref = process.Rebase<PtrStorage>(off_open_ref);
+            if (process.Read(ptr_open_ref) != process.Rebase(off_open)) {
+                return false;
+            }
+            auto const ptr_free = process.Rebase<PtrStorage>(off_free_ptr);
+            if (process.Read(ptr_free) == 0) {
+                return false;
+            }
+            auto const ptr_wopen = process.Rebase<PtrStorage>(off_wopen);
+            if (process.Read(ptr_wopen) == 0) {
+                return false;
+            }
+        } catch(std::runtime_error const&) {
+            return false;
+        }
+        return true;
     }
 
     void patch(LCS::Process const &process, std::filesystem::path const& prefix) const {
@@ -211,25 +222,41 @@ void ModOverlay::from_string(std::string const & str) noexcept {
     config_->from_string(str);
 }
 
-int ModOverlay::run(std::function<bool(Message)> update,
-                     std::filesystem::path const& profilePath) {
-    auto process = Process::Find("League of Legends.exe");
-    if (!process) {
-        return 0;
+void ModOverlay::run(std::function<bool(Message)> update, std::filesystem::path const& profilePath) {
+    if (!update(M_DONE)) return;
+    for (;;) {
+        auto process = Process::Find("/LeagueofLegends");
+        if (!process) {
+            if (!update(M_NONE)) return;
+            LCS::SleepMS(150);
+            continue;
+        }
+        if (!update(M_FOUND)) return;
+        if (!config_->check(*process)) {
+            if (!update(M_WAIT_INIT)) return;
+            for (std::uint32_t timeout = 3 * 60 * 1000; timeout; timeout -= 5) {
+                if (process->WaitInitialized(5)) {
+                    break;
+                }
+            }
+            if (!update(M_SCAN)) return;
+            config_->scan(*process);
+            if (!update(M_NEED_SAVE)) return;
+        } else {
+            if (!update(M_WAIT_PATCHABLE)) return;
+            for (std::uint32_t timeout = 3 * 60 * 1000; timeout; timeout -= 5) {
+                if (config_->is_patchable()) {
+                    break;
+                }
+            }
+        }
+        if (!update(M_PATCH)) return;
+        config_->patch(*process, profilePath);
+        while (!process->WaitExit(0)) {
+            if (!update(M_NONE)) return;
+            LCS::SleepMS(500);
+        }
+        if (!update(M_DONE)) return;
     }
-    if (!update(M_FOUND)) return -1;
-    if (!config_->check(*process)) {
-        if (!update(M_WAIT_INIT)) return -1;
-        process->WaitInitialized();
-        if (!update(M_SCAN)) return -1;
-        config_->scan(*process);
-        if (!update(M_NEED_SAVE)) return -1;
-    } else {
-        if (!update(M_WAIT_PATCHABLE)) return -1;
-        config_->wait_patchable(*process, 60 * 1000);
-    }
-    config_->patch(*process, profilePath);
-    if (!update(M_WAIT_EXIT)) return -1;
-    process->WaitExit();
-    return 1;
 }
+

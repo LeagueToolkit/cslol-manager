@@ -31,6 +31,10 @@ Process::~Process() noexcept {
     }
 }
 
+bool Process::ThisProcessHasParent() noexcept {
+    return getppid() > 1;
+}
+
 std::optional<Process> Process::Find (char const* name) {
     pid_t pids[4096];
     int bytes = proc_listpids(PROC_ALL_PIDS, 0, pids, sizeof(pids));
@@ -87,47 +91,14 @@ std::vector<char> Process::Dump() const {
     return buffer;
 }
 
-bool Process::WaitExit(uint32_t delay, uint32_t timeout) const {
-    for (; timeout > delay;) {
-        int p = 0;
-        pid_for_task((mach_port_t)(uintptr_t)handle_, &p);
-        if (p < 0) {
-            break;
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(delay));
-        if (timeout != (uint32_t)-1) {
-            timeout -= delay;
-        }
-    }
-   return true;
+bool Process::WaitExit(uint32_t timeout) const {
+    int p = 0;
+    pid_for_task((mach_port_t)(uintptr_t)handle_, &p);
+    return p < 0;
 }
 
-void Process::WaitInitialized(uint32_t delay, uint32_t timeout) const {}
-
-void Process::WaitPtrEq(void* address, PtrStorage what, uint32_t delay, uint32_t timeout) const {
-    PtrStorage data = ~what;
-    for (; timeout > delay;) {
-        ReadMemory(address, &data, sizeof(data));
-        if (data == what) {
-            return;
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(delay));
-        timeout -= delay;
-    }
-    throw std::runtime_error("Failed to WaitMemoryNonZero!");
-}
-
-void Process::WaitPtrNotEq(void* address, PtrStorage what, uint32_t delay, uint32_t timeout) const {
-    PtrStorage data = what;
-    for (; timeout > delay;) {
-        ReadMemory(address, &data, sizeof(data));
-        if (data != what) {
-            return;
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(delay));
-        timeout -= delay;
-    }
-    throw std::runtime_error("Failed to WaitMemoryNonZero!");
+bool Process::WaitInitialized(uint32_t timeout) const {
+    return false;
 }
 
 void Process::ReadMemory(void *address, void *dest, size_t size) const {

@@ -73,6 +73,8 @@ namespace LCS {
         explicit inline operator bool() const noexcept { return handle_; }
         inline bool operator!() const noexcept { return !handle_; }
 
+        static bool ThisProcessHasParent() noexcept;
+
         static std::optional<Process> Find(char const *name);
 
         PtrStorage Base() const;
@@ -83,13 +85,9 @@ namespace LCS {
 
         std::vector<char> Dump() const;
 
-        void WaitInitialized(uint32_t delay = 1, uint32_t timeout = 60 * 1000) const;
+        bool WaitInitialized(uint32_t timeout = 1) const;
 
-        bool WaitExit(uint32_t delay = 500, uint32_t timeout = 3 * 60 * 60 * 1000) const;
-
-        void WaitPtrEq(void *addr, PtrStorage what, uint32_t delay = 1, uint32_t timeout = 60 * 1000) const;
-
-        void WaitPtrNotEq(void *addr, PtrStorage what, uint32_t delay = 1, uint32_t timeout = 60 * 1000) const;
+        bool WaitExit(uint32_t timeout = 1) const;
 
         void ReadMemory(void *address, void *dest, size_t size) const;
 
@@ -101,19 +99,15 @@ namespace LCS {
 
         void *AllocateMemory(size_t size) const;
 
-        inline void WaitPtrEq(Ptr<void> address, PtrStorage what, uint32_t delay = 1,
-                              uint32_t timeout = 60 * 1000) const {
-            WaitPtrEq(static_cast<void *>(address), what, delay, timeout);
-        }
-
-        inline void WaitPtrNotEq(Ptr<void> address, PtrStorage what, uint32_t delay = 1,
-                                uint32_t timeout = 60 * 1000) const {
-            WaitPtrNotEq(static_cast<void *>(address), what, delay, timeout);
-        }
-
         template<typename T>
         inline void Read(Ptr<T> address, T& dest, size_t count = 1) const {
             ReadMemory(static_cast<void*>(address), &dest, count * sizeof(T));
+        }
+
+        template<typename T>
+        inline T Read(Ptr<T> address) const {
+            T dest = {};
+            ReadMemory(static_cast<void*>(address), &dest);
         }
 
         template<typename T>

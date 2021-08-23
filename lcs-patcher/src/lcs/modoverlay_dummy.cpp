@@ -6,9 +6,7 @@ using namespace LCS;
 char const ModOverlay::SCHEMA[] = "lcs-overlay-dummy v0";
 char const ModOverlay::INFO[] = "lcs-overlay-dummy v0";
 
-struct ModOverlay::Config {
-
-};
+struct ModOverlay::Config {};
 
 ModOverlay::ModOverlay() : config_(std::make_unique<Config>()) {}
 
@@ -20,6 +18,6 @@ std::string ModOverlay::to_string() const noexcept {
 
 void ModOverlay::from_string(std::string const & str) noexcept {}
 
-int ModOverlay::run(std::function<bool(Message)> update, std::filesystem::path const& profilePath) {
-    return 0;
+void ModOverlay::run(std::function<bool(Message)> update, std::filesystem::path const& profilePath) {
+    if (!update(M_DONE)) return;
 }

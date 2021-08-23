@@ -436,45 +436,24 @@ void LCSToolsImpl::runProfile(QString name) {
         LCS::fs::path profilePath = progDirPath_ / "profiles" / name.toStdU16String();
         std::thread thread([this, profilePath = std::move(profilePath)] {
             try {
-                setStatus("Waiting for league match to start...");
                 setState(LCSState::StateRunning);
                 lcs_hint(u8"Try running LCS as Administrator!");
-                while (state_ == LCSState::StateRunning) {
-                    auto const result = patcher_.run([&](LCS::ModOverlay::Message m) -> bool {
-                            switch(m) {
-                            case LCS::ModOverlay::M_FOUND:
-                            setState(LCSState::StatePatching);
-                            setStatus("Found league");
-                            return true;
-                            case LCS::ModOverlay::M_WAIT_INIT:
-                            setStatus("Game is starting");
-                            return true;
-                            case LCS::ModOverlay::M_SCAN:
-                            setStatus("Scan offsets");
-                            return true;
-                            case LCS::ModOverlay::M_NEED_SAVE:
-                            patcher_.save(patcherConfig_);
-                            return true;
-                            case LCS::ModOverlay::M_WAIT_PATCHABLE:
-                            setStatus("Wait patchable");
-                            return true;
-                            case LCS::ModOverlay::M_PATCH:
-                            setStatus("Patching game");
-                            return true;
-                            case LCS::ModOverlay::M_WAIT_EXIT:
-                            setStatus("Wait for league to exit");
-                            return true;
-                            }
-                            return true;
-                    }, profilePath);
-                    if (result > 0) {
-                        setStatus("Waiting for league match to start...");
-                        setState(LCSState::StateRunning);
+                bool canexit = true;
+                patcher_.run([&](LCS::ModOverlay::Message m) -> bool {
+                    if (m) {
+                        setStatus(LCS::ModOverlay::STATUS_MSG[0][m]);
                     }
-                    if (result < 0) {
-                        break;
+                    if (m == LCS::ModOverlay::M_WAIT_EXIT){
+                        canexit = false;
                     }
-                }
+                    if (m == LCS::ModOverlay::M_DONE) {
+                        canexit = true;
+                    }
+                    if (m == LCS::ModOverlay::M_NEED_SAVE) {
+                        patcher_.save(patcherConfig_);
+                    }
+                    return !canexit || this->state_ == LCSState::StateRunning;
+                }, profilePath);
                 setStatus("Patcher stoped");
                 setState(LCSState::StateIdle);
             } catch(std::runtime_error const& error) {
