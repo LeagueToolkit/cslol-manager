@@ -19,32 +19,28 @@ find_package(Threads REQUIRED)
 if (WIN32)
     add_subdirectory(lolcustomskin)
     add_executable(lcs-manager WIN32
-        src/LCSTools.h
-        src/LCSTools.cpp
-        src/LCSToolsImpl.h
-        src/LCSToolsImpl.cpp
-        src/LCSUtils.h
-        src/LCSUtils.cpp
         src/main.cpp
-        src/qml/qml.qrc
         src/qml/rc.rc
         src/lcs-manager.exe.manifest
     )
-    target_link_libraries(lcs-manager PRIVATE lolcustomskin-lib)
+    target_link_libraries(lcs-manager PRIVATE user32)
+elseif(APPLE)
+    add_executable(lcs-manager src/main.cpp)
 else()
-    add_executable(lcs-manager
-        src/LCSTools.h
-        src/LCSTools.cpp
-        src/LCSToolsImpl.h
-        src/LCSToolsImpl.cpp
-        src/LCSUtils.h
-        src/LCSUtils.cpp
-        src/main.cpp
-        src/qml/qml.qrc
-        src/qml/rc.rc
-    )
+    add_executable(lcs-manager src/main.cpp)
 endif()
+
+target_sources(lcs-manager PUBLIC
+    src/LCSTools.h
+    src/LCSTools.cpp
+    src/LCSToolsImpl.h
+    src/LCSToolsImpl.cpp
+    src/LCSUtils.h
+    src/LCSUtils.cpp
+    src/qml/qml.qrc
+)
+
 target_compile_definitions(lcs-manager PRIVATE $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>)
-target_link_libraries(lcs-manager PRIVATE user32 lcs-lib Qt::Core Qt::Gui Qt::Quick Threads::Threads)
-target_include_directories(lcs-manager PRIVATE lolcustomskin/src)
+target_link_libraries(lcs-manager PRIVATE lcs-patcher lcs-lib Qt::Core Qt::Gui Qt::Quick Threads::Threads)
+
 qt_import_qml_plugins(lcs-manager)

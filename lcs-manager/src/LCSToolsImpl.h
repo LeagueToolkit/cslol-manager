@@ -17,10 +17,7 @@
 #include "lcs/wadmakequeue.hpp"
 #include "lcs/wadmerge.hpp"
 #include "lcs/wadmergequeue.hpp"
-#ifdef WIN32
-#include "lcs/process.hpp"
 #include "lcs/modoverlay.hpp"
-#endif
 
 class LCSToolsImpl : public QObject, public LCS::ProgressMulti
 {
@@ -94,9 +91,7 @@ private:
     LCS::fs::path patcherConfig_ = {};
     std::unique_ptr<LCS::ModIndex> modIndex_ = nullptr;
     std::unique_ptr<LCS::WadIndex> wadIndex_ = nullptr;
-#ifdef WIN32
     LCS::ModOverlay patcher_ = {};
-#endif
     LCSState state_ = LCSState::StateUnitialized;
     bool blacklist_ = true;
     bool ignorebad_ = false;

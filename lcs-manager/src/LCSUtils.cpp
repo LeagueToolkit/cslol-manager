@@ -48,7 +48,7 @@ QString LCSUtils::toFile(QString file) {
 
 static QString try_game_path(fs::path path) {
     path = path.lexically_normal();
-    if (!fs::exists(path / "League of Legends.exe")) {
+    if (!fs::exists(path / "League of Legends.exe") && !fs::exists(path / "League of Legends.app")) {
         path = "";
     }
     return QString::fromStdU16String(path.generic_u16string());

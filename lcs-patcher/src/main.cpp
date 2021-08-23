@@ -1,5 +1,4 @@
 #include "lcs/modoverlay.hpp"
-#include "lcs/process.hpp"
 #include <cstdio>
 #include <filesystem>
 #include <stdexcept>
@@ -20,6 +19,7 @@ namespace fs = std::filesystem;
 #define make_main(body) int main(int argc, char** argv) { body }
 #endif
 
+
 make_main({
     fs::path prefix = argc > 1 ? fs::path(argv[1]) : fs::path("MOD/");
     fs::path configfile = fs::path(argv[0]).parent_path() / "lolcustomskin.txt";
@@ -33,30 +33,39 @@ make_main({
     try {
         prefix = fs::absolute(prefix);
         print_path("Prefix", prefix);
-        for (;;) {
-            puts("===============================================================================");
-            std::optional<LCS::Process> process = {};
-            puts("Looking for league");
-            while (!process) {
-                LCS::SleepMS(50);
-                process = LCS::Process::Find("League of Legends.exe");
+        for (int result = 1;;) {
+            if (result == 1) {
+                puts("===============================================================================");
+                puts("Scanning for league");
             }
-            puts("Found league");
-            if (!overlay.check(*process)) {
-                puts("Wait initialized!");
-                process->WaitInitialized();
-                puts("Rescanning");
-                overlay.scan(*process);
-                overlay.save(configfile);
-                printf("Config: %s\n", overlay.to_string().c_str());
-            } else {
-                puts("Wait patchable");
-                overlay.wait_patchable(*process);
-            }
-            puts("Patching");
-            overlay.patch(*process, prefix);
-            puts("Waiting for exit");
-            process->WaitExit();
+            result = overlay.run([&](LCS::ModOverlay::Message m) -> bool {
+                  switch(m) {
+                  case LCS::ModOverlay::M_FOUND:
+                  puts("Found league");
+                  break;
+                  case LCS::ModOverlay::M_WAIT_INIT:
+                  puts("Wait initialized");
+                  break;
+                  case LCS::ModOverlay::M_SCAN:
+                  puts("Scanning");
+                  break;
+                  case LCS::ModOverlay::M_NEED_SAVE:
+                  puts("Saving");
+                  overlay.save(configfile);
+                  break;
+                  case LCS::ModOverlay::M_WAIT_PATCHABLE:
+                  puts("Wait patchable");
+                  break;
+                  case LCS::ModOverlay::M_PATCH:
+                  puts(overlay.to_string().c_str());
+                  puts("Patching");
+                  break;
+                  case LCS::ModOverlay::M_WAIT_EXIT:
+                  puts("Waiting for exit");
+                  break;
+                  }
+                  return true;
+            }, prefix);
         }
     } catch (std::runtime_error const &error) {
         printf("Error: %s\n"

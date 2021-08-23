@@ -2,22 +2,23 @@
 #include <cinttypes>
 #include <cstddef>
 #include <optional>
+#include <filesystem>
 #include <thread>
 #include <type_traits>
 #include <vector>
 
 namespace LCS {
-    inline void SleepMS(uint32_t time) noexcept {
-        std::this_thread::sleep_for(std::chrono::milliseconds(time));
-    }
-
     template <typename T>
     struct Ptr;
 
     template <typename T>
     Ptr(T *)->Ptr<T>;
 
+#ifdef WIN32
     using PtrStorage = uint32_t;
+#else
+    using PtrStorage = uint64_t;
+#endif
 
     template <>
     struct Ptr<void> {
@@ -30,6 +31,7 @@ namespace LCS {
         inline Ptr(uintptr_t value) noexcept : storage((PtrStorage)(value)) {}
         explicit inline Ptr(void *value) noexcept : Ptr((uintptr_t)(value)) {}
         explicit inline operator void *() const noexcept { return (void *)((uintptr_t)(storage)); }
+        explicit inline operator PtrStorage () const noexcept { return storage; }
     };
 
     template<typename T>
@@ -37,6 +39,7 @@ namespace LCS {
         static_assert (!std::is_pointer_v<T>);
         using Ptr<void>::Ptr;
         using Ptr<void>::operator void *;
+        using Ptr<void>::operator PtrStorage;
         inline Ptr(T *value) noexcept : Ptr((uintptr_t)(value)) {}
         inline auto operator-> () const noexcept { return (T *)((void *)(*this)); }
     };
@@ -46,39 +49,43 @@ namespace LCS {
         void *handle_ = nullptr;
         mutable PtrStorage base_ = {};
         mutable uint32_t checksum_ = {};
+        mutable std::filesystem::path path_ = {};
 
     public:
         inline Process() noexcept = default;
-        Process(void *ahandle) noexcept;
-        Process(uint32_t pid) noexcept;
+        Process(uint32_t pid);
         Process(const Process &) = delete;
         inline Process(Process &&other) noexcept {
             std::swap(handle_, other.handle_);
             std::swap(base_, other.base_);
             std::swap(checksum_, other.checksum_);
+            std::swap(path_, other.path_);
         }
         Process &operator=(const Process &) = delete;
         inline Process &operator=(Process &&other) noexcept {
             std::swap(handle_, other.handle_);
             std::swap(base_, other.base_);
             std::swap(checksum_, other.checksum_);
+            std::swap(path_, other.path_);
             return *this;
         }
         ~Process() noexcept;
         explicit inline operator bool() const noexcept { return handle_; }
         inline bool operator!() const noexcept { return !handle_; }
 
-        static std::optional<Process> Find(char const *name) noexcept;
+        static std::optional<Process> Find(char const *name);
 
         PtrStorage Base() const;
+
+        std::filesystem::path Path() const;
 
         uint32_t Checksum() const;
 
         std::vector<char> Dump() const;
 
-        void WaitInitialized(uint32_t timeout = 60 * 1000) const;
+        void WaitInitialized(uint32_t delay = 1, uint32_t timeout = 60 * 1000) const;
 
-        bool WaitExit(uint32_t timeout = 2 * 60 * 60 * 1000) const;
+        bool WaitExit(uint32_t delay = 500, uint32_t timeout = 3 * 60 * 60 * 1000) const;
 
         void WaitPtrEq(void *addr, PtrStorage what, uint32_t delay = 1, uint32_t timeout = 60 * 1000) const;
 
@@ -90,10 +97,12 @@ namespace LCS {
 
         void MarkMemoryExecutable(void* address, size_t size) const;
 
+        void MarkMemoryWritable(void* address, size_t size) const;
+
         void *AllocateMemory(size_t size) const;
 
         inline void WaitPtrEq(Ptr<void> address, PtrStorage what, uint32_t delay = 1,
-                                uint32_t timeout = 60 * 1000) const {
+                              uint32_t timeout = 60 * 1000) const {
             WaitPtrEq(static_cast<void *>(address), what, delay, timeout);
         }
 
@@ -126,6 +135,11 @@ namespace LCS {
         }
 
         template<typename T>
+        inline void MarkWritable(Ptr<T> address, size_t count = 1) const {
+            MarkMemoryWritable(static_cast<void*>(address), count * sizeof(T));
+        }
+
+        template<typename T>
         inline void MarkExecutable(Ptr<T> address, size_t count = 1) const {
             MarkMemoryExecutable(static_cast<void*>(address), count * sizeof(T));
         }
@@ -133,5 +147,10 @@ namespace LCS {
         inline PtrStorage Rebase(PtrStorage offset) const { return offset + Base(); }
 
         inline PtrStorage Debase(PtrStorage offset) const { return offset - Base(); }
+
+        template <typename T>
+        inline Ptr<T> Rebase(PtrStorage offset) const {
+            return Ptr<T> { offset + Base() };
+        }
     };
 }

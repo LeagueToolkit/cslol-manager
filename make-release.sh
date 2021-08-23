@@ -6,7 +6,7 @@ copy2folder() {
     cp "lcs-manager/LICENSE" "$2"
 
     cp "$1/lcs-manager/lcs-manager.exe" "$2"
-    cp "$1/lcs-manager/lolcustomskin/lolcustomskin.exe" "$2"
+    cp "$1/lcs-patcher/lolcustomskin.exe" "$2"
     cp "$1/lcs-wadextract/lcs-wadextract.exe" "$2"
     cp "$1/lcs-wadmake/lcs-wadmake.exe" "$2"
     cp "$1/lcs-wxyextract/lcs-wxyextract.exe" "$2"

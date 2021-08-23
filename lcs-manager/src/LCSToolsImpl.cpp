@@ -193,7 +193,7 @@ void LCSToolsImpl::changeLeaguePath(QString newLeaguePath) {
             setStatus("Change League Path");
         }
         LCS::fs::path path = newLeaguePath.toStdU16String();
-        if (!LCS::fs::exists(path / "League of Legends.exe")) {
+        if (!LCS::fs::exists(path / "League of Legends.exe") && !LCS::fs::exists(path / "League of Legends.app")) {
             path = "";
         }
         if (leaguePath_ != path) {
@@ -275,9 +275,7 @@ void LCSToolsImpl::init() {
 
         setStatus("Load mods");
         try {
-#ifdef WIN32
             patcher_.load(patcherConfig_);
-#endif
             modIndex_ = std::make_unique<LCS::ModIndex>(progDirPath_ / "installed");
             QJsonObject mods;
             for(auto const& [rawFileName, rawMod]: modIndex_->mods()) {
@@ -442,32 +440,40 @@ void LCSToolsImpl::runProfile(QString name) {
                 setState(LCSState::StateRunning);
                 lcs_hint(u8"Try running LCS as Administrator!");
                 while (state_ == LCSState::StateRunning) {
-#ifdef WIN32
-                    auto process = LCS::Process::Find("League of Legends.exe");
-                    if (!process) {
-                        LCS::SleepMS(250);
-                        continue;
+                    auto const result = patcher_.run([&](LCS::ModOverlay::Message m) -> bool {
+                            switch(m) {
+                            case LCS::ModOverlay::M_FOUND:
+                            setState(LCSState::StatePatching);
+                            setStatus("Found league");
+                            return true;
+                            case LCS::ModOverlay::M_WAIT_INIT:
+                            setStatus("Game is starting");
+                            return true;
+                            case LCS::ModOverlay::M_SCAN:
+                            setStatus("Scan offsets");
+                            return true;
+                            case LCS::ModOverlay::M_NEED_SAVE:
+                            patcher_.save(patcherConfig_);
+                            return true;
+                            case LCS::ModOverlay::M_WAIT_PATCHABLE:
+                            setStatus("Wait patchable");
+                            return true;
+                            case LCS::ModOverlay::M_PATCH:
+                            setStatus("Patching game");
+                            return true;
+                            case LCS::ModOverlay::M_WAIT_EXIT:
+                            setStatus("Wait for league to exit");
+                            return true;
+                            }
+                            return true;
+                    }, profilePath);
+                    if (result > 0) {
+                        setStatus("Waiting for league match to start...");
+                        setState(LCSState::StateRunning);
                     }
-                    setState(LCSState::StatePatching);
-                    setStatus("Found league");
-                    if (!patcher_.check(*process)) {
-                        setStatus("Game is starting");
-                        process->WaitInitialized();
-                        setStatus("Scan offsets");
-                        patcher_.scan(*process);
-                        patcher_.save(patcherConfig_);
-                    } else {
-                        setStatus("Wait patchable");
-                        patcher_.wait_patchable(*process);
+                    if (result < 0) {
+                        break;
                     }
-                    patcher_.patch(*process, profilePath);
-                    setStatus("Wait for league to exit");
-                    process->WaitExit();
-                    setStatus("Waiting for league match to start...");
-                    setState(LCSState::StateRunning);
-#else
-                  QThread::msleep(250);
-#endif
                 }
                 setStatus("Patcher stoped");
                 setState(LCSState::StateIdle);
