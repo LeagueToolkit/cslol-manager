@@ -5,23 +5,25 @@
 
 using namespace LCS;
 
-char const ModOverlay::SCHEMA[] = "lcs-overlay-osx v5 0x%016llX 0x%016llX";
-char const ModOverlay::INFO[] = "lcs-overlay-osx v5 off_rsa_verify off_fopen";
+char const ModOverlay::SCHEMA[] = "lcs-overlay-osx v5 0x%016llX 0x%016llX 0x%016llX";
+char const ModOverlay::INFO[] = "lcs-overlay-osx v5 off_rsa_verify off_fopen_org off_fopen_ref";
 
 struct ModOverlay::Config {
     MachO macho = {};
     std::uint64_t off_rsa_verify = {};
-    std::uint64_t off_fopen = {};
+    std::uint64_t off_fopen_org = {};
+    std::uint64_t off_fopen_ref = {};
 
     std::string to_string() const noexcept {
         char buffer[sizeof(SCHEMA) * 4] = {};
-        int size = sprintf(buffer, SCHEMA, off_rsa_verify, off_fopen);
+        int size = sprintf(buffer, SCHEMA, off_rsa_verify, off_fopen_org, off_fopen_ref);
         return std::string(buffer, (size_t)size);
     }
 
     void from_string(std::string const &buffer) noexcept {
         off_rsa_verify = 0;
-        off_fopen = 0;
+        off_fopen_org = 0;
+        off_fopen_ref = 0;
     }
 
     void scan(LCS::Process const &process) {
@@ -30,28 +32,19 @@ struct ModOverlay::Config {
         if (!(off_rsa_verify = macho.find_export("_int_rsa_verify"))) {
             throw std::runtime_error("Failed to find int_rsa_verify");
         }
-        if (!(off_fopen = macho.find_import_ptr("_fopen"))) {
-            throw std::runtime_error("Failed to find fopen");
+        if (!(off_fopen_org = macho.find_import_ptr("_fopen"))) {
+            throw std::runtime_error("Failed to find fopen org");
         }
-    }
-
-    void wait_patchable(LCS::Process const &process, uint32_t delay, uint32_t timeout) {
-        auto ptr = process.Rebase<PtrStorage>(off_fopen);
-        for (; timeout > delay;) {
-            PtrStorage data = 0;
-            process.Read(ptr, data);
-            if ((data > 0x7f0000000000)) {
-                return;
-            }
-            std::this_thread::sleep_for(std::chrono::milliseconds(delay));
-            timeout -= delay;
+        if (!(off_fopen_ref = macho.find_stub_refs(off_fopen_org))) {
+            throw std::runtime_error("Failed to find fopen ref");
         }
     }
 
     struct Payload {
-        unsigned char ret_true[16] = {
-            0xb8, 01, 00, 00, 00, 0xc2, 00, 00,
+        unsigned char ret_true[8] = {
+            0xb8, 0x01, 0x00, 0x00, 0x00, 0xc2, 0x00, 0x00,
         };
+        PtrStorage fopen_hook_ptr = {};
         unsigned char fopen_hook[0x80] = {
             0x55, 0x48, 0x89, 0xe5, 0x41, 0x54, 0x41, 0x55,
             0x48, 0x81, 0xec, 0x00, 0x04, 0x00, 0x00, 0x49,
@@ -80,16 +73,29 @@ struct ModOverlay::Config {
         }
         auto payload = Payload {};
         memcpy(payload.prefix, prefix.c_str(), prefix.size() + 1);
-        auto const ptr_fopen = process.Rebase<PtrStorage>(off_fopen);
+
         auto const ptr_rsa_verify = process.Rebase<Payload>(off_rsa_verify);
+        auto const ptr_fopen_org = process.Rebase<PtrStorage>(off_fopen_org);
+        auto const ptr_fopen_ref = process.Rebase<int32_t>(off_fopen_ref);
+
+        // fopen_hook_ptr stores pointer to fopen_hook, fopen_ref uses relative addressing to call it
+        payload.fopen_hook_ptr = (PtrStorage)ptr_rsa_verify + offsetof(Payload, fopen_hook);
+        auto const fopen_hook_rel = (std::int32_t)(
+                    + (std::int64_t)((PtrStorage)ptr_rsa_verify + offsetof(Payload, fopen_hook_ptr))
+                    - (std::int64_t)((PtrStorage)ptr_fopen_ref + 4));
+
         // Read org fopen
-        process.Read(ptr_fopen, payload.org_fopen);
+        process.Read(ptr_fopen_org, payload.org_fopen);
+
         // Write payload
         process.MarkWritable(ptr_rsa_verify);
         process.Write(ptr_rsa_verify, payload);
         process.MarkExecutable(ptr_rsa_verify);
-        // Write new fopen
-        process.Write(ptr_fopen, (PtrStorage)ptr_rsa_verify + offsetof(Payload, fopen_hook));
+
+        // Write fopen ref
+        process.MarkWritable(ptr_fopen_ref);
+        process.Write(ptr_fopen_ref, fopen_hook_rel);
+        process.MarkExecutable(ptr_fopen_ref);
     }
 };
 
@@ -114,8 +120,6 @@ int ModOverlay::run(std::function<bool(Message)> update, std::filesystem::path c
     if (!update(M_FOUND)) return -1;
     if (!update(M_SCAN)) return -1;
     config_->scan(*process);
-    if (!update(M_WAIT_PATCHABLE)) return -1;
-    config_->wait_patchable(*process, 1, 2 * 60 * 1000);
     if (!update(M_PATCH)) return -1;
     config_->patch(*process, profilePath.generic_string());
     if (!update(M_WAIT_EXIT)) return -1;
