@@ -45,14 +45,16 @@ write_filename:
 call_with_buffer:
     mov     rdi, rsp            ; filename = buffer
     mov     rsi, r13            ; mode = mode
-    call    qword [rel org_fopen]
+    mov     rax, qword [rel fopen_org_ref]
+    call    qword [rax]
     test    rax, rax
     jne     return
 
 call_with_filename:
     mov     rdi, r12            ; filename = filename
     mov     rsi, r13            ; mode = mode
-    call    qword [rel org_fopen]
+    mov     rax, qword [rel fopen_org_ref]
+    call    qword [rax]
 
 return:
     add     rsp, buffer_size
@@ -63,7 +65,7 @@ return:
 
 align 0x80
 
-org_fopen:
-    dq   0x11223344556677
+fopen_org_ref:
+    dq   0x11223344556677  
 prefix:
     dq   0x11223344556677
