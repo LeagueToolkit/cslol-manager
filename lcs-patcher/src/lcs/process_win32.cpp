@@ -50,13 +50,11 @@ namespace {
     }
 }
 
-Process::Process(void *handle) noexcept : handle_(handle) {
+Process::Process(uint32_t pid) : handle_(OpenProcess(PROCESS_NEEDED_ACCESS, false, pid)) {
     if (handle_ == INVALID_HANDLE_VALUE) {
         handle_ = nullptr;
     }
 }
-
-Process::Process(uint32_t pid) noexcept : Process(OpenProcess(PROCESS_NEEDED_ACCESS, false, pid)) {}
 
 Process::~Process() noexcept {
     if (handle_ && handle_ != INVALID_HANDLE_VALUE) {
@@ -65,7 +63,7 @@ Process::~Process() noexcept {
     }
 }
 
-std::optional<Process> Process::Find(char const *name) noexcept {
+std::optional<Process> Process::Find(char const *name) {
     PROCESSENTRY32 entry = {};
     entry.dwSize = sizeof(PROCESSENTRY32);
     auto handle = SafeWinHandle(CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0));
@@ -107,6 +105,16 @@ PtrStorage Process::Base() const {
     return base_;
 }
 
+std::filesystem::path Process::Path() const {
+    wchar_t pathbuf[32767];
+    if (auto const ret = QueryFullProcessImageNameW(handle_, 0, pathbuf, 32767)) {
+        throw std::runtime_error("Failed to get image path!");
+    } else {
+        path_ = std::string { pathbuf, pathbuf + ret };
+    }
+    return path_;
+}
+
 uint32_t Process::Checksum() const {
     if (!checksum_) {
         char raw[1024] = {};
@@ -137,7 +145,7 @@ std::vector<char> Process::Dump() const {
     return buffer;
 }
 
-bool Process::WaitExit(uint32_t timeout) const {
+bool Process::WaitExit(uint32_t delay, uint32_t timeout) const {
     switch (WaitForSingleObject(handle_, timeout)) {
     case WAIT_OBJECT_0:
         return true;
@@ -148,13 +156,13 @@ bool Process::WaitExit(uint32_t timeout) const {
     }
 }
 
-void Process::WaitInitialized(uint32_t timeout) const {
+void Process::WaitInitialized(uint32_t delay, uint32_t timeout) const {
     if (WaitForInputIdle(handle_, timeout) != 0) {
         throw std::runtime_error("Failed to WaitInitialized!");
     }
 }
 
-void Process::WaitPtrEq(void *address, PtrStorage what, uint32_t delay, uint32_t timeout) const {
+void Process::WaitPtrEq(void* address, PtrStorage what, uint32_t delay, uint32_t timeout) const {
     PtrStorage data = ~what;
     for (; timeout > delay;) {
         ReadProcessMemory(handle_, address, &data, sizeof(data), nullptr);
@@ -167,7 +175,7 @@ void Process::WaitPtrEq(void *address, PtrStorage what, uint32_t delay, uint32_t
     throw std::runtime_error("Failed to WaitMemoryNonZero!");
 }
 
-void Process::WaitPtrNotEq(void *address, PtrStorage what, uint32_t delay, uint32_t timeout) const {
+void Process::WaitPtrNotEq(void* address, PtrStorage what, uint32_t delay, uint32_t timeout) const {
     PtrStorage data = what;
     for (; timeout > delay;) {
         ReadProcessMemory(handle_, address, &data, sizeof(data), nullptr);
@@ -180,7 +188,7 @@ void Process::WaitPtrNotEq(void *address, PtrStorage what, uint32_t delay, uint3
     throw std::runtime_error("Failed to WaitMemoryNonZero!");
 }
 
-void Process::ReadMemory(void *address, void *dest, size_t size) const {
+void Process::ReadMemory(void* address, void *dest, size_t size) const {
     if (!address) {
         throw std::runtime_error("Can not read memory from nullptr");
     }
@@ -198,7 +206,14 @@ void Process::WriteMemory(void* address, void const* src, size_t sizeBytes) cons
     }
 }
 
-void Process::MarkMemoryExecutable(void *address, size_t sizeBytes) const {
+void Process::MarkMemoryWritable(void* address, size_t size) const {
+    DWORD old = 0;
+    if (!VirtualProtectEx(handle_, address, sizeBytes, PAGE_EXECUTE_READWRITE, &old)) {
+        throw std::runtime_error("Failed to change protection");
+    }
+}
+
+void Process::MarkMemoryExecutable(void* address, size_t sizeBytes) const {
     DWORD old = 0;
     if (!VirtualProtectEx(handle_, address, sizeBytes, PAGE_EXECUTE, &old)) {
         throw std::runtime_error("Failed to change protection");
