@@ -80,7 +80,7 @@ struct ModOverlay::Config {
 
         // fopen_hook_ptr stores pointer to fopen_hook, fopen_ref uses relative addressing to call it
         payload.fopen_hook_ptr = (PtrStorage)ptr_rsa_verify + offsetof(Payload, fopen_hook);
-        auto const fopen_hook_rel = (std::int32_t)(
+        auto const fopen_hook_ref = (std::int32_t)(
                     + (std::int64_t)((PtrStorage)ptr_rsa_verify + offsetof(Payload, fopen_hook_ptr))
                     - (std::int64_t)((PtrStorage)ptr_fopen_ref + 4));
 
@@ -91,7 +91,7 @@ struct ModOverlay::Config {
 
         // Write fopen ref
         process.MarkWritable(ptr_fopen_ref);
-        process.Write(ptr_fopen_ref, fopen_hook_rel);
+        process.Write(ptr_fopen_ref, fopen_hook_ref);
         process.MarkExecutable(ptr_fopen_ref);
     }
 };
@@ -108,18 +108,25 @@ void ModOverlay::from_string(std::string const & str) noexcept {
     config_->from_string(str);
 }
 
-int ModOverlay::run(std::function<bool(Message)> update, std::filesystem::path const& profilePath) {
-    auto process = Process::Find("/LeagueofLegends");
-    if (!process) {
-        LCS::SleepMS(50);
-        return 0;
+void ModOverlay::run(std::function<bool(Message)> update, std::filesystem::path const& profilePath) {
+    if (!update(M_DONE)) return;
+    for (;;) {
+        auto process = Process::Find("/LeagueofLegends");
+        if (!process) {
+            if (!update(M_NONE)) return;
+            LCS::SleepMS(125);
+            continue;
+        }
+        if (!update(M_FOUND)) return;
+        if (!update(M_SCAN)) return;
+        config_->scan(*process);
+        if (!update(M_PATCH)) return;
+        config_->patch(*process, profilePath.generic_string());
+        if (!update(M_WAIT_EXIT)) return;
+        while (!process->WaitExit(0)) {
+            if (!update(M_NONE)) return;
+            LCS::SleepMS(250);
+        }
+        if (!update(M_DONE)) return;
     }
-    if (!update(M_FOUND)) return -1;
-    if (!update(M_SCAN)) return -1;
-    config_->scan(*process);
-    if (!update(M_PATCH)) return -1;
-    config_->patch(*process, profilePath.generic_string());
-    if (!update(M_WAIT_EXIT)) return -1;
-    process->WaitExit();
-    return 1;
 }
