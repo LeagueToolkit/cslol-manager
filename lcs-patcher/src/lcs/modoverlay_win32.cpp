@@ -158,24 +158,10 @@ struct ModOverlay::Config {
         return true;
     }
 
-    void patch(LCS::Process const &process, std::filesystem::path const& prefix) const {
+    void patch(LCS::Process const &process, std::u16string const& prefix_str) const {
         if (!check(process)) {
             throw std::runtime_error("Config invalid to patch this executable!");
         }
-        std::u16string prefix_str = prefix.generic_u16string();
-        for (auto& c: prefix_str) {
-            if (c == u'/') {
-                c = u'\\';
-            }
-        }
-        prefix_str = u"\\\\?\\" + prefix_str;
-        if (!prefix_str.ends_with(u"\\")) {
-            prefix_str.push_back(u'\\');
-        }
-        if (prefix_str.size() * sizeof(char16_t) >= sizeof(CodePayload::prefix_open_data)) {
-            throw std::runtime_error("Prefix too big!");
-        }
-
         // Prepare pointers
         auto mod_code = process.Allocate<CodePayload>();
         auto ptr_open = Ptr<Ptr<ImportTrampoline>>(process.Rebase(off_open));
@@ -223,6 +209,19 @@ void ModOverlay::from_string(std::string const & str) noexcept {
 }
 
 void ModOverlay::run(std::function<bool(Message)> update, std::filesystem::path const& profilePath) {
+    std::u16string prefix_str = profilePath.generic_u16string();
+    for (auto& c: prefix_str) {
+        if (c == u'/') {
+            c = u'\\';
+        }
+    }
+    prefix_str = u"\\\\?\\" + prefix_str;
+    if (!prefix_str.ends_with(u"\\")) {
+        prefix_str.push_back(u'\\');
+    }
+    if ((prefix_str.size() + 1) * sizeof(char16_t) >= sizeof(Config::CodePayload::prefix_open_data)) {
+        throw std::runtime_error("Prefix too big!");
+    }
     if (!update(M_DONE)) return;
     for (;;) {
         auto process = Process::Find("/LeagueofLegends");
@@ -253,7 +252,7 @@ void ModOverlay::run(std::function<bool(Message)> update, std::filesystem::path 
             }
         }
         if (!update(M_PATCH)) return;
-        config_->patch(*process, profilePath);
+        config_->patch(*process, prefix_str);
         for (std::uint32_t timeout = 3 * 60 * 60 * 1000; timeout; timeout -= 250) {
             if (process->WaitExit(250)) {
                 break;

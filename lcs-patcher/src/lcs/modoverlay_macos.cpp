@@ -67,10 +67,7 @@ struct ModOverlay::Config {
         char prefix[0x200] = {};
     };
 
-    void patch(LCS::Process const &process, std::string prefix) {
-        if (!prefix.ends_with('/')) {
-            prefix.push_back('/');
-        }
+    void patch(LCS::Process const &process, std::string const& prefix) {
         auto payload = Payload {};
         memcpy(payload.prefix, prefix.c_str(), prefix.size() + 1);
         payload.fopen_org_ptr = process.Rebase(off_fopen_org);
@@ -109,6 +106,13 @@ void ModOverlay::from_string(std::string const & str) noexcept {
 }
 
 void ModOverlay::run(std::function<bool(Message)> update, std::filesystem::path const& profilePath) {
+    std::string prefix = profilePath.generic_string();
+    if (!prefix.ends_with('/')) {
+        prefix.push_back('/');
+    }
+    if (prefix.size() > sizeof (Config::Payload::prefix) - 1) {
+        throw std::runtime_error("Prefix too big!");
+    }
     if (!update(M_DONE)) return;
     for (;;) {
         auto process = Process::Find("/LeagueofLegends");
@@ -121,7 +125,7 @@ void ModOverlay::run(std::function<bool(Message)> update, std::filesystem::path 
         if (!update(M_SCAN)) return;
         config_->scan(*process);
         if (!update(M_PATCH)) return;
-        config_->patch(*process, profilePath.generic_string());
+        config_->patch(*process, prefix);
         if (!update(M_WAIT_EXIT)) return;
         while (!process->WaitExit(0)) {
             if (!update(M_NONE)) return;
