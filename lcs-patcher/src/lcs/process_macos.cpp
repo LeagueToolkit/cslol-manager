@@ -98,7 +98,7 @@ bool Process::WaitExit(uint32_t timeout) const {
 }
 
 bool Process::WaitInitialized(uint32_t timeout) const {
-    return false;
+    return true;
 }
 
 void Process::ReadMemory(void *address, void *dest, size_t size) const {
@@ -147,4 +147,3 @@ void Process::MarkMemoryExecutable(void* address, std::size_t size) const {
         throw std::runtime_error("Failed to mark rx memory: " + std::to_string(err));
     }
 }
-
