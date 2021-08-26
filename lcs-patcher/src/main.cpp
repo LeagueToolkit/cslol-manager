@@ -44,7 +44,7 @@ make_main({
             if (m == LCS::ModOverlay::M_NEED_SAVE) {
                 overlay.save(configfile);
             }
-            return m == LCS::ModOverlay::M_WAIT_EXIT || LCS::Process::ThisProcessHasParent();
+            return LCS::Process::ThisProcessHasParent();
         }, prefix);
     } catch (std::runtime_error const &error) {
         printf("Error: %s\n", error.what());

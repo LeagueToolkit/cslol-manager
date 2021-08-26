@@ -19,9 +19,10 @@ add_custom_command(
             "log"
             "-1"
             "--output" "${CMAKE_CURRENT_BINARY_DIR}/version.cpp"
+            "--date=short"
             "--format=\
             #include <lcs/common.hpp>%n\
-            char const* LCS::VERSION=\"%as-%h\";%n\
+            char const* LCS::VERSION=\"%ad-%h\";%n\
             char const* LCS::COMMIT=\"%H\";%n\
             char const* LCS::DATE=\"%aI\";%n"
     DEPENDS "${CMAKE_SOURCE_DIR}/.git/index"

@@ -25,7 +25,25 @@ if (WIN32)
     )
     target_link_libraries(lcs-manager PRIVATE user32)
 elseif(APPLE)
-    add_executable(lcs-manager src/main.cpp)
+    set_source_files_properties(src/qml/icon.icns
+        PROPERTIES
+        MACOSX_PACKAGE_LOCATION "Resources")
+    add_executable(lcs-manager MACOSX_BUNDLE
+        src/main.cpp
+        src/qml/icon.icns
+        )
+    set_target_properties(lcs-manager
+        PROPERTIES
+        MACOSX_BUNDLE_ICON_FILE icon
+        MACOSX_BUNDLE_BUNDLE_NAME lcs-manager
+        MACOSX_BUNDLE_BUNDLE_VERSION "0.1"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1"
+        MACOSX_BUNDLE_GUI_IDENTIFIER lcs.manager
+        )
+    install(CODE [[
+      include(BundleUtilities)
+      fixup_bundle("${CMAKE_BINARY_DIR}/lcs-manager/lcs-manager.app" "" "")
+    ]] COMPONENT Runtime)
 else()
     add_executable(lcs-manager src/main.cpp)
 endif()
