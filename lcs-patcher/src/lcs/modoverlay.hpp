@@ -15,7 +15,7 @@ namespace LCS {
         static char const INFO[];
 
         enum Message {
-            M_NONE,
+            M_WAIT_START,
             M_FOUND,
             M_WAIT_INIT,
             M_SCAN,
@@ -27,31 +27,16 @@ namespace LCS {
             M_COUNT_OF,
         };
 
-        static constexpr const char* const STATUS_MSG[2][LCS::ModOverlay::M_COUNT_OF] = {
-            // User friendly status messages
-            {
-                "",
-                "Found League",
-                "Wait initialized",
-                "Scanning",
-                "Saving",
-                "Wait patchable",
-                "Patching",
-                "Waiting for exit",
-                "Waiting for league match to start",
-            },
-            // Machine friendly messages
-            {
-                "Status: M_NONE",
-                "Status: FOUND",
-                "Status: WAIT_INIT",
-                "Status: SCAN",
-                "Status: NEED_SAVE",
-                "Status: WAIT_PATCHABLE",
-                "Status: PATCH",
-                "Status: WAIT_EXIT",
-                "Status: DONE",
-            }
+        static constexpr const char* const STATUS_MSG[LCS::ModOverlay::M_COUNT_OF] = {
+            "Status: M_WAIT_START Waiting for league match to start",
+            "Status: FOUND Found League",
+            "Status: WAIT_INIT Wait initialized",
+            "Status: SCAN Scanning",
+            "Status: NEED_SAVE Saving",
+            "Status: WAIT_PATCHABLE Wait patchable",
+            "Status: PATCH Patching",
+            "Status: WAIT_EXIT Waiting for exit",
+            "Status: DONE League exited",
         };
 
         ModOverlay();

@@ -58,20 +58,21 @@ struct ModOverlay::Config {
     void scan(LCS::Process const &process) {
         auto const base = process.Base();
         auto const data = process.Dump();
+        auto const data_span = std::span<char const>(data);
 
-        auto const open_match = find_open(data, base);
+        auto const open_match = find_open(data_span, base);
         if (!open_match) {
             throw std::runtime_error("Failed to find fopen!");
         }
-        auto const wopen_match = find_wopen(data, base);
+        auto const wopen_match = find_wopen(data_span, base);
         if (!wopen_match) {
             throw std::runtime_error("Failed to find wfopen!");
         }
-        auto const ret_match = find_ret(data, base);
+        auto const ret_match = find_ret(data_span, base);
         if (!ret_match) {
             throw std::runtime_error("Failed to find ret!");
         }
-        auto const free_match = find_free(data, base);
+        auto const free_match = find_free(data_span, base);
         if (!free_match) {
             throw std::runtime_error("Failed to find free!");
         }
@@ -222,42 +223,40 @@ void ModOverlay::run(std::function<bool(Message)> update, std::filesystem::path 
     if ((prefix_str.size() + 1) * sizeof(char16_t) >= sizeof(Config::CodePayload::prefix_open_data)) {
         throw std::runtime_error("Prefix too big!");
     }
-    if (!update(M_DONE)) return;
     for (;;) {
         auto process = Process::Find("/LeagueofLegends");
         if (!process) {
-            if (!update(M_NONE)) return;
-            LCS::SleepMS(125);
+            if (!update(M_WAIT_START)) return;
+            LCS::SleepMS(250);
             continue;
         }
         if (!update(M_FOUND)) return;
         if (!config_->check(*process)) {
-            if (!update(M_WAIT_INIT)) return;
             for (std::uint32_t timeout = 3 * 60 * 1000; timeout; timeout -= 5) {
+                if (!update(M_WAIT_INIT)) return;
                 if (process->WaitInitialized(5)) {
                     break;
                 }
-                if (!update(M_NONE)) return;
             }
             if (!update(M_SCAN)) return;
             config_->scan(*process);
             if (!update(M_NEED_SAVE)) return;
         } else {
-            if (!update(M_WAIT_PATCHABLE)) return;
-            for (std::uint32_t timeout = 3 * 60 * 1000; timeout; timeout -= 5) {
-                if (config_->is_patchable()) {
+            for (std::uint32_t timeout = 3 * 60 * 1000; timeout; timeout -= 1) {
+                if (!update(M_WAIT_PATCHABLE)) return;
+                if (config_->is_patchable(*process)) {
                     break;
                 }
-                if (!update(M_NONE)) return;
+                SleepMS(1);
             }
         }
         if (!update(M_PATCH)) return;
         config_->patch(*process, prefix_str);
         for (std::uint32_t timeout = 3 * 60 * 60 * 1000; timeout; timeout -= 250) {
+            if (!update(M_WAIT_EXIT)) return;
             if (process->WaitExit(250)) {
                 break;
             }
-            if (!update(M_NONE)) return;
         }
         if (!update(M_DONE)) return;
     }

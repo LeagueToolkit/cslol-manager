@@ -439,18 +439,23 @@ void LCSToolsImpl::runProfile(QString name) {
                 setState(LCSState::StateRunning);
                 lcs_hint(u8"Try running LCS as Administrator!");
                 bool canexit = true;
+                auto old_m = LCS::ModOverlay::M_DONE;
                 patcher_.run([&](LCS::ModOverlay::Message m) -> bool {
-                    if (m) {
-                        setStatus(LCS::ModOverlay::STATUS_MSG[0][m]);
+                    if (m != old_m) {
+                        setStatus(LCS::ModOverlay::STATUS_MSG[m]);
                     }
-                    if (m == LCS::ModOverlay::M_WAIT_EXIT){
-                        canexit = false;
-                    }
-                    if (m == LCS::ModOverlay::M_DONE) {
-                        canexit = true;
-                    }
-                    if (m == LCS::ModOverlay::M_NEED_SAVE) {
+                    switch (m) {
+                    case LCS::ModOverlay::M_NEED_SAVE:
                         patcher_.save(patcherConfig_);
+                        break;
+                    case LCS::ModOverlay::M_WAIT_EXIT:
+                        canexit = false;
+                        break;
+                    case LCS::ModOverlay::M_DONE:
+                        canexit = true;
+                        break;
+                    default:
+                        break;
                     }
                     return !canexit || this->state_ == LCSState::StateRunning;
                 }, profilePath);
