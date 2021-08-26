@@ -36,13 +36,18 @@ make_main({
         prefix = fs::absolute(prefix);
         print_path("Prefix: ", prefix);
         fflush(stdout);
+        auto old_m = LCS::ModOverlay::M_DONE;
         overlay.run([&](LCS::ModOverlay::Message m) -> bool {
-            if (m) {
-                puts(LCS::ModOverlay::STATUS_MSG[message_type][m]);
+            if (m != old_m) {
+                puts(LCS::ModOverlay::STATUS_MSG[m]);
                 fflush(stdout);
             }
-            if (m == LCS::ModOverlay::M_NEED_SAVE) {
+            switch (m) {
+            case LCS::ModOverlay::M_NEED_SAVE:
                 overlay.save(configfile);
+                break;
+            default:
+                break;
             }
             return LCS::Process::ThisProcessHasParent();
         }, prefix);

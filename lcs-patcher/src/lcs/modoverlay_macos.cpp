@@ -13,6 +13,7 @@ struct ModOverlay::Config {
     std::uint64_t off_rsa_verify = {};
     std::uint64_t off_fopen_org = {};
     std::uint64_t off_fopen_ref = {};
+    std::string prefix = {};
 
     std::string to_string() const noexcept {
         char buffer[sizeof(SCHEMA) * 4] = {};
@@ -113,12 +114,11 @@ void ModOverlay::run(std::function<bool(Message)> update, std::filesystem::path 
     if (prefix.size() > sizeof (Config::Payload::prefix) - 1) {
         throw std::runtime_error("Prefix too big!");
     }
-    if (!update(M_DONE)) return;
     for (;;) {
+        if (!update(M_WAIT_START)) return;
         auto process = Process::Find("/LeagueofLegends");
         if (!process) {
-            if (!update(M_NONE)) return;
-            LCS::SleepMS(125);
+            SleepMS(250);
             continue;
         }
         if (!update(M_FOUND)) return;
@@ -126,10 +126,12 @@ void ModOverlay::run(std::function<bool(Message)> update, std::filesystem::path 
         config_->scan(*process);
         if (!update(M_PATCH)) return;
         config_->patch(*process, prefix);
-        if (!update(M_WAIT_EXIT)) return;
-        while (!process->WaitExit(0)) {
-            if (!update(M_NONE)) return;
-            LCS::SleepMS(250);
+        for (std::uint32_t timeout = 3 * 60 * 60 * 1000; timeout; timeout -= 250) {
+            if (!update(M_WAIT_EXIT)) return;
+            if (process->WaitExit(250)) {
+                break;
+            }
+            SleepMS(250);
         }
         if (!update(M_DONE)) return;
     }
