@@ -17,7 +17,6 @@ endif()
 find_package(Threads REQUIRED)
 
 if (WIN32)
-    add_subdirectory(lolcustomskin)
     add_executable(lcs-manager WIN32
         src/main.cpp
         res/rc.rc
