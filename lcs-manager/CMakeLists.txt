@@ -20,20 +20,21 @@ if (WIN32)
     add_subdirectory(lolcustomskin)
     add_executable(lcs-manager WIN32
         src/main.cpp
-        src/qml/rc.rc
-        src/lcs-manager.exe.manifest
+        res/rc.rc
+        res/lcs-manager.exe.manifest
     )
     target_link_libraries(lcs-manager PRIVATE user32)
 elseif(APPLE)
-    set_source_files_properties(src/qml/icon.icns
+    set_source_files_properties(res/icon.icns
         PROPERTIES
         MACOSX_PACKAGE_LOCATION "Resources")
     add_executable(lcs-manager MACOSX_BUNDLE
         src/main.cpp
-        src/qml/icon.icns
+        res/icon.icns
         )
     set_target_properties(lcs-manager
         PROPERTIES
+        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/res/MacOSXBundleInfo.plist.in"
         MACOSX_BUNDLE_ICON_FILE icon
         MACOSX_BUNDLE_BUNDLE_NAME lcs-manager
         MACOSX_BUNDLE_BUNDLE_VERSION "0.1"
@@ -55,7 +56,7 @@ target_sources(lcs-manager PUBLIC
     src/LCSToolsImpl.cpp
     src/LCSUtils.h
     src/LCSUtils.cpp
-    src/qml/qml.qrc
+    qml/qml.qrc
 )
 
 target_compile_definitions(lcs-manager PRIVATE $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>)
