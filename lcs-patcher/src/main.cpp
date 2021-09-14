@@ -16,11 +16,11 @@ namespace fs = std::filesystem;
 #include <processenv.h>
 #define make_main(body) int main() { auto argc = 0; auto argv = CommandLineToArgvW(GetCommandLineW(), &argc); body }
 #else
+#include <unistd.h>
 #define print_path(name, path) printf("%s%s\n", name, path.c_str())
 #define make_main(body) int main(int argc, char** argv) { body }
 #endif
 
-#include <unistd.h>
 make_main({
     fs::path prefix = argc > 1 ? fs::path(argv[1]) : fs::path("MOD/");
     fs::path configfile = argc > 2 ? fs::path(argv[2]) : fs::path(argv[0]).parent_path() / "lolcustomskin.txt";
@@ -32,8 +32,9 @@ make_main({
            "Config: %s\n",
            LCS::ModOverlay::INFO, overlay.to_string().c_str());
     fflush(stdout);
+    auto const stdout_fd = _fileno(stdout);
     try {
-        prefix = fs::absolute(prefix);
+        prefix = fs::absolute(prefix.lexically_normal());
         print_path("Prefix: ", prefix);
         fflush(stdout);
         auto old_m = LCS::ModOverlay::M_DONE;
@@ -49,7 +50,7 @@ make_main({
             default:
                 break;
             }
-            return LCS::Process::ThisProcessHasParent();
+            return !message_type || LCS::Process::ThisProcessHasParent();
         }, prefix);
     } catch (std::runtime_error const &error) {
         printf("Error: %s\n", error.what());

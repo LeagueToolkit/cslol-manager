@@ -202,7 +202,7 @@ ModOverlay::ModOverlay() : config_(std::make_unique<Config>()) {}
 ModOverlay::~ModOverlay() = default;
 
 std::string ModOverlay::to_string() const noexcept {
-    config_->to_string();
+    return config_->to_string();
 }
 
 void ModOverlay::from_string(std::string const & str) noexcept {
