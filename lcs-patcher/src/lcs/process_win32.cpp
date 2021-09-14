@@ -4,6 +4,7 @@
 /// Extra windows header
 #include <psapi.h>
 #include <tlhelp32.h>
+#include <process.h>
 /// End windows headers
 #include "process.hpp"
 #include <chrono>
@@ -63,6 +64,10 @@ Process::~Process() noexcept {
     }
 }
 
+bool Process::ThisProcessHasParent() noexcept {
+    return true;
+}
+
 std::optional<Process> Process::Find(char const *name) {
     PROCESSENTRY32 entry = {};
     entry.dwSize = sizeof(PROCESSENTRY32);
@@ -107,10 +112,11 @@ PtrStorage Process::Base() const {
 
 std::filesystem::path Process::Path() const {
     wchar_t pathbuf[32767];
-    if (auto const ret = QueryFullProcessImageNameW(handle_, 0, pathbuf, 32767)) {
+    DWORD size = 32767;
+    if (auto const ret = QueryFullProcessImageNameW(handle_, 0, pathbuf, &size)) {
         throw std::runtime_error("Failed to get image path!");
     } else {
-        path_ = std::string { pathbuf, pathbuf + ret };
+        path_ = std::wstring { pathbuf, pathbuf + ret };
     }
     return path_;
 }
@@ -145,7 +151,7 @@ std::vector<char> Process::Dump() const {
     return buffer;
 }
 
-bool Process::WaitExit(uint32_t delay, uint32_t timeout) const {
+bool Process::WaitExit(uint32_t timeout) const {
     switch (WaitForSingleObject(handle_, timeout)) {
     case WAIT_OBJECT_0:
         return true;
@@ -156,7 +162,7 @@ bool Process::WaitExit(uint32_t delay, uint32_t timeout) const {
     }
 }
 
-bool Process::WaitInitialized(uint32_t delay, uint32_t timeout) const {
+bool Process::WaitInitialized(uint32_t timeout) const {
     return WaitForInputIdle(handle_, timeout) == 0;
 }
 
@@ -180,7 +186,7 @@ void Process::WriteMemory(void* address, void const* src, size_t sizeBytes) cons
 
 void Process::MarkMemoryWritable(void* address, size_t size) const {
     DWORD old = 0;
-    if (!VirtualProtectEx(handle_, address, sizeBytes, PAGE_EXECUTE_READWRITE, &old)) {
+    if (!VirtualProtectEx(handle_, address, size, PAGE_EXECUTE_READWRITE, &old)) {
         throw std::runtime_error("Failed to change protection");
     }
 }

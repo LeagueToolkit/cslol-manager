@@ -107,7 +107,8 @@ namespace LCS {
         template<typename T>
         inline T Read(Ptr<T> address) const {
             T dest = {};
-            ReadMemory(static_cast<void*>(address), &dest);
+            ReadMemory(static_cast<void*>(address), &dest, sizeof(T));
+            return dest;
         }
 
         template<typename T>
