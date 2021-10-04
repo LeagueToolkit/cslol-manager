@@ -11,9 +11,6 @@ namespace LCS {
     extern void SleepMS(uint32_t time) noexcept;
 
     struct ModOverlay {
-        static char const SCHEMA[];
-        static char const INFO[];
-
         enum Message {
             M_WAIT_START,
             M_FOUND,
@@ -28,15 +25,15 @@ namespace LCS {
         };
 
         static constexpr const char* const STATUS_MSG[LCS::ModOverlay::M_COUNT_OF] = {
-            "Status: M_WAIT_START Waiting for league match to start",
-            "Status: FOUND Found League",
-            "Status: WAIT_INIT Wait initialized",
-            "Status: SCAN Scanning",
-            "Status: NEED_SAVE Saving",
-            "Status: WAIT_PATCHABLE Wait patchable",
-            "Status: PATCH Patching",
-            "Status: WAIT_EXIT Waiting for exit",
-            "Status: DONE League exited",
+            "Waiting for league match to start",
+            "Found League",
+            "Wait initialized",
+            "Scanning",
+            "Saving",
+            "Wait patchable",
+            "Patching",
+            "Waiting for exit",
+            "League exited",
         };
 
         ModOverlay();
@@ -47,7 +44,7 @@ namespace LCS {
         void from_string(std::string const &) noexcept;
         void run(std::function<bool(Message)> update, std::filesystem::path const& profilePath);
     private:
-        struct Config;
-        std::unique_ptr<Config> config_;
+        struct Impl;
+        std::unique_ptr<Impl> impl_;
     };
 }

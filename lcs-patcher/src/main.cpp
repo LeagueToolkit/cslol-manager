@@ -1,5 +1,4 @@
 #include "lcs/modoverlay.hpp"
-#include "lcs/process.hpp"
 #include <cstdio>
 #include <filesystem>
 #include <stdexcept>
@@ -23,24 +22,27 @@ namespace fs = std::filesystem;
 
 make_main({
     fs::path prefix = argc > 1 ? fs::path(argv[1]) : fs::path("MOD/");
-    fs::path configfile = argc > 2 ? fs::path(argv[2]) : fs::path(argv[0]).parent_path() / "lolcustomskin.txt";
-    LCS::ModOverlay overlay = {};
-    int message_type = argc > 2;
-    overlay.load(configfile);
-    printf("Source: https://github.com/LoL-Fantome/lolcustomskin-tools\n"
-           "Schema: %s\n"
-           "Config: %s\n",
-           LCS::ModOverlay::INFO, overlay.to_string().c_str());
+    prefix = fs::absolute(prefix.lexically_normal());
+    print_path("Path: prefix", prefix);
     fflush(stdout);
-    auto const stdout_fd = _fileno(stdout);
+
+    fs::path configfile = argc > 2 ? fs::path(argv[2]) : fs::path(argv[0]).parent_path() / "lolcustomskin.txt";
+    configfile = fs::absolute(configfile.lexically_normal());
+    print_path("Path: configfile", configfile);
+    fflush(stdout);
+
+    LCS::ModOverlay overlay = {};
+    bool const is_background = argc > 2;
+
+    overlay.load(configfile);
+    printf("Config: %s\n", overlay.to_string().c_str());
+    fflush(stdout);
     try {
-        prefix = fs::absolute(prefix.lexically_normal());
-        print_path("Prefix: ", prefix);
-        fflush(stdout);
         auto old_m = LCS::ModOverlay::M_DONE;
-        overlay.run([&](LCS::ModOverlay::Message m) -> bool {
+        overlay.run([&] (LCS::ModOverlay::Message m) -> bool {
             if (m != old_m) {
-                puts(LCS::ModOverlay::STATUS_MSG[m]);
+                old_m = m;
+                printf("Status: %s\n", LCS::ModOverlay::STATUS_MSG[m]);
                 fflush(stdout);
             }
             switch (m) {
@@ -50,15 +52,15 @@ make_main({
             default:
                 break;
             }
-            return !message_type || LCS::Process::ThisProcessHasParent();
+            return !is_background || true;
         }, prefix);
     } catch (std::runtime_error const &error) {
         printf("Error: %s\n", error.what());
         fflush(stdout);
-        if (!message_type) {
-            return EXIT_FAILURE;
+        if (!is_background) {
+            getc(stdin);
         }
-        getc(stdin);
+        return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;
 })

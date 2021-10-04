@@ -2,18 +2,14 @@
 
 using namespace LCS;
 
-
-char const ModOverlay::SCHEMA[] = "lcs-overlay-dummy v0";
-char const ModOverlay::INFO[] = "lcs-overlay-dummy v0";
-
 struct ModOverlay::Config {};
 
-ModOverlay::ModOverlay() : config_(std::make_unique<Config>()) {}
+ModOverlay::ModOverlay() : config_(std::make_unique<Impl>()) {}
 
 ModOverlay::~ModOverlay() = default;
 
 std::string ModOverlay::to_string() const noexcept {
-    return SCHEMA;
+    return "lcs-patcher-dummy-v0";
 }
 
 void ModOverlay::from_string(std::string const & str) noexcept {}
