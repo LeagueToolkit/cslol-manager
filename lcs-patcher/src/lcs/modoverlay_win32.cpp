@@ -1,7 +1,8 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include "modoverlay.hpp"
-#include "process.hpp"
-#include "ppp.hpp"
+#include "patcher_utility/lineconfig.hpp"
+#include "patcher_utility/process.hpp"
+#include "patcher_utility/ppp.hpp"
 #include <array>
 #include <algorithm>
 #include <cstdio>
@@ -21,39 +22,12 @@ constexpr auto const find_wopen = &ppp::any<
 constexpr auto const find_free = &ppp::any<
         "A1 u[?? ?? ?? ??] 85 C0 74 09 3D ?? ?? ?? ?? 74 02 FF E0 o[FF 74 24 04] E8 ?? ?? ??"_pattern>;
 
-char const ModOverlay::SCHEMA[] = "lcs-overlay v5 0x%08X 0x%08X 0x%08X 0x%08X 0x%08X 0x%08X 0x%08X";
-char const ModOverlay::INFO[] = "lcs-overlay v5 checksum off_open off_open_ref off_wopen off_ret off_free_ptr off_free_fn";
-
-struct ModOverlay::Config {
-    uint32_t checksum = {};
-    PtrStorage off_open = {};
-    PtrStorage off_open_ref = {};
-    PtrStorage off_wopen = {};
-    PtrStorage off_ret = {};
-    PtrStorage off_free_ptr = {};
-    PtrStorage off_free_fn = {};
-
-    std::string to_string() const noexcept {
-        char buffer[sizeof(SCHEMA) * 4] = {};
-        int size = sprintf(buffer, SCHEMA, checksum, off_open, off_open_ref, off_wopen, off_ret, off_free_ptr, off_free_fn);
-        return std::string(buffer, (size_t)size);
-    }
-
-    void from_string(std::string const &buffer) noexcept {
-        if (sscanf(buffer.c_str(), SCHEMA, &checksum, &off_open, &off_open_ref, &off_wopen, &off_ret, &off_free_ptr, &off_free_fn) != 7) {
-            checksum = 0;
-            off_open = 0;
-            off_open_ref = 0;
-            off_wopen = 0;
-            off_ret = 0;
-            off_free_ptr = 0;
-            off_free_fn = 0;
-        }
-    }
-
-    bool check(LCS::Process const &process) const {
-        return checksum && off_open && off_open_ref && off_wopen && off_ret && off_free_ptr && off_free_fn && process.Checksum() == checksum;
-    }
+struct ModOverlay::Impl {
+    using Config = LineConfig<
+        std::uint32_t, "lcs-patcher-win32-v6",
+        "checksum", "open", "open_ref", "wopen", "ret", "free_ptr", "free_fn"
+    >;
+    Config config = {};
 
     void scan(LCS::Process const &process) {
         auto const base = process.Base();
@@ -77,14 +51,14 @@ struct ModOverlay::Config {
             throw std::runtime_error("Failed to find free!");
         }
 
-        off_open_ref = process.Debase((PtrStorage)std::get<1>(*open_match));
-        off_open = process.Debase((PtrStorage)std::get<2>(*open_match));
-        off_wopen = process.Debase((PtrStorage)std::get<1>(*wopen_match));
-        off_ret = process.Debase((PtrStorage)std::get<1>(*ret_match));
-        off_free_ptr = process.Debase((PtrStorage)std::get<1>(*free_match));
-        off_free_fn = process.Debase((PtrStorage)std::get<2>(*free_match));
+        config.get<"open_ref">() = process.Debase((PtrStorage)std::get<1>(*open_match));
+        config.get<"open">() = process.Debase((PtrStorage)std::get<2>(*open_match));
+        config.get<"wopen">() = process.Debase((PtrStorage)std::get<1>(*wopen_match));
+        config.get<"ret">() = process.Debase((PtrStorage)std::get<1>(*ret_match));
+        config.get<"free_ptr">() = process.Debase((PtrStorage)std::get<1>(*free_match));
+        config.get<"free_fn">() = process.Debase((PtrStorage)std::get<2>(*free_match));
 
-        checksum = process.Checksum();
+        config.get<"checksum">() = process.Checksum();
     }
 
     struct ImportTrampoline {
@@ -139,18 +113,22 @@ struct ModOverlay::Config {
         char16_t prefix_open_data[0x400] = {};
     };
 
+    bool check(const Process & process) {
+        return config.check() && process.Checksum() == config.get<"checksum">();
+    }
+
     bool is_patchable(const Process &process) {
         try {
-            auto const ptr_open_ref = process.Rebase<PtrStorage>(off_open_ref);
-            if (process.Read(ptr_open_ref) != process.Rebase(off_open)) {
+            auto const open_ref = process.Rebase<PtrStorage>(config.get<"open_ref">());
+            if (process.Read(open_ref) != process.Rebase(config.get<"open">())) {
                 return false;
             }
-            auto const ptr_free = process.Rebase<PtrStorage>(off_free_ptr);
-            if (process.Read(ptr_free) == 0) {
+            auto const free_ptr = process.Rebase<PtrStorage>(config.get<"free_ptr">());
+            if (process.Read(free_ptr) == 0) {
                 return false;
             }
-            auto const ptr_wopen = process.Rebase<PtrStorage>(off_wopen);
-            if (process.Read(ptr_wopen) == 0) {
+            auto const wopen = process.Rebase<PtrStorage>(config.get<"wopen">());
+            if (process.Read(wopen) == 0) {
                 return false;
             }
         } catch(std::runtime_error const&) {
@@ -160,20 +138,20 @@ struct ModOverlay::Config {
     }
 
     void patch(LCS::Process const &process, std::u16string const& prefix_str) const {
-        if (!check(process)) {
+        if (!config.check()) {
             throw std::runtime_error("Config invalid to patch this executable!");
         }
         // Prepare pointers
         auto mod_code = process.Allocate<CodePayload>();
-        auto ptr_open = Ptr<Ptr<ImportTrampoline>>(process.Rebase(off_open));
+        auto ptr_open = Ptr<Ptr<ImportTrampoline>>(process.Rebase(config.get<"open">()));
         auto org_open = Ptr<ImportTrampoline>{};
         process.Read(ptr_open, org_open);
-        auto ptr_wopen = Ptr<Ptr<uint8_t>>(process.Rebase(off_wopen));
+        auto ptr_wopen = Ptr<Ptr<uint8_t>>(process.Rebase(config.get<"wopen">()));
         auto wopen = Ptr<uint8_t>{};
         process.Read(ptr_wopen, wopen);
-        auto find_ret_addr = process.Rebase(off_ret);
-        auto ptr_free = Ptr<Ptr<uint8_t>>(process.Rebase(off_free_ptr));
-        auto org_free_ptr = Ptr<uint8_t>(process.Rebase(off_free_fn));
+        auto find_ret_addr = process.Rebase(config.get<"ret">());
+        auto ptr_free = Ptr<Ptr<uint8_t>>(process.Rebase(config.get<"free_ptr">()));
+        auto org_free_ptr = Ptr<uint8_t>(process.Rebase(config.get<"free_fn">()));
 
         // Prepare payload
         auto payload = CodePayload {};
@@ -197,16 +175,16 @@ struct ModOverlay::Config {
     }
 };
 
-ModOverlay::ModOverlay() : config_(std::make_unique<Config>()) {}
+ModOverlay::ModOverlay() : impl_(std::make_unique<Impl>()) {}
 
 ModOverlay::~ModOverlay() = default;
 
 std::string ModOverlay::to_string() const noexcept {
-    return config_->to_string();
+    return impl_->config.to_string();
 }
 
 void ModOverlay::from_string(std::string const & str) noexcept {
-    config_->from_string(str);
+    impl_->config.from_string(str);
 }
 
 void ModOverlay::run(std::function<bool(Message)> update, std::filesystem::path const& profilePath) {
@@ -220,18 +198,18 @@ void ModOverlay::run(std::function<bool(Message)> update, std::filesystem::path 
     if (!prefix_str.ends_with(u"\\")) {
         prefix_str.push_back(u'\\');
     }
-    if ((prefix_str.size() + 1) * sizeof(char16_t) >= sizeof(Config::CodePayload::prefix_open_data)) {
+    if ((prefix_str.size() + 1) * sizeof(char16_t) >= sizeof(Impl::CodePayload::prefix_open_data)) {
         throw std::runtime_error("Prefix too big!");
     }
     for (;;) {
-        auto process = Process::Find("/LeagueofLegends");
+        auto process = Process::Find("League of Legends.exe");
         if (!process) {
             if (!update(M_WAIT_START)) return;
             LCS::SleepMS(250);
             continue;
         }
         if (!update(M_FOUND)) return;
-        if (!config_->check(*process)) {
+        if (!impl_->check(*process)) {
             for (std::uint32_t timeout = 3 * 60 * 1000; timeout; timeout -= 5) {
                 if (!update(M_WAIT_INIT)) return;
                 if (process->WaitInitialized(5)) {
@@ -239,19 +217,19 @@ void ModOverlay::run(std::function<bool(Message)> update, std::filesystem::path 
                 }
             }
             if (!update(M_SCAN)) return;
-            config_->scan(*process);
+            impl_->scan(*process);
             if (!update(M_NEED_SAVE)) return;
         } else {
             for (std::uint32_t timeout = 3 * 60 * 1000; timeout; timeout -= 1) {
                 if (!update(M_WAIT_PATCHABLE)) return;
-                if (config_->is_patchable(*process)) {
+                if (impl_->is_patchable(*process)) {
                     break;
                 }
                 SleepMS(1);
             }
         }
         if (!update(M_PATCH)) return;
-        config_->patch(*process, prefix_str);
+        impl_->patch(*process, prefix_str);
         for (std::uint32_t timeout = 3 * 60 * 60 * 1000; timeout; timeout -= 250) {
             if (!update(M_WAIT_EXIT)) return;
             if (process->WaitExit(250)) {

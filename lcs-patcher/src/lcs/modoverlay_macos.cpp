@@ -1,14 +1,14 @@
 #include "modoverlay.hpp"
-#include "macho.hpp"
-#include "process.hpp"
+#include "patcher_utility/lineconfig.hpp"
+#include "patcher_utility/macho.hpp"
+#include "patcher_utility/process.hpp"
 #include <cstring>
 
 using namespace LCS;
 
-char const ModOverlay::SCHEMA[] = "lcs-overlay-osx v5 0x%016llX 0x%016llX 0x%016llX";
-char const ModOverlay::INFO[] = "lcs-overlay-osx v5 off_rsa_verify off_fopen_org off_fopen_ref";
+struct ModOverlay::Impl {
+    static constexpr char const SCHEMA[] = "lcs-patcher-osx-v0 0x%016llX 0x%016llX 0x%016llX";
 
-struct ModOverlay::Config {
     MachO macho = {};
     std::uint64_t off_rsa_verify = {};
     std::uint64_t off_fopen_org = {};
@@ -94,16 +94,16 @@ struct ModOverlay::Config {
     }
 };
 
-ModOverlay::ModOverlay() : config_(std::make_unique<Config>()) {}
+ModOverlay::ModOverlay() : impl_(std::make_unique<Impl>()) {}
 
 ModOverlay::~ModOverlay() = default;
 
 std::string ModOverlay::to_string() const noexcept {
-    return config_->to_string();
+    return impl_->to_string();
 }
 
 void ModOverlay::from_string(std::string const & str) noexcept {
-    config_->from_string(str);
+    impl_->from_string(str);
 }
 
 void ModOverlay::run(std::function<bool(Message)> update, std::filesystem::path const& profilePath) {
@@ -115,17 +115,17 @@ void ModOverlay::run(std::function<bool(Message)> update, std::filesystem::path 
         throw std::runtime_error("Prefix too big!");
     }
     for (;;) {
-        if (!update(M_WAIT_START)) return;
         auto process = Process::Find("/LeagueofLegends");
         if (!process) {
+            if (!update(M_WAIT_START)) return;
             SleepMS(250);
             continue;
         }
         if (!update(M_FOUND)) return;
         if (!update(M_SCAN)) return;
-        config_->scan(*process);
+        impl_->scan(*process);
         if (!update(M_PATCH)) return;
-        config_->patch(*process, prefix);
+        impl_->patch(*process, prefix);
         for (std::uint32_t timeout = 3 * 60 * 60 * 1000; timeout; timeout -= 250) {
             if (!update(M_WAIT_EXIT)) return;
             if (process->WaitExit(250)) {
