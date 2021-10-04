@@ -16,7 +16,7 @@ constexpr auto const find_open = &ppp::any<
         "6A 03 68 00 00 00 00 C0 68 ?? ?? ?? ?? FF 15 o[u[?? ?? ?? ??]]"_pattern,
         "6A 00 56 55 50 FF 15 o[u[?? ?? ?? ??]] 8B F8"_pattern>;
 constexpr auto const find_ret = &ppp::any<
-        "57 8B CB E8 ?? ?? ?? ?? o[84] C0 75 12"_pattern>;
+        "57 8B CB E8 ?? ?? ?? ?? o[84] C0 75 r[??]"_pattern>;
 constexpr auto const find_wopen = &ppp::any<
         "6A 00 6A ?? 68 ?? ?? 12 00 ?? FF 15 u[?? ?? ?? ??]"_pattern>;
 constexpr auto const find_free = &ppp::any<
@@ -24,8 +24,8 @@ constexpr auto const find_free = &ppp::any<
 
 struct ModOverlay::Impl {
     using Config = LineConfig<
-        std::uint32_t, "lcs-patcher-win32-v6",
-        "checksum", "open", "open_ref", "wopen", "ret", "free_ptr", "free_fn"
+        std::uint32_t, "lcs-patcher-win32-v7",
+        "checksum", "open", "open_ref", "wopen", "ret", "ret_jmp", "free_ptr", "free_fn"
     >;
     Config config = {};
 
@@ -55,6 +55,7 @@ struct ModOverlay::Impl {
         config.get<"open">() = process.Debase((PtrStorage)std::get<2>(*open_match));
         config.get<"wopen">() = process.Debase((PtrStorage)std::get<1>(*wopen_match));
         config.get<"ret">() = process.Debase((PtrStorage)std::get<1>(*ret_match));
+        config.get<"ret_jmp">() = process.Debase((PtrStorage)std::get<2>(*ret_match));
         config.get<"free_ptr">() = process.Debase((PtrStorage)std::get<1>(*free_match));
         config.get<"free_fn">() = process.Debase((PtrStorage)std::get<2>(*free_match));
 
@@ -119,10 +120,6 @@ struct ModOverlay::Impl {
 
     bool is_patchable(const Process &process) {
         try {
-            auto const open_ref = process.Rebase<PtrStorage>(config.get<"open_ref">());
-            if (process.Read(open_ref) != process.Rebase(config.get<"open">())) {
-                return false;
-            }
             auto const free_ptr = process.Rebase<PtrStorage>(config.get<"free_ptr">());
             if (process.Read(free_ptr) == 0) {
                 return false;
@@ -150,6 +147,7 @@ struct ModOverlay::Impl {
         auto wopen = Ptr<uint8_t>{};
         process.Read(ptr_wopen, wopen);
         auto find_ret_addr = process.Rebase(config.get<"ret">());
+        auto jmp_ret_addr = process.Rebase(config.get<"ret_jmp">());
         auto ptr_free = Ptr<Ptr<uint8_t>>(process.Rebase(config.get<"free_ptr">()));
         auto org_free_ptr = Ptr<uint8_t>(process.Rebase(config.get<"free_fn">()));
 
@@ -160,7 +158,7 @@ struct ModOverlay::Impl {
         payload.wopen_ptr = wopen;
         payload.org_free_ptr = org_free_ptr;
         payload.find_ret_addr = find_ret_addr;
-        payload.hook_ret_addr = find_ret_addr + 0x16;
+        payload.hook_ret_addr = jmp_ret_addr;
 
         process.Read(org_open, payload.org_open_data);
         std::copy_n(prefix_str.data(), prefix_str.size(), payload.prefix_open_data);
@@ -210,9 +208,9 @@ void ModOverlay::run(std::function<bool(Message)> update, std::filesystem::path 
         }
         if (!update(M_FOUND)) return;
         if (!impl_->check(*process)) {
-            for (std::uint32_t timeout = 3 * 60 * 1000; timeout; timeout -= 5) {
+            for (std::uint32_t timeout = 3 * 60 * 1000; timeout; timeout -= 1) {
                 if (!update(M_WAIT_INIT)) return;
-                if (process->WaitInitialized(5)) {
+                if (process->WaitInitialized(1)) {
                     break;
                 }
             }
