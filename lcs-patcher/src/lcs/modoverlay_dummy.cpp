@@ -2,7 +2,7 @@
 
 using namespace LCS;
 
-struct ModOverlay::Config {};
+struct ModOverlay::Impl {};
 
 ModOverlay::ModOverlay() : config_(std::make_unique<Impl>()) {}
 
