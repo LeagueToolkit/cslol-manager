@@ -120,6 +120,10 @@ struct ModOverlay::Impl {
 
     bool is_patchable(const Process &process) {
         try {
+            auto const open_ref = process.Rebase<PtrStorage>(config.get<"open_ref">());
+            if (process.Read(open_ref) != process.Rebase(config.get<"open">())) {
+                return false;
+            }
             auto const free_ptr = process.Rebase<PtrStorage>(config.get<"free_ptr">());
             if (process.Read(free_ptr) == 0) {
                 return false;
