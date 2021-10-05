@@ -63,7 +63,7 @@ namespace LCS::LineConfigImpl {
         }
 
         inline void from_string(std::string_view src) & noexcept {
-            std::string_view buffer = {};
+            std::string_view buffer = src;
             bool error = false;
             auto skip_spaces = [&buffer] () mutable {
                 while (buffer.starts_with(" ")) {

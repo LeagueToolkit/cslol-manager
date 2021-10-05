@@ -16,9 +16,6 @@ copy2folder() {
 VERSION=$(git log --format="%as-%h" -1)
 echo "Version: $VERSION"
 
-if [ "$#" -gt 1 ] && [ -d "$2" ]; then
-    copy2folder "$2" "lolcustomskin-tools-32"
-fi;
 if [ "$#" -gt 0 ] && [ -d "$1" ]; then
     copy2folder "$1" "lolcustomskin-tools-64"
 else
