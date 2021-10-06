@@ -51,10 +51,27 @@ namespace {
     }
 }
 
+Process::Process() noexcept = default;
+
 Process::Process(uint32_t pid) : handle_(OpenProcess(PROCESS_NEEDED_ACCESS, false, pid)) {
     if (handle_ == INVALID_HANDLE_VALUE) {
         handle_ = nullptr;
     }
+}
+
+Process::Process(Process &&other) noexcept {
+    std::swap(handle_, other.handle_);
+    std::swap(base_, other.base_);
+    std::swap(checksum_, other.checksum_);
+    std::swap(path_, other.path_);
+}
+
+Process& Process::operator=(Process &&other) noexcept {
+    std::swap(handle_, other.handle_);
+    std::swap(base_, other.base_);
+    std::swap(checksum_, other.checksum_);
+    std::swap(path_, other.path_);
+    return *this;
 }
 
 Process::~Process() noexcept {
