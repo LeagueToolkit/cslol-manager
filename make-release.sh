@@ -13,11 +13,12 @@ copy2folder() {
     curl -R -L -o "$2/hashes.game.txt" -z "$2/hashes.game.txt" "https://raw.githubusercontent.com/CommunityDragon/CDTB/master/cdragontoolbox/hashes.game.txt"
 }
 
-VERSION=$(git log --format="%as-%h" -1)
+VERSION=$(git log --date=short --format="%ad-%h" -1)
 echo "Version: $VERSION"
 
 if [ "$#" -gt 0 ] && [ -d "$1" ]; then
-    copy2folder "$1" "lolcustomskin-tools-64"
+    copy2folder "$1" "lolcustomskin-tools-windows"
+    echo "Version: $VERSION" > "lolcustomskin-tools-windows/version.txt"
 else
     echo "Error: Provide at least one valid path."
     exit
