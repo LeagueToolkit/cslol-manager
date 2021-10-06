@@ -11,6 +11,8 @@
 
 using namespace LCS;
 
+Process::Process() noexcept = default;
+
 Process::Process (std::uint32_t pid)  {
     mach_port_t task = {};
     if (auto err = task_for_pid(mach_task_self(), pid, &task)) {
@@ -23,6 +25,21 @@ Process::Process (std::uint32_t pid)  {
     } else {
         path_ = std::string { pathbuf, pathbuf + ret };
     }
+}
+
+Process::Process(Process &&other) noexcept {
+    std::swap(handle_, other.handle_);
+    std::swap(base_, other.base_);
+    std::swap(checksum_, other.checksum_);
+    std::swap(path_, other.path_);
+}
+
+Process& Process::operator=(Process &&other) noexcept {
+    std::swap(handle_, other.handle_);
+    std::swap(base_, other.base_);
+    std::swap(checksum_, other.checksum_);
+    std::swap(path_, other.path_);
+    return *this;
 }
 
 Process::~Process() noexcept {

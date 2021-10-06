@@ -52,25 +52,19 @@ namespace LCS {
         mutable std::filesystem::path path_ = {};
 
     public:
-        inline Process() noexcept = default;
+        Process() noexcept;
         Process(uint32_t pid);
-        Process(const Process &) = delete;
-        inline Process(Process &&other) noexcept {
-            std::swap(handle_, other.handle_);
-            std::swap(base_, other.base_);
-            std::swap(checksum_, other.checksum_);
-            std::swap(path_, other.path_);
-        }
-        Process &operator=(const Process &) = delete;
-        inline Process &operator=(Process &&other) noexcept {
-            std::swap(handle_, other.handle_);
-            std::swap(base_, other.base_);
-            std::swap(checksum_, other.checksum_);
-            std::swap(path_, other.path_);
-            return *this;
-        }
+
+        Process(Process const&) = delete;
+        Process &operator=(Process const&) = delete;
+
+        Process(Process &&other) noexcept;
+        Process& operator=(Process&& other) noexcept;
+
         ~Process() noexcept;
+
         explicit inline operator bool() const noexcept { return handle_; }
+
         inline bool operator!() const noexcept { return !handle_; }
 
         static bool ThisProcessHasParent() noexcept;
