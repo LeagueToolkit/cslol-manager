@@ -4,7 +4,7 @@ using namespace LCS;
 
 struct ModOverlay::Impl {};
 
-ModOverlay::ModOverlay() : config_(std::make_unique<Impl>()) {}
+ModOverlay::ModOverlay() : impl_(std::make_unique<Impl>()) {}
 
 ModOverlay::~ModOverlay() = default;
 
