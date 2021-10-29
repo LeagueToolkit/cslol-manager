@@ -98,7 +98,9 @@ void WadMakeCopy::write(fs::path const& dstpath, Progress& progress) const {
         progress.consumeData(entry.sizeCompressed);
     }
     Wad::Header header{
-        { 'R', 'W', '\x03', '\x01' },
+        { 'R', 'W', },
+        0x03,
+        0x02,
         {},
         {},
         static_cast<uint32_t>(entries.size())
@@ -196,7 +198,9 @@ void WadMake::write(fs::path const& dstpath, Progress& progress) const {
     }
     outfile.seek(0, SEEK_SET);
     Wad::Header header{
-        { 'R', 'W', '\x03', '\x01' },
+        { 'R', 'W', },
+        0x03,
+        0x02,
         {},
         {},
         static_cast<uint32_t>(entries.size())
