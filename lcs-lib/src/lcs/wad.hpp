@@ -4,6 +4,7 @@
 #include "hashtable.hpp"
 #include "iofile.hpp"
 #include <array>
+#include <cstdint>
 #include <vector>
 
 namespace LCS {
@@ -28,7 +29,9 @@ namespace LCS {
         static_assert (sizeof(Entry) == 32);
 
         struct Header {
-            std::array<char, 4> version;
+            std::array<char, 2> magic;
+            std::uint8_t version_major;
+            std::uint8_t version_minor;
             std::array<uint8_t, 256> signature;
             std::array<uint8_t, 8> checksum;
             uint32_t filecount;
@@ -77,7 +80,7 @@ namespace LCS {
         }
 
         inline auto is_oldchecksum() const noexcept {
-            return header_.version[3] == 0;
+            return header_.version_minor == 0;
         }
 
         void extract(fs::path const& dstpath, HashTable const& hashtable, Progress& progress) const;
