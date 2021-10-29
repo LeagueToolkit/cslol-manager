@@ -18,7 +18,7 @@ Wad::Wad(fs::path const& path, fs::path const& name)
                 );
     InFile infile(path_);
     infile.read((char*)&header_, sizeof(header_));
-    if (header_.signature == std::array<uint8_t, 256>{}) {
+    if (header_.magic == std::array{'\0', '\0'} && header_.signature == std::array<uint8_t, 256>{}) {
         ::LCS::throw_error("All zero .wad");
     }
     lcs_assert(header_.magic == std::array{'R', 'W'});
