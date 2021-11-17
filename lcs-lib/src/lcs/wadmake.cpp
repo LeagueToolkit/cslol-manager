@@ -100,7 +100,7 @@ void WadMakeCopy::write(fs::path const& dstpath, Progress& progress) const {
     Wad::Header header{
         { 'R', 'W', },
         0x03,
-        0x02,
+        0x03,
         {},
         {},
         static_cast<uint32_t>(entries.size())
@@ -200,7 +200,7 @@ void WadMake::write(fs::path const& dstpath, Progress& progress) const {
     Wad::Header header{
         { 'R', 'W', },
         0x03,
-        0x02,
+        0x03,
         {},
         {},
         static_cast<uint32_t>(entries.size())
