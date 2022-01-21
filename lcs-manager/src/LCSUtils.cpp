@@ -1,29 +1,10 @@
 #include "LCSUtils.h"
+#include "lcs/common.hpp"
 #include <filesystem>
-#ifdef WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <shellapi.h>
-
-void LCSUtils::disableSS(QQuickWindow* window, bool disable) {
-    auto const hwnd = (HWND)window->winId();
-    SetWindowDisplayAffinity(hwnd, disable ? 1 : 0);
-}
-
-void LCSUtils::allowDD() {
-    ChangeWindowMessageFilter(WM_DROPFILES, MSGFLT_ADD);
-    ChangeWindowMessageFilter(WM_COPYDATA, MSGFLT_ADD);
-    ChangeWindowMessageFilter(0x0049, MSGFLT_ADD);
-//    auto const hwnd = (HWND)window->winId();
-//    ChangeWindowMessageFilterEx(hwnd, WM_DROPFILES, MSGFLT_ALLOW, nullptr);
-//    ChangeWindowMessageFilterEx(hwnd, WM_COPYDATA, MSGFLT_ALLOW, nullptr);
-//    ChangeWindowMessageFilterEx(hwnd, 0x0049, MSGFLT_ALLOW, nullptr);
-}
-#else
-void LCSUtils::disableSS(QQuickWindow* window, bool disable) {}
-void LCSUtils::allowDD() {}
-#endif
-
+#include <QUrl>
+#include <QUrlQuery>
+#include <QSysInfo>
+#include <QCryptographicHash>
 
 namespace fs = std::filesystem;
 
@@ -69,4 +50,19 @@ QString LCSUtils::checkGamePath(QString pathRaw) {
         return pathRaw;
     }
     return "";
+}
+
+QString LCSUtils::statsUrl() {
+    if (!LCS::STATS_HOST || !*LCS::STATS_HOST) {
+        return "";
+    }
+    constexpr auto md5_hex = [] (QByteArray data) { return QCryptographicHash::hash(data, QCryptographicHash::Md5).toHex(); };
+    QUrl result(QString("http://%1/add").arg(LCS::STATS_HOST));
+    result.setQuery({
+                        {"id", md5_hex(QSysInfo::machineUniqueId()) },
+                        {"ver", LCS::VERSION},
+                        {"kernel", QSysInfo::kernelType() + " " + QSysInfo::kernelVersion() },
+                        {"os", QSysInfo::prettyProductName() },
+                    });
+    return result.toString();
 }
