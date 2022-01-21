@@ -26,6 +26,7 @@ namespace LCS {
     extern char const* VERSION;
     extern char const* COMMIT;
     extern char const* DATE;
+    extern char const* STATS_HOST;
 
     extern std::u8string to_hex_string(std::uint32_t value);
     extern std::u8string to_hex_string(std::uint64_t value);
