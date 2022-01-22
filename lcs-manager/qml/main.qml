@@ -27,6 +27,7 @@ ApplicationWindow {
         property alias themeDarkMode: lcsDialogSettings.themeDarkMode
         property alias themePrimaryColor: lcsDialogSettings.themePrimaryColor
         property alias themeAccentColor: lcsDialogSettings.themeAccentColor
+        property alias statsUrl: lcsDialogUpdate.stats_url
 
         property alias lastZipDirectory: lcsDialogOpenZipFantome.folder
 
@@ -374,5 +375,6 @@ ApplicationWindow {
         firstTick = true;
         lcsTools.init()
         lcsDialogUpdate.checkForUpdates()
+        lcsDialogUpdate.checkForStats()
     }
 }
