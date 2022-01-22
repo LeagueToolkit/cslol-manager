@@ -11,6 +11,7 @@ add_subdirectory(dep/xxhash)
 add_subdirectory(dep/miniz)
 add_subdirectory(dep/zstd)
 
+set(LCS_STATS_HOST "" CACHE STRING "LCS Stats Host")
 
 add_custom_command(
     OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/version.cpp"
@@ -21,10 +22,11 @@ add_custom_command(
             "--output" "${CMAKE_CURRENT_BINARY_DIR}/version.cpp"
             "--date=short"
             "--format=\
-            #include <lcs/common.hpp>%n\
-            char const* LCS::VERSION=\"%ad-%h\";%n\
-            char const* LCS::COMMIT=\"%H\";%n\
-            char const* LCS::DATE=\"%aI\";%n"
+#include <lcs/common.hpp>%n\
+char const* LCS::VERSION=\"%ad-%h\";%n\
+char const* LCS::COMMIT=\"%H\";%n\
+char const* LCS::DATE=\"%aI\";%n\
+char const* LCS::STATS_HOST=\"${LCS_STATS_HOST}\";%n"
     DEPENDS "${CMAKE_SOURCE_DIR}/.git/index"
     VERBATIM
     )

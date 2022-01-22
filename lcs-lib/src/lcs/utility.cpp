@@ -17,6 +17,7 @@ namespace {
         { "\x42\x4D", u8"bmp" },
         { "\x89\x50\x4E\x47\x0D\x0A\x1A\x0A", u8"png" },
         { "DDS", u8"dds" },
+        { "TEX\0", u8"tex" },
         { "OggS", u8"ogg" },
         { "\x00\x01\x00\x00\x00", u8"ttf" },
         { "OTTO\x00", u8"otf" },
