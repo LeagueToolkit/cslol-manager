@@ -1,6 +1,8 @@
-name: BuildIt
+name: Release
 on:
-  workflow_dispatch:
+  push:
+    tags:
+      - "*-*-*-*"
 jobs:
   build:
     runs-on: windows-2022
@@ -25,9 +27,7 @@ jobs:
       run: |
         ./make-release.sh build
         7z a lolcustomskin-tools-windows.zip lolcustomskin-tools-windows/
-    - name: 'Upload Artifact'
-      uses: actions/upload-artifact@v2
+    - name: "Release"
+      uses: softprops/action-gh-release@v1
       with:
-        name: lolcustomskin-tools-windows
-        path: lolcustomskin-tools-windows.zip
-        retention-days: 15
+        files: lolcustomskin-tools-windows.zip
