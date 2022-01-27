@@ -14,7 +14,8 @@ namespace LCS {
                 Uncompressed,
                 ZlibCompressed,
                 FileRedirection,
-                ZStandardCompressed
+                ZStandardCompressed,
+                ZStandardMulti,
             };
 
             uint64_t xxhash;
@@ -23,7 +24,7 @@ namespace LCS {
             uint32_t sizeUncompressed;
             uint8_t type;
             uint8_t isDuplicate;
-            std::array<uint8_t, 2> pad;
+            uint16_t chunks_index;
             uint64_t checksum;
         };
         static_assert (sizeof(Entry) == 32);

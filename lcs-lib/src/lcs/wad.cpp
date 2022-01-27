@@ -28,7 +28,13 @@ Wad::Wad(fs::path const& path, fs::path const& name)
     lcs_assert(dataBegin_ <= dataEnd_);
     entries_.resize(header_.filecount);
     infile.read((char*)entries_.data(), header_.filecount * sizeof(Entry));
-    for(auto const& entry: entries_) {
+    for(auto& entry: entries_) {
+        entry.type &= 0xF;
+        if (entry.type == Entry::ZStandardMulti) {
+            entry.type = Entry::ZStandardCompressed;
+            entry.chunks_index = 0;
+        }
+        lcs_assert(entry.type <= Entry::ZStandardCompressed);
         lcs_assert(entry.dataOffset <= dataEnd_ && entry.dataOffset >= dataBegin_);
         lcs_assert(entry.dataOffset + entry.sizeCompressed <= dataEnd_);
     }
@@ -54,7 +60,6 @@ void Wad::extract(fs::path const& dstpath, HashTable const& hashtable, Progress&
     compressedBuffer.reserve((size_t)(maxCompressed));
     uncompressedBuffer.reserve((size_t)(maxUncompressed));
 
-    printf("Is old: %d\n", is_oldchecksum());
     for(auto const& entry: entries_) {
         infile.seek(entry.dataOffset, SEEK_SET);
         if (entry.type == Entry::Uncompressed) {
