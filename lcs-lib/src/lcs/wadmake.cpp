@@ -5,7 +5,6 @@
 #include <charconv>
 #include <numeric>
 #include <xxhash.h>
-#include <picosha2.hpp>
 #include <zstd.h>
 #include <miniz.h>
 #include <span>
