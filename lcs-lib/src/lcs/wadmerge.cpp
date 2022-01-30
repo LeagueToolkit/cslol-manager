@@ -5,8 +5,8 @@
 #include <numeric>
 #include <utility>
 #include <unordered_set>
-#include <picosha2.hpp>
 #include <cstring>
+#include <xxh3.h>
 
 using namespace LCS;
 
@@ -117,10 +117,8 @@ void WadMerge::write(Progress& progress) const {
         std::sort(newEntries.begin(), newEntries.end(), [] (auto const& lhs, auto const& rhs) {
             return lhs.xxhash < rhs.xxhash;
         });
-        auto sha256_hasher = picosha2::hash256_one_by_one{};
-        sha256_hasher.process((char const*)newEntries.data(), (char const*)(newEntries.data() + newEntries.size()));
-        sha256_hasher.finish();
-        sha256_hasher.get_hash_bytes(newHeader.signature.begin(), newHeader.signature.end());
+        auto newHeaderHash = XXH3_128bits(newEntries.data(), newEntries.size() * sizeof(LCS::Wad::Entry));
+        memcpy(newHeader.signature.data(), &newHeaderHash, sizeof(newHeaderHash));
         newHeader.filecount = static_cast<std::uint32_t>(entries_.size());
     }
     if (fs::exists(path_)) {
