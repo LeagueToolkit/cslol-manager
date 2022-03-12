@@ -18,7 +18,7 @@ jobs:
       run: |
         mkdir build
         cd build
-        cmake -G "NMake Makefiles" "-DCMAKE_PREFIX_PATH:PATH=C:/msvc2019-x64-qt5.15.2-static" "-DCMAKE_BUILD_TYPE:STRING=Release" ..
+        cmake -G "NMake Makefiles" "-DCMAKE_PREFIX_PATH:PATH=C:/msvc2019-x64-qt5.15.2-static" "-DCMAKE_BUILD_TYPE:STRING=Release" "-DCMAKE_MSVC_RUNTIME_LIBRARY:STRING=MultiThreaded" ..
         cmake --build .
     - name: "Package"
       shell: bash
