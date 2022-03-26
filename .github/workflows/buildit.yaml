@@ -7,6 +7,8 @@ jobs:
     steps:
     - name: "Clone source"
       uses: actions/checkout@v2
+      with:
+        submodules: 'true'
     - name: "Download Qt5"
       shell: bash
       run: |
@@ -24,10 +26,10 @@ jobs:
       shell: bash
       run: |
         ./make-release.sh build
-        7z a lolcustomskin-tools-windows.zip lolcustomskin-tools-windows/
+        7z a cslol-manager-windows.zip cslol-manager/
     - name: 'Upload Artifact'
       uses: actions/upload-artifact@v2
       with:
-        name: lolcustomskin-tools-windows
-        path: lolcustomskin-tools-windows.zip
+        name: cslol-manager-windows
+        path: cslol-manager-windows.zip
         retention-days: 15

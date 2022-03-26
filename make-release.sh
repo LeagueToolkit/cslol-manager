@@ -1,24 +1,24 @@
 #!/bin/bash
 
 copy2folder() {
-    mkdir -p "$2"
-    cp -r "Dist/." "$2"
-    cp "lcs-manager/LICENSE" "$2"
+    mkdir -p "$2/cslol-tools"
 
-    cp "$1/lcs-manager/lcs-manager.exe" "$2"
-    cp "$1/lcs-patcher/lolcustomskin.exe" "$2"
-    cp "$1/lcs-wadextract/lcs-wadextract.exe" "$2"
-    cp "$1/lcs-wadmake/lcs-wadmake.exe" "$2"
-    cp "$1/lcs-wxyextract/lcs-wxyextract.exe" "$2"
-    curl -R -L -o "$2/hashes.game.txt" -z "$2/hashes.game.txt" "https://raw.githubusercontent.com/CommunityDragon/CDTB/master/cdragontoolbox/hashes.game.txt"
+    cp "./dist/"*.bat "$2/cslol-tools"
+    cp "./dist/FIX-NON-ENGLISH.reg" "$2"
+    cp "./dist/SOURCE.URL" "$2"
+    cp "./LICENSE" "$2"
+
+    cp "$1/cslol-tools/"*.exe "$2/cslol-tools"
+    cp "$1/cslol-manager.exe" "$2"
+    curl -R -L -o "$2/cslol-tools/hashes.game.txt" -z "$2/cslol-tools/hashes.game.txt" "https://raw.githubusercontent.com/CommunityDragon/CDTB/master/cdragontoolbox/hashes.game.txt"
 }
 
 VERSION=$(git log --date=short --format="%ad-%h" -1)
 echo "Version: $VERSION"
 
 if [ "$#" -gt 0 ] && [ -d "$1" ]; then
-    copy2folder "$1" "lolcustomskin-tools-windows"
-    echo "Version: $VERSION" > "lolcustomskin-tools-windows/version.txt"
+    copy2folder "$1" "cslol-manager"
+    echo "Version: $VERSION" > "cslol-manager/version.txt"
 else
     echo "Error: Provide at least one valid path."
     exit

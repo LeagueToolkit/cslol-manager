@@ -1,0 +1,20 @@
+﻿---
+BasedOnStyle: Google
+AccessModifierOffset: '-4'
+AlignTrailingComments: true
+AllowAllArgumentsOnNextLine: false
+AllowAllParametersOfDeclarationOnNextLine: false
+BinPackArguments: 'false'
+BinPackParameters: 'false'
+ColumnLimit: '120'
+FixNamespaceComments: 'false'
+IndentWidth: '4'
+IndentPPDirectives: AfterHash
+IndentRequires: 'true'
+KeepEmptyLinesAtTheStartOfBlocks: 'true'
+NamespaceIndentation: All
+ReflowComments: 'false'
+TabWidth: '4'
+UseTab: Never
+
+...
