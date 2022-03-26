@@ -1,0 +1,27 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>CSLOLToolBar.qml</file>
+        <file>CSLOLDialogNewProfile.qml</file>
+        <file>CSLOLDialogLoLPath.qml</file>
+        <file>CSLOLModsView.qml</file>
+        <file>CSLOLStatusBar.qml</file>
+        <file>CSLOLDialogOpenZipFantome.qml</file>
+        <file>CSLOLDialogLog.qml</file>
+        <file>CSLOLDialogError.qml</file>
+        <file>CSLOLDialogErrorUser.qml</file>
+        <file>CSLOLDialogNewMod.qml</file>
+        <file>CSLOLDialogNewModImage.qml</file>
+        <file>CSLOLDialogNewModWadFiles.qml</file>
+        <file>CSLOLDialogNewModRAWFolder.qml</file>
+        <file>CSLOLDialogSaveZipFantome.qml</file>
+        <file>CSLOLDialogEditMod.qml</file>
+        <file>icon.png</file>
+        <file>CSLOLDialogUpdate.qml</file>
+        <file>qtquickcontrols2.conf</file>
+        <file>fontawesome-webfont.ttf</file>
+        <file>CSLOLDialogSettings.qml</file>
+        <file>CSLOLModInfoEdit.qml</file>
+        <file>CSLOLDialogGame.qml</file>
+    </qresource>
+</RCC>

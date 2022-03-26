@@ -9,6 +9,8 @@ jobs:
     steps:
     - name: "Clone source"
       uses: actions/checkout@v2
+      with:
+        submodules: 'true'
     - name: "Download Qt5"
       shell: bash
       run: |
@@ -26,8 +28,8 @@ jobs:
       shell: bash
       run: |
         ./make-release.sh build
-        7z a lolcustomskin-tools-windows.zip lolcustomskin-tools-windows/
+        7z a cslol-manager-windows.zip cslol-manager/
     - name: "Release"
       uses: softprops/action-gh-release@v1
       with:
-        files: lolcustomskin-tools-windows.zip
+        files: cslol-manager-windows.zip

@@ -1,14 +1,11 @@
 # Download???
- https://github.com/LoL-Fantome/lolcustomskin-tools/releases
+ https://github.com/customskinlol/cslol-manager/releases
 
-# About CLI tools
- Set of simple CLI tools to help mod league.
+# About CustomSkin for LoL manager
+ Mod manager for League of legends using [Fantome mod format](https://github.com/LoL-Fantome/Fantome/wiki/Mod-File-Format).
+ ![Main window](docs/manager-0.png)
+ ![Editing mods](docs/manager-1.png)
 
-# About lcs-manager.exe
- League of legends mod manager using [Fantome mod format](https://github.com/LoL-Fantome/Fantome/wiki/Mod-File-Format).
- ![Main window](screenshots/lcs-manager-0.png)
- ![Editing mods](screenshots/lcs-manager-1.png)
-
-Note that lcs-manager is "use at your own risk".
+Note that this software is "use at your own risk".
 
 Asian servers and garena are not officially supported and may not work.

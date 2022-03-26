@@ -1,3 +1,4 @@
-[submodule "lolcustomskin"]
-	path = lcs-manager/lolcustomskin
-	url = https://github.com/moonshadow565/lolcustomskin
+
+[submodule "cslol-tools"]
+	path = cslol-tools
+	url = https://github.com/customskinlol/cslol-tools
