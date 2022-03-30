@@ -91,7 +91,7 @@ private:
     void writeProfile(QString profileName, QJsonObject profile);
     QString readCurrentProfile();
     void writeCurrentProfile(QString profile);
-    QProcess* processCreate(std::function<void(int code, QProcess*)> handle);
+    QProcess* processCreate(std::function<void(int code, QProcess*)> handle, bool parse_status = false);
 };
 
 #endif  // QMODMANAGERWORKER_H
