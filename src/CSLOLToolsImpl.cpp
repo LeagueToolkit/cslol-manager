@@ -237,7 +237,7 @@ void CSLOLToolsImpl::init() {
     if (state_ == CSLOLState::StateUnitialized) {
         setState(CSLOLState::StateBusy);
 
-        patcherProcess_ = processCreate([=, this](int code, QProcess* process) { setState(CSLOLState::StateIdle); });
+        patcherProcess_ = processCreate([this](int code, QProcess* process) { setState(CSLOLState::StateIdle); }, true);
         connect(patcherProcess_, &QProcess::started, this, [this] { setState(CSLOLState::StateRunning); });
 
         // connect(process_, &QProcess::readyReadStandardError, this, &CSLOLToolsImpl::processReadStderror);
@@ -378,12 +378,13 @@ void CSLOLToolsImpl::saveProfile(QString name, QJsonObject mods, bool run, bool 
         auto process = processCreate([=, this](int code, QProcess* process) {
             process->deleteLater();
             if (run && code == 0) {
-                setStatus("Waiting for league match to start");
-                patcherProcess_->start(prog_ + "/cslol-tools/mod-patcher.exe",
+                setStatus("Starting patcher...");
+                patcherProcess_->start(prog_ + "/cslol-tools/mod-tools.exe",
                                        {
+                                           "runoverlay",
                                            prog_ + "/profiles/" + name,
                                            prog_ + "/profiles/" + name + ".config",
-                                           game_,
+                                           "--game:" + game_,
                                        });
             } else {
                 setState(CSLOLState::StateIdle);
@@ -517,12 +518,19 @@ void CSLOLToolsImpl::addModWad(QString fileName, QString wad, bool removeUnknown
     }
 }
 
-QProcess* CSLOLToolsImpl::processCreate(std::function<void(int code, QProcess*)> handle) {
+QProcess* CSLOLToolsImpl::processCreate(std::function<void(int code, QProcess*)> handle, bool parse_status) {
     auto process = new QProcess(this);
     connect(process, &QProcess::readyReadStandardOutput, this, [=, this]() {
         process->setReadChannel(QProcess::ProcessChannel::StandardOutput);
         while (process->canReadLine()) {
-            auto line = process->readLine();
+            auto line = process->readLine().trimmed();
+            if (parse_status) {
+                if (auto idx = line.indexOf("Status: "); idx >= 0) {
+                    line.remove(0, idx + 8);
+                    setStatus(line);
+                    continue;
+                }
+            }
             emit processLog(line);
         }
     });
@@ -542,8 +550,9 @@ QProcess* CSLOLToolsImpl::processCreate(std::function<void(int code, QProcess*)>
         if (error == QProcess::FailedToStart) {
             auto path = process->program().replace('\\', '/');
             auto stack_trace = "arguments:\n  " + process->arguments().join("\n  ").replace('\\', '/') + "\n";
-            auto message = "Run " + path.split('/').back();
-            emit reportError("Failed to start", message, stack_trace);
+            auto title = "Failed to start: " + path.split('/').back();
+            auto message = process->errorString();
+            emit reportError(title, message, stack_trace);
             handle(-1, process);
         }
     });
