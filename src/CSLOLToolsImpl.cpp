@@ -398,6 +398,7 @@ void CSLOLToolsImpl::saveProfile(QString name, QJsonObject mods, bool run, bool 
                            "--game:" + game_,
                            "--mods:" + mods.keys().join('/'),
                            blacklist_ ? "--noTFT" : "",
+                           skipConflict ? "ignoreConflict" : "",
                        });
     }
 }

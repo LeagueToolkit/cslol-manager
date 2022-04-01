@@ -1,4 +1,5 @@
 #include <QFile>
+#include <QFileInfo>
 #include <QFontDatabase>
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
@@ -16,7 +17,7 @@ int main(int argc, char *argv[]) {
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 #else
-    if (CSLOL::fs::exists("opengl.txt")) {
+    if (QFileInfo info("opengl.txt"); info.exists()) {
         QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
     }
 #endif
