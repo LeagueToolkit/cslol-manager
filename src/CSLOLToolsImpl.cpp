@@ -1,3 +1,5 @@
+#include "CSLOLToolsImpl.h"
+
 #include <QCoreApplication>
 #include <QDebug>
 #include <QDir>
@@ -9,8 +11,6 @@
 #include <QStandardPaths>
 #include <QThread>
 #include <fstream>
-
-#include "CSLOLToolsImpl.h"
 
 CSLOLToolsImpl::CSLOLToolsImpl(QObject* parent) : QObject(parent), prog_(QCoreApplication::applicationDirPath()) {}
 
@@ -237,9 +237,7 @@ void CSLOLToolsImpl::init() {
     if (state_ == CSLOLState::StateUnitialized) {
         setState(CSLOLState::StateBusy);
 
-        patcherProcess_ = processCreate([this](int code, QProcess* process) { setState(CSLOLState::StateIdle); }, true);
-        connect(patcherProcess_, &QProcess::started, this, [this] { setState(CSLOLState::StateRunning); });
-
+        patcherProcess_ = nullptr;
         setStatus("Acquire lock");
         lockfile_ = new QLockFile(prog_ + "/lockfile");
         if (!lockfile_->tryLock()) {
@@ -300,18 +298,15 @@ void CSLOLToolsImpl::exportMod(QString name, QString dest) {
         setState(CSLOLState::StateBusy);
 
         setStatus("Export mod");
-        auto process = processCreate([this](int code, QProcess* process) {
-            process->deleteLater();
-            setState(CSLOLState::StateIdle);
-        });
-        process->start(prog_ + "/cslol-tools/mod-tools.exe",
-                       {
-                           "export",
-                           prog_ + "/installed/" + name,
-                           dest,
-                           "--game:" + game_,
-                           blacklist_ ? "--noTFT" : "",
-                       });
+        runTool(
+            {
+                "export",
+                prog_ + "/installed/" + name,
+                dest,
+                "--game:" + game_,
+                blacklist_ ? "--noTFT" : "",
+            },
+            [this](int code, QProcess* process) { setState(CSLOLState::StateIdle); });
     }
 }
 
@@ -334,22 +329,21 @@ void CSLOLToolsImpl::installFantomeZip(QString path) {
             return;
         }
 
-        auto process = processCreate([=, this](int code, QProcess* process) {
-            process->deleteLater();
-            if (code == 0) {
-                auto info = modInfoRead(name);
-                emit installedMod(name, info);
-            }
-            setState(CSLOLState::StateIdle);
-        });
-        process->start(prog_ + "/cslol-tools/mod-tools.exe",
-                       {
-                           "import",
-                           path,
-                           dst,
-                           "--game:" + game_,
-                           blacklist_ ? "--noTFT" : "",
-                       });
+        runTool(
+            {
+                "import",
+                path,
+                dst,
+                "--game:" + game_,
+                blacklist_ ? "--noTFT" : "",
+            },
+            [=, this](int code, QProcess* process) {
+                if (code == 0) {
+                    auto info = modInfoRead(name);
+                    emit installedMod(name, info);
+                }
+                setState(CSLOLState::StateIdle);
+            });
     }
 }
 
@@ -383,31 +377,29 @@ void CSLOLToolsImpl::saveProfile(QString name, QJsonObject mods, bool run, bool 
         emit profileSaved(name, mods);
 
         setStatus("Write profile");
-        auto process = processCreate([=, this](int code, QProcess* process) {
-            process->deleteLater();
-            if (run && code == 0) {
-                setStatus("Starting patcher...");
-                patcherProcess_->start(prog_ + "/cslol-tools/mod-tools.exe",
-                                       {
-                                           "runoverlay",
-                                           prog_ + "/profiles/" + name,
-                                           prog_ + "/profiles/" + name + ".config",
-                                           "--game:" + game_,
-                                       });
-            } else {
-                setState(CSLOLState::StateIdle);
-            }
-        });
-        process->start(prog_ + "/cslol-tools/mod-tools.exe",
-                       {
-                           "mkoverlay",
-                           prog_ + "/installed",
-                           prog_ + "/profiles/" + name,
-                           "--game:" + game_,
-                           "--mods:" + mods.keys().join('/'),
-                           blacklist_ ? "--noTFT" : "",
-                           skipConflict ? "--ignoreConflict" : "",
-                       });
+        runTool(
+            {
+                "mkoverlay",
+                prog_ + "/installed",
+                prog_ + "/profiles/" + name,
+                "--game:" + game_,
+                "--mods:" + mods.keys().join('/'),
+                blacklist_ ? "--noTFT" : "",
+                skipConflict ? "--ignoreConflict" : "",
+            },
+            [=, this](int code, QProcess* process) {
+                if (run && code == 0) {
+                    setStatus("Starting patcher...");
+                    runPatcher({
+                        "runoverlay",
+                        prog_ + "/profiles/" + name,
+                        prog_ + "/profiles/" + name + ".config",
+                        "--game:" + game_,
+                    });
+                } else {
+                    setState(CSLOLState::StateIdle);
+                }
+            });
     }
 }
 
@@ -442,7 +434,9 @@ void CSLOLToolsImpl::deleteProfile(QString name) {
 void CSLOLToolsImpl::stopProfile() {
     if (state_ == CSLOLState::StateRunning) {
         // setState(CSLOLState::StateStoping);
-        patcherProcess_->write("\n");
+        if (patcherProcess_ != nullptr) {
+            patcherProcess_->write("\n");
+        }
     }
 }
 
@@ -501,45 +495,37 @@ void CSLOLToolsImpl::addModWad(QString fileName, QString wad, bool removeUnknown
 
         setStatus("Add mod wads");
         auto before = modWadsList(fileName);
-        auto process = processCreate([=, this](int code, QProcess* process) {
-            if (code == 0) {
-                auto after = modWadsList(fileName);
-                auto done = QStringList();
-                for (auto wad : after) {
-                    if (!before.contains(wad, Qt::CaseInsensitive)) {
-                        done.push_back(wad);
+        runTool(
+            {
+                "addwad",
+                wad,
+                prog_ + "/installed/" + fileName,
+                "--game:" + game_,
+                removeUnknownNames ? "--removeUNK" : "",
+                blacklist_ ? "--noTFT" : "",
+            },
+            [=, this](int code, QProcess* process) {
+                if (code == 0) {
+                    auto after = modWadsList(fileName);
+                    auto done = QStringList();
+                    for (auto wad : after) {
+                        if (!before.contains(wad, Qt::CaseInsensitive)) {
+                            done.push_back(wad);
+                        }
                     }
+                    emit modWadsAdded(fileName, QJsonArray::fromStringList(done));
                 }
-                emit modWadsAdded(fileName, QJsonArray::fromStringList(done));
-            }
-            process->deleteLater();
-            setState(CSLOLState::StateIdle);
-        });
-        process->start(prog_ + "/cslol-tools/mod-tools.exe",
-                       {
-                           "addwad",
-                           wad,
-                           prog_ + "/installed/" + fileName,
-                           "--game:" + game_,
-                           removeUnknownNames ? "--removeUNK" : "",
-                           blacklist_ ? "--noTFT" : "",
-                       });
+                setState(CSLOLState::StateIdle);
+            });
     }
 }
 
-QProcess* CSLOLToolsImpl::processCreate(std::function<void(int code, QProcess*)> handle, bool parse_status) {
+void CSLOLToolsImpl::runTool(QStringList args, std::function<void(int code, QProcess*)> handle) {
     auto process = new QProcess(this);
     connect(process, &QProcess::readyReadStandardOutput, this, [=, this]() {
         process->setReadChannel(QProcess::ProcessChannel::StandardOutput);
         while (process->canReadLine()) {
             auto line = process->readLine().trimmed();
-            if (parse_status) {
-                if (auto idx = line.indexOf("Status: "); idx >= 0) {
-                    line.remove(0, idx + 8);
-                    setStatus(line);
-                    continue;
-                }
-            }
             emit processLog(line);
         }
     });
@@ -548,22 +534,70 @@ QProcess* CSLOLToolsImpl::processCreate(std::function<void(int code, QProcess*)>
             this,
             [=, this](int exitCode, QProcess::ExitStatus exitStatus) {
                 if (exitCode != 0) {
-                    auto path = process->program().replace('\\', '/');
-                    auto stack_trace = process->readAllStandardError();
-                    auto message = "Run " + path.split('/').back();
+                    QString message = "Run mod-tools";
+                    QString stack_trace = process->readAllStandardError();
                     emit reportError("Exit with error", message, stack_trace);
                 }
                 handle(exitCode, process);
+                process->deleteLater();
             });
     connect(process, &QProcess::errorOccurred, this, [=, this](QProcess::ProcessError error) {
         if (error == QProcess::FailedToStart) {
-            auto path = process->program().replace('\\', '/');
-            auto stack_trace = "arguments:\n  " + process->arguments().join("\n  ").replace('\\', '/') + "\n";
-            auto title = "Failed to start: " + path.split('/').back();
-            auto message = process->errorString();
-            emit reportError(title, message, stack_trace);
+            QString message = process->errorString();
+            QString path = process->program();
+            if (QFileInfo pathInfo(path); !pathInfo.exists()) {
+                message = "Make sure you installed properly and that anti-virus isn't blocking any executables.";
+            }
+            QString stack_trace = "arguments:\n  " + args.join("\n  ").replace('\\', '/') + "\n";
+            emit reportError("Failed to run mod-tools", message, stack_trace);
             handle(-1, process);
+            process->deleteLater();
         }
     });
-    return process;
+    process->start(prog_ + "/cslol-tools/mod-tools.exe", args);
+}
+
+void CSLOLToolsImpl::runPatcher(QStringList args) {
+    if (patcherProcess_ == nullptr) {
+        patcherProcess_ = new QProcess(this);
+        connect(patcherProcess_, &QProcess::readyReadStandardOutput, this, [=, this]() {
+            patcherProcess_->setReadChannel(QProcess::ProcessChannel::StandardOutput);
+            while (patcherProcess_->canReadLine()) {
+                auto line = patcherProcess_->readLine().trimmed();
+                if (auto idx = line.indexOf("Status: "); idx >= 0) {
+                    line.remove(0, idx + 8);
+                    setStatus(line);
+                } else {
+                    emit processLog(line);
+                }
+            }
+        });
+        connect(patcherProcess_, &QProcess::started, this, [this] { setState(CSLOLState::StateRunning); });
+        connect(patcherProcess_,
+                static_cast<void (QProcess::*)(int exitCode, QProcess::ExitStatus exitStatus)>(&QProcess::finished),
+                this,
+                [=, this](int exitCode, QProcess::ExitStatus exitStatus) {
+                    if (exitCode != 0) {
+                        auto message = "Run mod-tools";
+                        QString path = patcherProcess_->program();
+                        if (QFileInfo pathInfo(path); !pathInfo.exists()) {
+                            message =
+                                "Make sure you installed properly and that anti-virus isn't blocking any executables.";
+                        }
+                        auto stack_trace = patcherProcess_->readAllStandardError();
+                        emit reportError("Exit with error", message, stack_trace);
+                    }
+                    setState(CSLOLState::StateIdle);
+                });
+        connect(patcherProcess_, &QProcess::errorOccurred, this, [=, this](QProcess::ProcessError error) {
+            if (error == QProcess::FailedToStart) {
+                auto message = patcherProcess_->errorString();
+                auto stack_trace =
+                    "arguments:\n  " + patcherProcess_->arguments().join("\n  ").replace('\\', '/') + "\n";
+                emit reportError("Failed to run mod-tools", message, stack_trace);
+                setState(CSLOLState::StateIdle);
+            }
+        });
+    }
+    patcherProcess_->start(prog_ + "/cslol-tools/mod-tools.exe", args);
 }
