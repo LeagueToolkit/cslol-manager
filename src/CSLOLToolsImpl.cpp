@@ -240,14 +240,22 @@ void CSLOLToolsImpl::init() {
         patcherProcess_ = processCreate([this](int code, QProcess* process) { setState(CSLOLState::StateIdle); }, true);
         connect(patcherProcess_, &QProcess::started, this, [this] { setState(CSLOLState::StateRunning); });
 
-        // connect(process_, &QProcess::readyReadStandardError, this, &CSLOLToolsImpl::processReadStderror);
-
         setStatus("Acquire lock");
         lockfile_ = new QLockFile(prog_ + "/lockfile");
         if (!lockfile_->tryLock()) {
             auto lockerror = QString::number((int)lockfile_->error());
             emit reportError("Acquire lock", "Can not run multiple instances", lockerror);
             setState(CSLOLState::StateCriticalError);
+            return;
+        }
+
+        setStatus("Check mod-tools");
+        if (QFileInfo modtools(prog_ + "/cslol-tools/mod-tools.exe"); !modtools.exists()) {
+            emit reportError("Check mod-tools",
+                             "cslol-tools/mod-tools.exe is missing",
+                             "Make sure you installed properly and that anti-virus isn't blocking any executables.");
+            setState(CSLOLState::StateCriticalError);
+            return;
         }
 
         setStatus("Load mods");
