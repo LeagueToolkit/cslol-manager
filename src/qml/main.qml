@@ -171,7 +171,9 @@ ApplicationWindow {
             cslolTools.startEditMod(fileName)
         }
         onImportFile: function(file) {
-            cslolTools.installFantomeZip(file)
+            if (checkGamePath()) {
+                cslolTools.installFantomeZip(file)
+            }
         }
         onInstallFantomeZip: function() {
             if (checkGamePath()) {
@@ -226,7 +228,9 @@ ApplicationWindow {
             cslolTools.removeModWads(fileName, wads)
         }
         onAddWad: function(wad, removeUnknownNames) {
-            cslolTools.addModWad(fileName, wad, removeUnknownNames)
+            if (checkGamePath()) {
+                cslolTools.addModWad(fileName, wad, removeUnknownNames)
+            }
         }
     }
 
