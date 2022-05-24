@@ -27,7 +27,6 @@ ApplicationWindow {
         property alias themeDarkMode: cslolDialogSettings.themeDarkMode
         property alias themePrimaryColor: cslolDialogSettings.themePrimaryColor
         property alias themeAccentColor: cslolDialogSettings.themeAccentColor
-        property alias statsUrl: cslolDialogUpdate.stats_url
 
         property alias removeUnknownNames: cslolDialogEditMod.removeUnknownNames
         property alias lastZipDirectory: cslolDialogOpenZipFantome.folder
@@ -370,6 +369,5 @@ ApplicationWindow {
         firstTick = true;
         cslolTools.init()
         cslolDialogUpdate.checkForUpdates()
-        cslolDialogUpdate.checkForStats()
     }
 }

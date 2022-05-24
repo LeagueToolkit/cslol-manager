@@ -50,20 +50,3 @@ QString CSLOLUtils::checkGamePath(QString pathRaw) {
     }
     return "";
 }
-
-QString CSLOLUtils::statsUrl() {
-    if (!CSLOL::STATS_HOST || !*CSLOL::STATS_HOST) {
-        return "";
-    }
-    constexpr auto md5_hex = [](QByteArray data) {
-        return QCryptographicHash::hash(data, QCryptographicHash::Md5).toHex();
-    };
-    QUrl result(QString("http://%1/add").arg(CSLOL::STATS_HOST));
-    result.setQuery({
-        {"id", md5_hex(QSysInfo::machineUniqueId())},
-        {"ver", CSLOL::VERSION},
-        {"kernel", QSysInfo::kernelType() + " " + QSysInfo::kernelVersion()},
-        {"os", QSysInfo::prettyProductName()},
-    });
-    return result.toString();
-}

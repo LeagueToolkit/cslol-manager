@@ -16,7 +16,6 @@ Dialog {
     }
 
     property string update_url: "https://github.com/customskinlol/cslol-manager/releases/latest"
-    property string stats_url: ""
 
     onAccepted: Qt.openUrlExternally(update_url)
 
@@ -65,23 +64,5 @@ Dialog {
                 })
             })
         })
-    }
-
-    function checkForStats() {
-        let statsUrl = CSLOLUtils.statsUrl()
-        if (statsUrl !== stats_url && statsUrl !== "") {
-            window.logInfo("Stats update", "REQ")
-            let request = new XMLHttpRequest();
-            request.onreadystatechange = function() {
-                if (request.readyState === XMLHttpRequest.DONE) {
-                    window.logInfo("Stats update", "RES:" + request.status)
-                    if (request.status == 200) {
-                        stats_url = statsUrl;
-                    }
-                }
-            }
-            request.open("GET", statsUrl);
-            request.send();
-        }
     }
 }
