@@ -9,23 +9,25 @@ jobs:
       uses: actions/checkout@v2
       with:
         submodules: 'true'
-    - name: "Download Qt5"
-      shell: bash
-      run: |
-        curl --output C:/qt5.7z -L "https://github.com/LoL-Fantome/lolcustomskin-tools/releases/download/release23/msvc2019-x64-qt5.15.2-static.7z"
-        7z x -oC:/ C:/qt5.7z
     - name: "Setup msvc"
       uses: ilammy/msvc-dev-cmd@v1
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2
+      with:
+        version: '5.15.2'
+        host: 'windows'
+        target: 'desktop'
+        arch: 'win64_msvc2019_64'
     - name: "Build"
       run: |
         mkdir build
         cd build
-        cmake -G "NMake Makefiles" "-DCMAKE_PREFIX_PATH:PATH=C:/msvc2019-x64-qt5.15.2-static" "-DCMAKE_BUILD_TYPE:STRING=Release" "-DCMAKE_MSVC_RUNTIME_LIBRARY:STRING=MultiThreaded" ..
+        cmake -G "NMake Makefiles" "-DCMAKE_BUILD_TYPE:STRING=Release" ..
         cmake --build .
     - name: "Package"
       shell: bash
       run: |
-        ./make-release.sh build
+        PATH="$PATH:$Qt5_DIR/bin" ./make-release.sh build
         7z a cslol-manager-windows.zip cslol-manager/
     - name: 'Upload Artifact'
       uses: actions/upload-artifact@v2
