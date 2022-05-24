@@ -7,7 +7,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
-set(CSLOL_STATS_HOST "" CACHE STRING "CSLOL Stats Host")
 
 add_subdirectory(cslol-tools)
 
@@ -32,8 +31,7 @@ add_custom_command(
 #include <CSLOLVersion.h>%n\
 char const* CSLOL::VERSION=\"%ad-%h\";%n\
 char const* CSLOL::COMMIT=\"%H\";%n\
-char const* CSLOL::DATE=\"%aI\";%n\
-char const* CSLOL::STATS_HOST=\"${CSLOL_STATS_HOST}\";%n"
+char const* CSLOL::DATE=\"%aI\";%n"
     DEPENDS "${CMAKE_SOURCE_DIR}/.git/index"
     VERBATIM
     )

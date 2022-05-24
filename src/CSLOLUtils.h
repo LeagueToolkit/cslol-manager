@@ -13,7 +13,6 @@ public:
     Q_INVOKABLE QString fromFile(QString file);
     Q_INVOKABLE QString toFile(QString file);
     Q_INVOKABLE QString checkGamePath(QString path);
-    Q_INVOKABLE QString statsUrl();
 
 private:
 };
