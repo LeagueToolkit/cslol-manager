@@ -30,8 +30,8 @@ jobs:
       shell: bash
       run: |
         PATH="$PATH:$Qt5_DIR/bin" ./make-release.sh build
-        7z a cslol-manager-windows.zip cslol-manager/
+        7z a cslol-manager-windows.exe -sfx7z.sfx cslol-manager/
     - name: "Release"
       uses: softprops/action-gh-release@v1
       with:
-        files: cslol-manager-windows.zip
+        files: cslol-manager-windows.exe
