@@ -15,14 +15,14 @@ Dialog {
         color: "#aa333333"
     }
 
-    property string update_url: "https://github.com/LoL-Fantome/cslol-manager"
+    property string update_url: "https://github.com/LoL-Fantome/cslol-manager/releases/latest"
 
     onAccepted: Qt.openUrlExternally(update_url)
 
     RowLayout {
         width: parent.width
         Label {
-            text: qsTr("You will be redirected to download page after pressing OK button.\n") + update_url + "/releases/latest"
+            text: qsTr("You will be redirected to download page after pressing OK button.\n") + update_url
             Layout.fillWidth: true
             wrapMode: Text.Wrap
         }
@@ -45,9 +45,10 @@ Dialog {
         if (disableUpdates) {
             return;
         }
-        makeRequest(update_url + "/releases/latest", function(latest) {
+        let url = "https://api.github.com/repos/LoL-Fantome/cslol-manager";
+        makeRequest(url + "/releases/latest", function(latest) {
             let tag_name = latest["tag_name"];
-            makeRequest(update_url + "/git/ref/tags/" + tag_name, function(ref) {
+            makeRequest(url + "/git/ref/tags/" + tag_name, function(ref) {
                 let commit_sha = ref["object"]["sha"];
                 let commit_url = ref["object"]["url"];
                 if (commit_sha === CSLOL_COMMIT) {
