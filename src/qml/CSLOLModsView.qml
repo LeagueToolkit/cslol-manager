@@ -7,7 +7,6 @@ import QtQuick.Controls.Material 2.15
 
 ColumnLayout {
     id: cslolModsView
-    layoutDirection: Qt.RightToLeft
     spacing: 5
 
     property int columnCount: 1
@@ -15,6 +14,8 @@ ColumnLayout {
     property bool isBussy: false
 
     property real rowHeight: 0
+
+    property string search: ""
 
     signal modRemoved(string fileName)
 
@@ -29,71 +30,158 @@ ColumnLayout {
     signal createNewMod()
 
     function addMod(fileName, info, enabled) {
-        cslolModsViewModel.append({
-                                    "FileName": fileName,
-                                    "Name": info["Name"],
-                                    "Version": info["Version"],
-                                    "Description": info["Description"],
-                                    "Author": info["Author"],
-                                    "Enabled": enabled === true
-                                })
-    }
-
-    function loadProfile(mods) {
-        let modsCount = cslolModsViewModel.count
-        for(let i = 0; i < modsCount; i++) {
-            let obj = cslolModsViewModel.get(i)
-            cslolModsViewModel.setProperty(i, "Enabled", mods[obj["FileName"]] === true)
+        let infoData = {
+            "FileName": fileName,
+            "Name": info["Name"],
+            "Version": info["Version"],
+            "Description": info["Description"],
+            "Author": info["Author"],
+            "Enabled": enabled === true
+        }
+        if (searchMatches(infoData)) {
+            cslolModsViewModel.append(infoData)
+            resortMod_model(cslolModsViewModel.count - 1, cslolModsViewModel)
+        } else {
+            cslolModsViewModel2.append(infoData)
         }
     }
 
+    function loadProfile(mods) {
+        loadProfile_model(mods, cslolModsViewModel)
+        loadProfile_model(mods, cslolModsViewModel2)
+    }
+
     function updateModInfo(fileName, info) {
-        let modsCount = cslolModsViewModel.count
-        for(let i = 0; i < modsCount; i++) {
-            let obj = cslolModsViewModel.get(i)
-            if (obj["FileName"] === fileName) {
-                if (obj["Name"] !== info["Name"]) {
-                    cslolModsViewModel.setProperty(i, "Name", info["Name"])
-                }
-                if (obj["Version"] !== info["Version"]) {
-                    cslolModsViewModel.setProperty(i, "Version", info["Version"])
-                }
-                if (obj["Description"] !== info["Description"]) {
-                    cslolModsViewModel.setProperty(i, "Description", info["Description"])
-                }
-                if (obj["Author"] !== info["Author"]) {
-                    cslolModsViewModel.setProperty(i, "Author", info["Author"])
-                }
-                break
+        let i0 = updateModInfo_model(fileName, info, cslolModsViewModel);
+        if (i0 !== -1) {
+            if (!searchMatches(info)) {
+                cslolModsViewModel2.append(cslolModsViewModel.get(i0))
+                cslolModsViewModel.remove(i0)
+            } else {
+                resortMod_model(i0, cslolModsViewModel)
+            }
+        }
+
+        let i1 = updateModInfo_model(fileName, info, cslolModsViewModel2);
+        if (i1 !== -1) {
+            if (searchMatches(info)) {
+                cslolModsViewModel.append(cslolModsViewModel2.get(i1))
+                cslolModsViewModel2.remove(i1)
+                resortMod_model(cslolModsViewModel.count - 1, cslolModsViewModel)
             }
         }
     }
 
     function saveProfile() {
         let mods = {}
-        let modsCount = cslolModsViewModel.count
-        for(let i = 0; i < modsCount; i++) {
-            let obj = cslolModsViewModel.get(i)
+        saveProfile_model(mods, cslolModsViewModel)
+        saveProfile_model(mods, cslolModsViewModel2)
+        return mods
+    }
+
+    function searchMatches(info) {
+        return search == "" || info["Name"].toLowerCase().search(search) !== -1 || info["Description"].toLowerCase().search(search) !== -1
+    }
+
+    function searchUpdate() {
+        let i = 0;
+        while (i < cslolModsViewModel2.count) {
+            let obj = cslolModsViewModel2.get(i)
+            if (searchMatches(obj)) {
+                cslolModsViewModel.append(obj);
+                cslolModsViewModel2.remove(i, 1)
+                resortMod_model(cslolModsViewModel.count - 1, cslolModsViewModel)
+            } else {
+                i++;
+            }
+        }
+        let j = 0;
+        while (j < cslolModsViewModel.count) {
+            let obj2 = cslolModsViewModel.get(j)
+            if (!searchMatches(obj2)) {
+                cslolModsViewModel2.append(obj2)
+                cslolModsViewModel.remove(j, 1)
+            } else {
+                j++;
+            }
+        }
+    }
+
+    function resortMod_model(index, model) {
+        let info = model.get(index)
+        for (let i = 0; i < index; i++) {
+            if (model.get(i)["Name"].toLowerCase() >= info["Name"].toLowerCase()) {
+                model.move(index, i, 1);
+                return i;
+            }
+        }
+        for (let j = model.count - 1; j > index; j--) {
+            if (model.get(j)["Name"].toLowerCase() <= info["Name"].toLowerCase()) {
+                model.move(index, j, 1);
+                return j;
+            }
+        }
+        return index;
+    }
+
+    function saveProfile_model(mods, model) {
+        let modsCount = model.count
+        for (let i = 0; i < modsCount; i++) {
+            let obj = model.get(i)
             if(obj["Enabled"] === true) {
                 mods[obj["FileName"]] = true
             }
         }
-        return mods
     }
 
-    function clearEnabled() {
-        let modsCount = cslolModsViewModel.count
+    function loadProfile_model(mods, model) {
+        let modsCount = model.count
         for(let i = 0; i < modsCount; i++) {
-            cslolModsViewModel.setProperty(i, "Enabled", false)
+            let obj = model.get(i)
+            model.setProperty(i, "Enabled", mods[obj["FileName"]] === true)
         }
     }
 
+    function updateModInfo_model(fileName, info, model) {
+        let modsCount = model.count
+        for(let i = 0; i < modsCount; i++) {
+            let obj = model.get(i)
+            if (obj["FileName"] === fileName) {
+                if (obj["Name"] !== info["Name"]) {
+                    model.setProperty(i, "Name", info["Name"])
+                }
+                if (obj["Version"] !== info["Version"]) {
+                    model.setProperty(i, "Version", info["Version"])
+                }
+                if (obj["Description"] !== info["Description"]) {
+                    model.setProperty(i, "Description", info["Description"])
+                }
+                if (obj["Author"] !== info["Author"]) {
+                    model.setProperty(i, "Author", info["Author"])
+                }
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    ListModel {
+        id: cslolModsViewModel
+    }
+
+    ListModel {
+        id: cslolModsViewModel2
+    }
+
     ScrollView {
-        padding: 5
-        spacing: 5
+        id: cslolModsScrollView
         Layout.fillHeight: true
         Layout.fillWidth: true
         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+        ScrollBar.vertical.policy: ScrollBar.AlwaysOn
+        padding: ScrollBar.vertical.width
+        spacing: 5
+
         GridView {
             id: cslolModsViewView
             DropArea {
@@ -109,15 +197,13 @@ ColumnLayout {
             cellWidth: cslolModsViewView.width / cslolModsView.columnCount
             cellHeight: 75
 
-            model: ListModel {
-                id: cslolModsViewModel
-            }
+            model: cslolModsViewModel
 
             delegate: Pane {
                 enabled: !isBussy
-                width: cslolModsViewView.width / cslolModsView.columnCount - 5
+                width: cslolModsViewView.width / cslolModsView.columnCount - cslolModsScrollView.spacing
                 Component.onCompleted: {
-                    let newCellHeight = height + 5
+                    let newCellHeight = height + cslolModsScrollView.spacing
                     if (cslolModsViewView.cellHeight < newCellHeight) {
                         cslolModsViewView.cellHeight = newCellHeight;
                     }
@@ -216,9 +302,23 @@ ColumnLayout {
             }
         }
     }
-    Row {
+
+    RowLayout {
         enabled: !isBussy
-        spacing: 5
+        spacing: cslolModsScrollView.spacing
+        Layout.fillWidth:  true
+        Layout.margins: cslolModsScrollView.padding
+
+        TextField {
+            id: cslolModsViewSearchBox
+            Layout.fillWidth:  true
+            placeholderText: "Search..."
+            onTextEdited: {
+                search = text.toLowerCase()
+                searchUpdate()
+            }
+        }
+
         RoundButton {
             text: "\uf067"
             font.family: "FontAwesome"
