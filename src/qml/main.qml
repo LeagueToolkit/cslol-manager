@@ -86,8 +86,11 @@ ApplicationWindow {
     }
     function checkGamePath() {
         if (cslolTools.leaguePath === "") {
-            cslolDialogGame.open();
-            return false;
+            cslolTools.leaguePath = CSLOLUtils.detectGamePath();
+            if (cslolTools.leaguePath === "") {
+                cslolDialogGame.open();
+                return false;
+            }
         }
         return true;
     }
@@ -307,9 +310,7 @@ ApplicationWindow {
             for(let fileName in mods) {
                 cslolModsView.addMod(fileName, mods[fileName], fileName in profileMods)
             }
-            if(cslolTools.leaguePath == "") {
-                cslolDialogGame.open()
-            }
+            checkGamePath()
         }
         onModDeleted: {}
         onInstalledMod: function(fileName, infoData) {
