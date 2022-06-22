@@ -26,7 +26,6 @@ public:
     ~CSLOLToolsImpl() override;
 signals:
     void stateChanged(CSLOLToolsImpl::CSLOLState state);
-    void processLog(QString line);
     void blacklistChanged(bool blacklist);
     void ignorebadChanged(bool ignorebad);
     void statusChanged(QString message);
@@ -38,7 +37,6 @@ signals:
     void profileSaved(QString name, QJsonObject mods);
     void profileLoaded(QString name, QJsonObject profileMods);
     void profileDeleted(QString name);
-    void updateProfileStatus(QString message);
     void modCreated(QString fileName, QJsonObject infoData, QString image);
     void modEditStarted(QString fileName, QJsonObject infoData, QString image, QJsonArray wads);
     void modInfoChanged(QString fileName, QJsonObject infoData, QString image);
@@ -77,6 +75,7 @@ private:
     bool blacklist_ = true;
     bool ignorebad_ = false;
     QString status_ = "";
+    QString trace_ = "";
     void setState(CSLOLToolsImpl::CSLOLState state);
     void setStatus(QString status);
 

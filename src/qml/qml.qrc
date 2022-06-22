@@ -7,7 +7,6 @@
         <file>CSLOLModsView.qml</file>
         <file>CSLOLStatusBar.qml</file>
         <file>CSLOLDialogOpenZipFantome.qml</file>
-        <file>CSLOLDialogLog.qml</file>
         <file>CSLOLDialogError.qml</file>
         <file>CSLOLDialogErrorUser.qml</file>
         <file>CSLOLDialogNewMod.qml</file>

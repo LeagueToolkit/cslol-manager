@@ -250,8 +250,8 @@ void CSLOLToolsImpl::init() {
         setStatus("Check mod-tools");
         if (QFileInfo modtools(prog_ + "/cslol-tools/mod-tools.exe"); !modtools.exists()) {
             emit reportError("Check mod-tools",
-                             "cslol-tools/mod-tools.exe is missing",
-                             "Make sure you installed properly and that anti-virus isn't blocking any executables.");
+                             "Make sure you installed properly and that anti-virus isn't blocking any executables.",
+                             "cslol-tools/mod-tools.exe is missing");
             setState(CSLOLState::StateCriticalError);
             return;
         }
@@ -460,7 +460,7 @@ void CSLOLToolsImpl::changeModInfo(QString fileName, QJsonObject infoData, QStri
 
         setStatus("Change mod info");
         if (!modInfoWrite(fileName, infoData)) {
-            emit reportError("Change mod info", "", "Failed to write mod info");
+            emit reportError("Change mod info", "Failed to write mod info", "");
         } else {
             infoData = modInfoFixup(fileName, infoData);
             image = modImageSet(fileName, image);
@@ -525,8 +525,9 @@ void CSLOLToolsImpl::runTool(QStringList args, std::function<void(int code, QPro
     connect(process, &QProcess::readyReadStandardOutput, this, [=, this]() {
         process->setReadChannel(QProcess::ProcessChannel::StandardOutput);
         while (process->canReadLine()) {
-            auto line = process->readLine().trimmed();
-            emit processLog(line);
+            auto line = process->readLine();
+            setStatus(line.trimmed());
+            trace_.append(line);
         }
     });
     connect(process,
@@ -534,9 +535,8 @@ void CSLOLToolsImpl::runTool(QStringList args, std::function<void(int code, QPro
             this,
             [=, this](int exitCode, QProcess::ExitStatus exitStatus) {
                 if (exitCode != 0) {
-                    QString message = "Run mod-tools";
-                    QString stack_trace = process->readAllStandardError();
-                    emit reportError("Exit with error", message, stack_trace);
+                    QString message = process->readAllStandardError().trimmed();
+                    emit reportError("Exit with error", message.split('\n').last(), trace_ + message);
                 }
                 handle(exitCode, process);
                 process->deleteLater();
@@ -544,60 +544,53 @@ void CSLOLToolsImpl::runTool(QStringList args, std::function<void(int code, QPro
     connect(process, &QProcess::errorOccurred, this, [=, this](QProcess::ProcessError error) {
         if (error == QProcess::FailedToStart) {
             QString message = process->errorString();
-            QString path = process->program();
-            if (QFileInfo pathInfo(path); !pathInfo.exists()) {
-                message = "Make sure you installed properly and that anti-virus isn't blocking any executables.";
+            if (QFileInfo pathInfo(process->program()); !pathInfo.exists()) {
+                message = "Make sure to install properly and that anti-virus isn't blocking executable.";
             }
-            QString stack_trace = "arguments:\n  " + args.join("\n  ").replace('\\', '/') + "\n";
-            emit reportError("Failed to run mod-tools", message, stack_trace);
+            QString trace = "arguments:\n  " + args.join("\n  ").replace('\\', '/') + "\n";
+            emit reportError("Failed to run", message, trace);
             handle(-1, process);
             process->deleteLater();
         }
     });
+    trace_.clear();
     process->start(prog_ + "/cslol-tools/mod-tools.exe", args);
 }
 
 void CSLOLToolsImpl::runPatcher(QStringList args) {
     if (patcherProcess_ == nullptr) {
-        patcherProcess_ = new QProcess(this);
-        connect(patcherProcess_, &QProcess::readyReadStandardOutput, this, [=, this]() {
-            patcherProcess_->setReadChannel(QProcess::ProcessChannel::StandardOutput);
-            while (patcherProcess_->canReadLine()) {
-                auto line = patcherProcess_->readLine().trimmed();
-                if (auto idx = line.indexOf("Status: "); idx >= 0) {
-                    line.remove(0, idx + 8);
-                    setStatus(line);
-                } else {
-                    emit processLog(line);
-                }
+        auto process = patcherProcess_ = new QProcess(this);
+        connect(process, &QProcess::readyReadStandardOutput, this, [=, this]() {
+            process->setReadChannel(QProcess::ProcessChannel::StandardOutput);
+            while (process->canReadLine()) {
+                auto line = process->readLine();
+                setStatus(line.trimmed());
+                trace_.append(line);
             }
         });
-        connect(patcherProcess_, &QProcess::started, this, [this] { setState(CSLOLState::StateRunning); });
-        connect(patcherProcess_,
+        connect(process, &QProcess::started, this, [this] { setState(CSLOLState::StateRunning); });
+        connect(process,
                 static_cast<void (QProcess::*)(int exitCode, QProcess::ExitStatus exitStatus)>(&QProcess::finished),
                 this,
                 [=, this](int exitCode, QProcess::ExitStatus exitStatus) {
                     if (exitCode != 0) {
-                        auto message = "Run mod-tools";
-                        QString path = patcherProcess_->program();
-                        if (QFileInfo pathInfo(path); !pathInfo.exists()) {
-                            message =
-                                "Make sure you installed properly and that anti-virus isn't blocking any executables.";
-                        }
-                        auto stack_trace = patcherProcess_->readAllStandardError();
-                        emit reportError("Exit with error", message, stack_trace);
+                        QString message = process->readAllStandardError().trimmed();
+                        emit reportError("Exit with error", message.split('\n').last(), trace_ + message);
                     }
                     setState(CSLOLState::StateIdle);
                 });
-        connect(patcherProcess_, &QProcess::errorOccurred, this, [=, this](QProcess::ProcessError error) {
+        connect(process, &QProcess::errorOccurred, this, [=, this](QProcess::ProcessError error) {
             if (error == QProcess::FailedToStart) {
-                auto message = patcherProcess_->errorString();
-                auto stack_trace =
-                    "arguments:\n  " + patcherProcess_->arguments().join("\n  ").replace('\\', '/') + "\n";
-                emit reportError("Failed to run mod-tools", message, stack_trace);
+                QString message = process->errorString();
+                if (QFileInfo pathInfo(process->program()); !pathInfo.exists()) {
+                    message = "Make sure to install properly and that anti-virus isn't blocking executable.";
+                }
+                QString trace = "arguments:\n  " + args.join("\n  ").replace('\\', '/') + "\n";
+                emit reportError("Failed to run", message, trace);
                 setState(CSLOLState::StateIdle);
             }
         });
     }
+    trace_.clear();
     patcherProcess_->start(prog_ + "/cslol-tools/mod-tools.exe", args);
 }

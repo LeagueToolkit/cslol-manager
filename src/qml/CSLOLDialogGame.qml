@@ -45,6 +45,17 @@ Dialog {
         DialogButtonBox {
             id: dialogButtonBox
             ToolButton {
+                text: qsTr("Detect")
+                onClicked: {
+                    let detected = CSLOLUtils.detectGamePath()
+                    if (detected === "") {
+                        window.showUserError("Failed to detect game path", "Make sure LeagueClient is running to enable detect feature!")
+                    } else {
+                        cslolDialogGame.selected(detected)
+                    }
+                }
+            }
+            ToolButton {
                 text: qsTr("Browse")
                 onClicked: cslolDialogLolPath.open()
             }

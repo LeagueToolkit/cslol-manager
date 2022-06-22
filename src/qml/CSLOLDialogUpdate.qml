@@ -54,7 +54,6 @@ Dialog {
                 if (commit_sha === CSLOL_COMMIT) {
                     return;
                 }
-                window.logInfo("Potential update found!", commit_sha)
                 makeRequest(commit_url, function(commit) {
                     let current_date = Date.parse(CSLOL_DATE)
                     let commit_date = Date.parse(commit["committer"]["date"]);
