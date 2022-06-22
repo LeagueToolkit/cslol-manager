@@ -86,10 +86,12 @@ ApplicationWindow {
     }
     function checkGamePath() {
         if (cslolTools.leaguePath === "") {
-            cslolTools.leaguePath = CSLOLUtils.detectGamePath();
-            if (cslolTools.leaguePath === "") {
+            let detected = CSLOLUtils.detectGamePath();
+            if (detected === "") {
                 cslolDialogGame.open();
                 return false;
+            } else {
+                cslolTools.leaguePath = detected;
             }
         }
         return true;
