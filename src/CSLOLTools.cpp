@@ -14,7 +14,6 @@ CSLOLTools::CSLOLTools(QObject *parent) : QObject(parent) {
     connect(worker_, &CSLOLToolsImpl::statusChanged, this, &CSLOLTools::setStatus);
     connect(worker_, &CSLOLToolsImpl::leaguePathChanged, this, &CSLOLTools::setLeaguePath);
     connect(worker_, &CSLOLToolsImpl::reportError, this, &CSLOLTools::reportError);
-    connect(worker_, &CSLOLToolsImpl::processLog, this, &CSLOLTools::processLog);
 
     connect(worker_, &CSLOLToolsImpl::blacklistChanged, this, &CSLOLTools::blacklistChanged);
     connect(worker_, &CSLOLToolsImpl::ignorebadChanged, this, &CSLOLTools::ignorebadChanged);
@@ -24,7 +23,6 @@ CSLOLTools::CSLOLTools(QObject *parent) : QObject(parent) {
     connect(worker_, &CSLOLToolsImpl::profileSaved, this, &CSLOLTools::profileSaved);
     connect(worker_, &CSLOLToolsImpl::profileLoaded, this, &CSLOLTools::profileLoaded);
     connect(worker_, &CSLOLToolsImpl::profileDeleted, this, &CSLOLTools::profileDeleted);
-    connect(worker_, &CSLOLToolsImpl::updateProfileStatus, this, &CSLOLTools::updateProfileStatus);
     connect(worker_, &CSLOLToolsImpl::modCreated, this, &CSLOLTools::modCreated);
     connect(worker_, &CSLOLToolsImpl::modEditStarted, this, &CSLOLTools::modEditStarted);
     connect(worker_, &CSLOLToolsImpl::modInfoChanged, this, &CSLOLTools::modInfoChanged);

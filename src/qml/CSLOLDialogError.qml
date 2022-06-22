@@ -20,6 +20,8 @@ Dialog {
 
     property string name: ""
     property string message: ""
+    property string log_data: ""
+
     onOpened: {
         let scrollbar = logTextScroll.ScrollBar;
         scrollbar.horizontal.position = 0
@@ -49,7 +51,7 @@ Dialog {
                 id: logTextArea
                 readOnly: true
                 Layout.fillWidth: true
-                text: "```\n" + window.log_data + "\n```"
+                text: "```\n" + log_data + "\n```"
                 textFormat: Text.MarkdownText
                 font.pointSize: 10
             }

@@ -286,7 +286,7 @@ static auto help(fs::path cmd) -> void {
 
 int main(int argc, char** argv) {
     utility::set_binary_io();
-    fmtlog::setHeaderPattern("{HMSe} {l}[{t:<6}] ");
+    fmtlog::setHeaderPattern("[{l}] ");
     fmtlog::setLogFile(stdout, false);
     fmtlog::startPollingThread();
     try {

@@ -17,7 +17,7 @@ ColumnLayout {
 
     function getInfoData() {
         if (fieldName.text === "") {
-            window.logUserError("Edit mod", "Mod name can't be empty!")
+            window.showUserError("Edit mod", "Mod name can't be empty!")
             return
         }
         let name = fieldName.text == "" ? "UNKNOWN" : fieldName.text

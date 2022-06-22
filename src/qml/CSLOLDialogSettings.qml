@@ -50,7 +50,6 @@ Dialog {
     ]
 
 
-    signal showLogs()
     signal changeGamePath()
 
     Column {
@@ -62,15 +61,11 @@ Dialog {
 
             TabButton {
                 text: qsTr("Game")
-                width: settingsStackLayout.width / 3
+                width: settingsStackLayout.width / 2
             }
             TabButton {
                 text: qsTr("Theme")
-                width: settingsStackLayout.width / 3
-            }
-            TabButton {
-                text: qsTr("Misc")
-                width: settingsStackLayout.width / 3
+                width: settingsStackLayout.width / 2
             }
         }
 
@@ -106,6 +101,12 @@ Dialog {
                     checked: false
                     Layout.fillWidth: true
                 }
+                Switch {
+                    id: disableUpdatesCheck
+                    text: qsTr("Disable updates")
+                    checked: false
+                    Layout.fillWidth: true
+                }
             }
             ColumnLayout {
                 id: settingsThemeTab
@@ -138,21 +139,6 @@ Dialog {
                     id: themeDarkModeCheck
                     text: qsTr("Dark mode")
                     checked: true
-                    Layout.fillWidth: true
-                }
-            }
-            ColumnLayout {
-                id: settingsMiscTab
-                spacing: 5
-                Button {
-                    text: qsTr("Log window")
-                    onClicked: cslolDialogSettings.showLogs()
-                    Layout.fillWidth: true
-                }
-                Switch {
-                    id: disableUpdatesCheck
-                    text: qsTr("Disable updates")
-                    checked: false
                     Layout.fillWidth: true
                 }
             }

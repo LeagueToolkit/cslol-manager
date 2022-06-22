@@ -33,7 +33,7 @@ static auto wad_make(fs::path src, fs::path dst) -> void {
 
 int main(int argc, char** argv) {
     utility::set_binary_io();
-    fmtlog::setHeaderPattern("{HMSe} {l}[{t:<6}] ");
+    fmtlog::setHeaderPattern("[{l}] ");
     fmtlog::setLogFile(stdout, false);
     fmtlog::startPollingThread();
     try {

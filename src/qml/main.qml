@@ -18,7 +18,6 @@ ApplicationWindow {
     Settings {
         id: settings
         property alias leaguePath: cslolTools.leaguePath
-        property alias logVisible: cslolDialogLog.visible
 
         property alias blacklist: cslolDialogSettings.blacklist
         property alias ignorebad: cslolDialogSettings.ignorebad
@@ -34,14 +33,32 @@ ApplicationWindow {
         property alias windowHeight: window.height
         property alias windowWidth: window.width
         property bool windowMaximised
-        property alias logHeight: cslolDialogLog.height
-        property alias logWidth: cslolDialogLog.width
 
         fileName: "config.ini"
     }
 
+    property bool isBussy: cslolTools.state !== CSLOLTools.StateIdle
     property var validName: new RegExp(/[\p{L}\p{M}\p{Z}\p{N}\w]{3,50}/u)
     property bool firstTick: false
+
+    function showUserError(name, message) {
+        cslolDialogUserError.text = message
+        cslolDialogUserError.open()
+    }
+
+    function checkGamePath() {
+        if (cslolTools.leaguePath === "") {
+            let detected = CSLOLUtils.detectGamePath();
+            if (detected === "") {
+                cslolDialogGame.open();
+                return false;
+            } else {
+                cslolTools.leaguePath = detected;
+            }
+        }
+        return true;
+    }
+
     onVisibilityChanged: {
         if (firstTick) {
             if (window.visibility === ApplicationWindow.Maximized) {
@@ -56,47 +73,9 @@ ApplicationWindow {
             }
         }
     }
-
     Material.theme: cslolDialogSettings.themeDarkMode ? Material.Dark : Material.Light
     Material.primary: cslolDialogSettings.colors_LIST[cslolDialogSettings.themePrimaryColor]
     Material.accent: cslolDialogSettings.colors_LIST[cslolDialogSettings.themeAccentColor]
-
-    property bool isBussy: cslolTools.state !== CSLOLTools.StateIdle
-    property string log_data: "[INFO] Version: " + CSLOL_VERSION + "\n"
-
-    function logClear() {
-        log_data = "[INFO] Version: " + CSLOL_VERSION + "\n"
-    }
-    function logInfo(name, message) {
-        log_data += "[INFO] " + name + ": " + message + "\n"
-    }
-    function logUserError(name, message) {
-        log_data += "[Warning] " + name + ": " + message + "\n"
-        cslolDialogUserError.text = message
-        cslolDialogUserError.open()
-    }
-    function logError(name, message, stack_trace) {
-        log_data += "[ERROR] " + name + ": " + message + "\n"
-        if (stack_trace) {
-            log_data += stack_trace.trim() + "\n"
-        }
-        cslolDialogError.name = name
-        cslolDialogError.message = message
-        cslolDialogError.open()
-    }
-    function checkGamePath() {
-        if (cslolTools.leaguePath === "") {
-            let detected = CSLOLUtils.detectGamePath();
-            if (detected === "") {
-                cslolDialogGame.open();
-                return false;
-            } else {
-                cslolTools.leaguePath = detected;
-            }
-        }
-        return true;
-    }
-
 
     header: CSLOLToolBar {
         id: cslolToolBar
@@ -145,12 +124,6 @@ ApplicationWindow {
 
         onIgnorebadChanged: function() {
             cslolTools.changeIgnorebad(ignorebad)
-        }
-
-        onShowLogs: function() {
-            if (!cslolDialogLog.visible) {
-                cslolDialogLog.visible = true
-            }
         }
     }
 
@@ -244,7 +217,7 @@ ApplicationWindow {
         onAccepted: {
             for(let i in  cslolToolBar.profilesModel) {
                 if (text.toLowerCase() ===  cslolToolBar.profilesModel[i].toLowerCase()) {
-                    logError("Bad profile", "This profile already exists!")
+                    window.showUserError("Bad profile", "This profile already exists!")
                     return
                 }
             }
@@ -255,19 +228,12 @@ ApplicationWindow {
         }
     }
 
-    CSLOLDialogLog {
-        id: cslolDialogLog
-        width: 640
-        height: 480
-        visible: false
-    }
-
     CSLOLDialogGame {
         id: cslolDialogGame
         onSelected: function(orgPath) {
             let path = CSLOLUtils.checkGamePath(orgPath)
             if (path === "") {
-                window.logUserError("Bad game directory",  "There is no \"League of Legends.exe\" in " + orgPath)
+                window.showUserError("Bad game directory",  "There is no \"League of Legends.exe\" in " + orgPath)
             } else {
                 cslolTools.leaguePath = path
                 cslolDialogGame.close()
@@ -290,16 +256,6 @@ ApplicationWindow {
 
     CSLOLTools {
         id: cslolTools
-
-        onStatusChanged: function(status) {
-            logInfo("Status changed", status)
-        }
-        onProcessLog: function(line) {
-            line = line.trim();
-            if (line) {
-                log_data += "[EXTERNAL] " + line + "\n";
-            }
-        }
         onInitialized: function(mods, profiles, profileName, profileMods) {
             cslolToolBar.profilesModel = profiles
             cslolToolBar.profilesCurrentIndex = 0
@@ -336,9 +292,6 @@ ApplicationWindow {
                 cslolToolBar.profilesCurrentIndex = 0
             }
         }
-        onUpdateProfileStatus: function(message) {
-            log_data += message
-        }
         onModCreated: function(fileName, infoData, image) {
             cslolModsView.addMod(fileName, infoData, false)
             cslolDialogEditMod.load(fileName, infoData, image, [], true)
@@ -358,8 +311,19 @@ ApplicationWindow {
         onModWadsRemoved: function(fileName, wads) {
             cslolDialogEditMod.wadsRemoved(wads)
         }
-        onReportError: function(name, message, stack_trace) {
-            logError(name, message, stack_trace)
+        onReportError: function(name, message, trace) {
+            let log_data = "";
+            if (trace) {
+                log_data += trace.trim() + "\n"
+            } else {
+                log_data += message.trim() + "\n"
+            }
+            log_data += "name: " + name + "\n"
+            log_data += "version: " + CSLOL_VERSION + "\n"
+            cslolDialogError.name = name
+            cslolDialogError.message = message
+            cslolDialogError.log_data = log_data
+            cslolDialogError.open()
         }
     }
 
