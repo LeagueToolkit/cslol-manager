@@ -12,7 +12,13 @@
 #include <QThread>
 #include <fstream>
 
-CSLOLToolsImpl::CSLOLToolsImpl(QObject* parent) : QObject(parent), prog_(QCoreApplication::applicationDirPath()) {}
+#include "CSLOLVersion.h"
+
+CSLOLToolsImpl::CSLOLToolsImpl(QObject* parent) : QObject(parent), prog_(QCoreApplication::applicationDirPath()) {
+    logFile_ = new QFile(prog_ + "/log.txt", this);
+    logFile_->open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Unbuffered);
+    logFile_->write("Version: " + QByteArray(CSLOL::VERSION) + "\n");
+}
 
 CSLOLToolsImpl::~CSLOLToolsImpl() {
     if (lockfile_) {
@@ -31,6 +37,7 @@ void CSLOLToolsImpl::setState(CSLOLState value) {
 
 void CSLOLToolsImpl::setStatus(QString status) {
     if (status_ != status) {
+        logFile_->write((status.toUtf8() + "\n"));
         status_ = status;
         emit statusChanged(status);
     }
@@ -193,6 +200,19 @@ void CSLOLToolsImpl::writeCurrentProfile(QString profile) {
     }
 }
 
+void CSLOLToolsImpl::doReportError(QString name, QString message, QString trace) {
+    if (!name.isEmpty()) {
+        logFile_->write("Error while: " + name.toUtf8() + "\n");
+    }
+    if (!message.isEmpty()) {
+        logFile_->write(message.toUtf8() + "\n");
+    }
+    if (!trace.isEmpty()) {
+        logFile_->write(trace.toUtf8() + "\n");
+    }
+    emit reportError(name, message, trace);
+}
+
 /// impl
 
 void CSLOLToolsImpl::changeLeaguePath(QString newLeaguePath) {
@@ -242,16 +262,16 @@ void CSLOLToolsImpl::init() {
         lockfile_ = new QLockFile(prog_ + "/lockfile");
         if (!lockfile_->tryLock()) {
             auto lockerror = QString::number((int)lockfile_->error());
-            emit reportError("Acquire lock", "Can not run multiple instances", lockerror);
+            doReportError("Acquire lock", "Can not run multiple instances", lockerror);
             setState(CSLOLState::StateCriticalError);
             return;
         }
 
         setStatus("Check mod-tools");
         if (QFileInfo modtools(prog_ + "/cslol-tools/mod-tools.exe"); !modtools.exists()) {
-            emit reportError("Check mod-tools",
-                             "Make sure you installed properly and that anti-virus isn't blocking any executables.",
-                             "cslol-tools/mod-tools.exe is missing");
+            doReportError("Check mod-tools",
+                          "Make sure you installed properly and that anti-virus isn't blocking any executables.",
+                          "cslol-tools/mod-tools.exe is missing");
             setState(CSLOLState::StateCriticalError);
             return;
         }
@@ -324,7 +344,7 @@ void CSLOLToolsImpl::installFantomeZip(QString path) {
         auto dst = prog_ + "/installed/" + name;
         if (QDir old(dst); old.exists()) {
             auto info = modInfoRead(name);
-            emit reportError("Install mod", "Already exists", "");
+            doReportError("Install mod", "Already exists", "");
             setState(CSLOLState::StateIdle);
             return;
         }
@@ -353,7 +373,7 @@ void CSLOLToolsImpl::makeMod(QString fileName, QJsonObject infoData, QString ima
 
         setStatus("Make mod");
         if (!modInfoWrite(fileName, infoData)) {
-            emit reportError("Make mod", "Failed to write mod info", "");
+            doReportError("Make mod", "Failed to write mod info", "");
         } else {
             infoData = modInfoFixup(fileName, infoData);
             image = modImageSet(fileName, image);
@@ -460,7 +480,7 @@ void CSLOLToolsImpl::changeModInfo(QString fileName, QJsonObject infoData, QStri
 
         setStatus("Change mod info");
         if (!modInfoWrite(fileName, infoData)) {
-            emit reportError("Change mod info", "Failed to write mod info", "");
+            doReportError("Change mod info", "Failed to write mod info", "");
         } else {
             infoData = modInfoFixup(fileName, infoData);
             image = modImageSet(fileName, image);
@@ -527,7 +547,6 @@ void CSLOLToolsImpl::runTool(QStringList args, std::function<void(int code, QPro
         while (process->canReadLine()) {
             auto line = process->readLine();
             setStatus(line.trimmed());
-            trace_.append(line);
         }
     });
     connect(process,
@@ -535,8 +554,8 @@ void CSLOLToolsImpl::runTool(QStringList args, std::function<void(int code, QPro
             this,
             [=, this](int exitCode, QProcess::ExitStatus exitStatus) {
                 if (exitCode != 0) {
-                    QString message = process->readAllStandardError().trimmed();
-                    emit reportError("Exit with error", message.split('\n').last(), trace_ + message);
+                    QString trace = process->readAllStandardError().trimmed();
+                    doReportError("Run mod-tools", trace.split('\n').last(), trace);
                 }
                 handle(exitCode, process);
                 process->deleteLater();
@@ -548,12 +567,11 @@ void CSLOLToolsImpl::runTool(QStringList args, std::function<void(int code, QPro
                 message = "Make sure to install properly and that anti-virus isn't blocking executable.";
             }
             QString trace = "arguments:\n  " + args.join("\n  ").replace('\\', '/') + "\n";
-            emit reportError("Failed to run", message, trace);
+            doReportError("Run mod-tools", message, trace);
             handle(-1, process);
             process->deleteLater();
         }
     });
-    trace_.clear();
     process->start(prog_ + "/cslol-tools/mod-tools.exe", args);
 }
 
@@ -565,7 +583,6 @@ void CSLOLToolsImpl::runPatcher(QStringList args) {
             while (process->canReadLine()) {
                 auto line = process->readLine();
                 setStatus(line.trimmed());
-                trace_.append(line);
             }
         });
         connect(process, &QProcess::started, this, [this] { setState(CSLOLState::StateRunning); });
@@ -574,8 +591,8 @@ void CSLOLToolsImpl::runPatcher(QStringList args) {
                 this,
                 [=, this](int exitCode, QProcess::ExitStatus exitStatus) {
                     if (exitCode != 0) {
-                        QString message = process->readAllStandardError().trimmed();
-                        emit reportError("Exit with error", message.split('\n').last(), trace_ + message);
+                        QString trace = process->readAllStandardError().trimmed();
+                        doReportError("Run mod-tools", trace.split('\n').last(), trace);
                     }
                     setState(CSLOLState::StateIdle);
                 });
@@ -586,11 +603,10 @@ void CSLOLToolsImpl::runPatcher(QStringList args) {
                     message = "Make sure to install properly and that anti-virus isn't blocking executable.";
                 }
                 QString trace = "arguments:\n  " + args.join("\n  ").replace('\\', '/') + "\n";
-                emit reportError("Failed to run", message, trace);
+                doReportError("Run mod-tools", message, trace);
                 setState(CSLOLState::StateIdle);
             }
         });
     }
-    trace_.clear();
     patcherProcess_->start(prog_ + "/cslol-tools/mod-tools.exe", args);
 }

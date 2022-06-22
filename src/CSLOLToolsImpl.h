@@ -1,5 +1,6 @@
 #ifndef QMODMANAGERWORKER_H
 #define QMODMANAGERWORKER_H
+#include <QFile>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QLockFile>
@@ -75,7 +76,7 @@ private:
     bool blacklist_ = true;
     bool ignorebad_ = false;
     QString status_ = "";
-    QString trace_ = "";
+    QFile* logFile_ = nullptr;
     void setState(CSLOLToolsImpl::CSLOLState state);
     void setStatus(QString status);
 
@@ -90,6 +91,7 @@ private:
     void writeProfile(QString profileName, QJsonObject profile);
     QString readCurrentProfile();
     void writeCurrentProfile(QString profile);
+    void doReportError(QString name, QString message, QString trace);
 
     void runPatcher(QStringList args);
     void runTool(QStringList args, std::function<void(int code, QProcess*)> handle);
