@@ -67,16 +67,14 @@ endif()
 
 FetchContent_Declare(
     miniz
-    URL             https://github.com/richgel999/miniz/releases/download/2.2.0/miniz-2.2.0.zip
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND ""
+    GIT_REPOSITORY https://github.com/richgel999/miniz.git
+    GIT_TAG        76b3a872855388c735c564905da030f26334f3b3
 )
 FetchContent_GetProperties(miniz)
 if(NOT miniz_POPULATED)
     FetchContent_Populate(miniz)
-    file(GLOB miniz_SRCS ${miniz_SOURCE_DIR}/miniz.c)
-    add_library(miniz STATIC ${miniz_SRCS})
-    target_include_directories(miniz PUBLIC ${miniz_SOURCE_DIR})
+    add_subdirectory(${miniz_SOURCE_DIR} ${miniz_BINARY_DIR})
+    target_compile_definitions(miniz PRIVATE -DMINIZ_DISABLE_ZIP_READER_CRC32_CHECKS=1)
 endif()
 
 
@@ -99,7 +97,7 @@ endif()
 FetchContent_Declare(
     fmtlog
     GIT_REPOSITORY https://github.com/MengRao/fmtlog.git
-    GIT_TAG        v2.1.4
+    GIT_TAG        16183b638d302042faf5f9cf2d089ab367ace933
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
 )
