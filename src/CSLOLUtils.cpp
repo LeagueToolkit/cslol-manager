@@ -69,10 +69,10 @@ QString CSLOLUtils::detectGamePath() {
         return "";
     }
 
-    auto entry = PROCESSENTRY32{.dwSize = sizeof(PROCESSENTRY32)};
-    for (bool i = Process32First(snapshot, &entry); i; i = Process32Next(snapshot, &entry)) {
-        auto process_name = std::string_view{entry.szExeFile};
-        if (process_name != "LeagueClient.exe" && process_name != "League of Legends.exe") {
+    auto entry = PROCESSENTRY32W{.dwSize = sizeof(PROCESSENTRY32W)};
+    for (bool i = Process32FirstW(snapshot, &entry); i; i = Process32NextW(snapshot, &entry)) {
+        auto process_name = std::wstring_view{entry.szExeFile};
+        if (process_name != L"LeagueClient.exe" && process_name != L"League of Legends.exe") {
             continue;
         }
 
