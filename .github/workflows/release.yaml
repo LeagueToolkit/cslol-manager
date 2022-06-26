@@ -22,7 +22,7 @@ jobs:
       run: |
         mkdir build
         cd build
-        cmake -G "NMake Makefiles" "-DCMAKE_PREFIX_PATH:PATH=C:/qt5.15.5-x86_64-msvc-static" "-DCMAKE_BUILD_TYPE:STRING=Release" ..
+        cmake -G "NMake Makefiles" "-DCMAKE_PREFIX_PATH:PATH=C:/qt5.15.5-x86_64-msvc-static" "-DCMAKE_MSVC_RUNTIME_LIBRARY:STRING=MultiThreaded" "-DCMAKE_BUILD_TYPE:STRING=Release" ..
         cmake --build .
     - name: "Package"
       shell: bash
