@@ -192,6 +192,11 @@ Dialog {
                     DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
                     onClicked: dialogRawFolder.open()
                 }
+                ToolButton {
+                    text: qsTr("Browse")
+                    DialogButtonBox.buttonRole: DialogButtonBox.InvalidRole
+                    onClicked: Qt.openUrlExternally(CSLOLUtils.toFile("./installed/" + fileName))
+                }
             }
         }
     }
