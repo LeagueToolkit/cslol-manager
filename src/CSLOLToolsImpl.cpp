@@ -60,6 +60,12 @@ static QJsonObject modInfoFixup(QString modName, QJsonObject object) {
     if (!object.contains("Description") || !object["Description"].isString()) {
         object["Description"] = "";
     }
+    if (!object.contains("Home") || !object["Home"].isString()) {
+        object["Home"] = "";
+    }
+    if (!object.contains("Heart") || !object["Heart"].isString()) {
+        object["Heart"] = "";
+    }
     return object;
 }
 

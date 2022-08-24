@@ -45,6 +45,14 @@ ToolBar {
             }
         }
         ToolButton {
+            id: heartButton
+            text: "\uf004"
+            font.family: "FontAwesome"
+            onClicked: {
+                Qt.openUrlExternally("https://github.com/sponsors/moonshadow565")
+            }
+        }
+        ToolButton {
             text: qsTr("Save")
             onClicked: cslolToolBar.saveProfileAndRun(false)
             enabled: !isBussy

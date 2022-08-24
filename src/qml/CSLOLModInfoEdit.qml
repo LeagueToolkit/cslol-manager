@@ -12,6 +12,8 @@ ColumnLayout {
         fieldAuthor.text = ""
         fieldVersion.text = ""
         fieldDescription.text = ""
+        fieldHome.text = ""
+        fieldHeart.text = ""
         fieldImage.text = ""
     }
 
@@ -24,11 +26,15 @@ ColumnLayout {
         let author = fieldAuthor.text == "" ? "UNKNOWN" : fieldAuthor.text
         let version = fieldVersion.text == "" ? "1.0" : fieldVersion.text
         let description = fieldDescription.text
+        let home = fieldHome.text
+        let heart = fieldHeart.text
         let info = {
             "Name": name,
             "Author": author,
             "Version": version,
-            "Description": description
+            "Description": description,
+            "Home": home,
+            "Heart": heart,
         }
         return info
     }
@@ -38,6 +44,8 @@ ColumnLayout {
         fieldAuthor.text = info["Author"]
         fieldVersion.text = info["Version"]
         fieldDescription.text = info["Description"]
+        fieldHome.text = info["Home"]
+        fieldHeart.text = info["Heart"]
     }
 
     RowLayout {
@@ -83,7 +91,39 @@ ColumnLayout {
             placeholderText: "0.0.0"
             selectByMouse: true
             validator: RegularExpressionValidator {
-                regularExpression: /([0-9]{1,3})(\.[0-9]{1,3}){0,3}/
+                regularExpression: window.validVersion
+            }
+        }
+    }
+
+    RowLayout {
+        Layout.fillWidth: true
+        Label {
+            text: qsTr("Home: ")
+        }
+        TextField {
+            id: fieldHome
+            Layout.fillWidth: true
+            placeholderText: "Home or update link for a skin"
+            selectByMouse: true
+            validator: RegularExpressionValidator {
+                regularExpression: window.validUrl
+            }
+        }
+    }
+
+    RowLayout {
+        Layout.fillWidth: true
+        Label {
+            text: qsTr("Heart: ")
+        }
+        TextField {
+            id: fieldHeart
+            Layout.fillWidth: true
+            placeholderText: "Authors homepage link or twitter or whatever"
+            selectByMouse: true
+            validator: RegularExpressionValidator {
+                regularExpression: window.validUrl
             }
         }
     }

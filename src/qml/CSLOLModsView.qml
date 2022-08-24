@@ -9,6 +9,8 @@ ColumnLayout {
     id: cslolModsView
     spacing: 5
 
+    property bool showImage: true
+
     property int columnCount: 1
 
     property bool isBussy: false
@@ -36,6 +38,9 @@ ColumnLayout {
             "Version": info["Version"],
             "Description": info["Description"],
             "Author": info["Author"],
+            "Home": info["Home"],
+            "Heart": info["Heart"],
+            "Image": CSLOLUtils.toFile("./installed/" + fileName + "/META/image.png"),
             "Enabled": enabled === true
         }
         if (searchMatches(infoData)) {
@@ -159,6 +164,12 @@ ColumnLayout {
                 if (obj["Author"] !== info["Author"]) {
                     model.setProperty(i, "Author", info["Author"])
                 }
+                if (obj["Home"] !== info["Home"]) {
+                    model.setProperty(i, "Home", info["Home"])
+                }
+                if (obj["Heart"] !== info["Heart"]) {
+                    model.setProperty(i, "Heart", info["Heart"])
+                }
                 return i;
             }
         }
@@ -213,6 +224,7 @@ ColumnLayout {
                 Row {
                     width: parent.width
                     property string modName: model.Name
+
                     CheckBox {
                         width: parent.width * 0.3
                         id: modCheckbox
@@ -237,7 +249,7 @@ ColumnLayout {
                     }
 
                     Column {
-                        width: parent.width * 0.39
+                        width: parent.width * 0.29
                         anchors.verticalCenter: parent.verticalCenter
                         Label {
                             horizontalAlignment: Text.AlignHCenter
@@ -257,7 +269,7 @@ ColumnLayout {
                     }
 
                     Row {
-                        width: parent.width * 0.3
+                        width: parent.width * 0.4
                         layoutDirection: Qt.RightToLeft
                         anchors.verticalCenter: parent.verticalCenter
                         ToolButton {
@@ -294,6 +306,34 @@ ColumnLayout {
                             }
                             ToolTip {
                                 text: qsTr("Edit this mod")
+                                visible: parent.hovered
+                            }
+                        }
+                        ToolButton {
+                            text: "\uf059"
+                            font.family: "FontAwesome"
+                            onClicked: {
+                                let url = model.Home
+                                if (window.validUrl.test(url)) {
+                                    Qt.openUrlExternally(url)
+                                }
+                            }
+                            ToolTip {
+                                text: qsTr("Mod updates")
+                                visible: parent.hovered
+                            }
+                        }
+                        ToolButton {
+                            text: "\uf004"
+                            font.family: "FontAwesome"
+                            onClicked: {
+                                let url = model.Heart
+                                if (window.validUrl.test(url)) {
+                                    Qt.openUrlExternally(url)
+                                }
+                            }
+                            ToolTip {
+                                text: qsTr("Support this author")
                                 visible: parent.hovered
                             }
                         }
