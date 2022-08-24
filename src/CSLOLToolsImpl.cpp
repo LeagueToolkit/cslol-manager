@@ -38,8 +38,10 @@ void CSLOLToolsImpl::setState(CSLOLState value) {
 void CSLOLToolsImpl::setStatus(QString status) {
     if (status_ != status) {
         logFile_->write((status.toUtf8() + "\n"));
-        status_ = status;
-        emit statusChanged(status);
+        if (!status.startsWith("[WRN] ")) {
+            status_ = status;
+            emit statusChanged(status);
+        }
     }
 }
 
