@@ -11,7 +11,13 @@
 #    include <psapi.h>
 #    include <tlhelp32.h>
 // do not reorder
+#    include <comutil.h>
+#    include <wbemcli.h>
+#    include <wrl/client.h>
+// do not reorder
 #    define last_error() std::error_code((int)GetLastError(), std::system_category())
+#    define hassert(...) \
+        if (auto hres = __VA_ARGS__; FAILED(hres)) lol_throw_msg("Failed: {}", #__VA_ARGS__);
 
 namespace {
     static inline constexpr DWORD PROCESS_NEEDED_ACCESS =
@@ -32,6 +38,49 @@ namespace {
         }
         using handle_value = std::remove_pointer_t<HANDLE>;
         return std::unique_ptr<handle_value, deleter>(handle);
+    }
+
+    static DWORD find_pid(char const* name) {
+        using namespace Microsoft::WRL;
+
+        static auto service = []() {
+            hassert(CoInitializeEx(0, COINIT_MULTITHREADED));
+
+            auto pLoc = ComPtr<IWbemLocator>{};
+            hassert(CoCreateInstance(CLSID_WbemLocator, 0, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(pLoc.GetAddressOf())));
+
+            auto pSvc = ComPtr<IWbemServices>{};
+            hassert(pLoc->ConnectServer(bstr_t(L"ROOT\\CIMV2"), 0, 0, 0, 0, 0, 0, pSvc.GetAddressOf()));
+
+            hassert(CoSetProxyBlanket(pSvc.Get(),
+                                      RPC_C_AUTHN_WINNT,
+                                      RPC_C_AUTHZ_NONE,
+                                      NULL,
+                                      RPC_C_AUTHN_LEVEL_CALL,
+                                      RPC_C_IMP_LEVEL_IMPERSONATE,
+                                      NULL,
+                                      EOAC_NONE));
+            return pSvc;
+        }();
+
+        auto query = "SELECT * FROM Win32_Process WHERE Name = '" + std::string(name) + "'";
+        auto enumerator = ComPtr<IEnumWbemClassObject>{};
+        hassert(service->ExecQuery(bstr_t("WQL"),
+                                   bstr_t(query.c_str()),
+                                   WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
+                                   NULL,
+                                   enumerator.GetAddressOf()));
+
+        while (enumerator) {
+            auto clsobj = ComPtr<IWbemClassObject>{};
+            if (ULONG res = 0; FAILED(enumerator->Next(WBEM_INFINITE, 1, clsobj.GetAddressOf(), &res)) || !res) {
+                break;
+            }
+            auto var = VARIANT{};
+            clsobj->Get(L"ProcessId", 0, &var, NULL, NULL);
+            return var.intVal;
+        }
+        return 0;
     }
 }
 
@@ -69,31 +118,13 @@ Process::~Process() noexcept {
     }
 }
 
-auto Process::Find(char const* name) noexcept -> std::optional<Process> {
-    PROCESSENTRY32 entry = {};
-    entry.dwSize = sizeof(PROCESSENTRY32);
-    auto handle = SafeWinHandle(CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0));
-    if (!handle) {
-        return std::nullopt;
-    }
-    HMODULE mod = {};
-    DWORD modSize = {};
-    char dump[1024] = {};
-    for (bool i = Process32First(handle.get(), &entry); i; i = Process32Next(handle.get(), &entry)) {
-        fs::path ExeFile = entry.szExeFile;
-        if (ExeFile.filename().generic_string() == name) {
-            auto process = Process(entry.th32ProcessID);
-            if (!process.handle_) {
-                return std::nullopt;
-            }
-            if (!EnumProcessModules(process.handle_, &mod, sizeof(mod), &modSize)) {
-                return std::nullopt;
-            }
-            if (!ReadProcessMemory(process.handle_, mod, dump, sizeof(dump), nullptr)) {
-                return std::nullopt;
-            }
-            return std::move(process);
+auto Process::Find(char const* name) -> std::optional<Process> {
+    if (auto pid = find_pid(name)) {
+        auto process = Process(pid);
+        if (!process.handle_) {
+            lol_throw_msg("OpenProcess: {}", last_error());
         }
+        return std::move(process);
     }
     return std::nullopt;
 }

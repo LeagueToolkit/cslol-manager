@@ -63,7 +63,7 @@ namespace lol::patcher {
 
         inline bool operator!() const noexcept { return !handle_; }
 
-        static auto Find(char const *name) noexcept -> std::optional<Process>;
+        static auto Find(char const *name) -> std::optional<Process>;
 
         auto Base() const -> PtrStorage;
 
