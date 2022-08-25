@@ -49,7 +49,7 @@ ToolBar {
             text: "\uf004"
             font.family: "FontAwesome"
             onClicked: {
-                Qt.openUrlExternally("https://github.com/sponsors/moonshadow565")
+                Qt.openUrlExternally("https://github.com/morilli")
             }
         }
         ToolButton {

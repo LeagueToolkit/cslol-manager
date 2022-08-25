@@ -124,6 +124,15 @@ auto Process::Find(char const* name) -> std::optional<Process> {
         if (!process.handle_) {
             lol_throw_msg("OpenProcess: {}", last_error());
         }
+        HMODULE mod = {};
+        DWORD modSize = {};
+        if (!EnumProcessModules(process.handle_, &mod, sizeof(mod), &modSize)) {
+            return std::nullopt;
+        }
+        char dump[1024] = {};
+        if (!ReadProcessMemory(process.handle_, mod, dump, sizeof(dump), nullptr)) {
+            return std::nullopt;
+        }
         return std::move(process);
     }
     return std::nullopt;
