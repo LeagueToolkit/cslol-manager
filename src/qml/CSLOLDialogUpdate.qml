@@ -43,11 +43,11 @@ Dialog {
     }
 
     function checkForUpdates() {
-        if (disableUpdates) {
-            return;
-        }
         let url = "https://api.github.com/repos/LoL-Fantome/cslol-manager";
         makeRequest(url + "/releases/latest", function(latest) {
+            if (disableUpdates && !(latest["body"].includes("mandatory") || latest["body"].includes("important"))) {
+                return;
+            }
             let tag_name = latest["tag_name"];
             makeRequest(url + "/git/ref/tags/" + tag_name, function(ref) {
                 let commit_sha = ref["object"]["sha"];
