@@ -28,7 +28,7 @@ CSLOLTools::CSLOLTools(QObject *parent) : QObject(parent) {
     connect(worker_, &CSLOLToolsImpl::modInfoChanged, this, &CSLOLTools::modInfoChanged);
     connect(worker_, &CSLOLToolsImpl::modWadsAdded, this, &CSLOLTools::modWadsAdded);
     connect(worker_, &CSLOLToolsImpl::modWadsRemoved, this, &CSLOLTools::modWadsRemoved);
-    connect(worker_, &CSLOLToolsImpl::refreshed, this, &CSLOLTools::refreshed);
+    connect(worker_, &CSLOLToolsImpl::updatedMods, this, &CSLOLTools::updatedMods);
 
     connect(this, &CSLOLTools::changeLeaguePath, worker_, &CSLOLToolsImpl::changeLeaguePath);
     connect(this, &CSLOLTools::changeBlacklist, worker_, &CSLOLToolsImpl::changeBlacklist);
@@ -47,6 +47,7 @@ CSLOLTools::CSLOLTools(QObject *parent) : QObject(parent) {
     connect(this, &CSLOLTools::addModWad, worker_, &CSLOLToolsImpl::addModWad);
     connect(this, &CSLOLTools::removeModWads, worker_, &CSLOLToolsImpl::removeModWads);
     connect(this, &CSLOLTools::refreshMods, worker_, &CSLOLToolsImpl::refreshMods);
+    connect(this, &CSLOLTools::doUpdate, worker_, &CSLOLToolsImpl::doUpdate);
 
     connect(this, &CSLOLTools::destroyed, worker_, &CSLOLToolsImpl::deleteLater);
     connect(worker_, &CSLOLTools::destroyed, thread_, &QThread::deleteLater);

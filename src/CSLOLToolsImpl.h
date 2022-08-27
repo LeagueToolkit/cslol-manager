@@ -5,6 +5,7 @@
 #include <QJsonObject>
 #include <QLockFile>
 #include <QMap>
+#include <QNetworkAccessManager>
 #include <QObject>
 #include <QProcess>
 #include <QString>
@@ -44,6 +45,7 @@ signals:
     void modWadsAdded(QString modFileName, QJsonArray wads);
     void modWadsRemoved(QString modFileName, QJsonArray wads);
     void refreshed(QJsonObject mods);
+    void updatedMods(QJsonArray mods);
     void reportError(QString name, QString message, QString stack_trace);
 
 public slots:
@@ -60,6 +62,7 @@ public slots:
     void stopProfile();
     void makeMod(QString fileName, QJsonObject infoData, QString image);
     void refreshMods();
+    void doUpdate(QString urls);
 
     void startEditMod(QString fileName);
     void changeModInfo(QString fileName, QJsonObject infoData, QString image);
@@ -70,6 +73,9 @@ public slots:
     QString getLeaguePath();
 
 private:
+    QNetworkAccessManager* networkManager_ = nullptr;
+    std::vector<QJsonDocument> networkResults_ = {};
+    std::vector<QNetworkRequest> networkRequests_ = {};
     QLockFile* lockfile_ = nullptr;
     QProcess* patcherProcess_ = nullptr;
     QString prog_ = "";

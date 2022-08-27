@@ -23,5 +23,6 @@
         <file>CSLOLModInfoEdit.qml</file>
         <file>CSLOLDialogGame.qml</file>
         <file>CSLOLToolTip.qml</file>
+        <file>CSLOLDialogUpdateMods.qml</file>
     </qresource>
 </RCC>

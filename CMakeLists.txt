@@ -12,9 +12,9 @@ add_subdirectory(cslol-tools)
 
 option(USE_QT6 "Use Qt6 instead of Qt5" OFF)
 if (USE_QT6)
-    find_package(Qt6 6.1 COMPONENTS Core Gui Quick QmlImportScanner REQUIRED)
+    find_package(Qt6 6.1 COMPONENTS Core Gui Quick QmlImportScanner Network REQUIRED)
 else()
-    find_package(Qt5 5.15 COMPONENTS Core Gui Quick QmlImportScanner REQUIRED)
+    find_package(Qt5 5.15 COMPONENTS Core Gui Quick QmlImportScanner Network REQUIRED)
 endif()
 find_package(Threads REQUIRED)
 find_package(Git QUIET REQUIRED)
@@ -83,7 +83,7 @@ target_sources(cslol-manager PRIVATE
 )
 
 target_compile_definitions(cslol-manager PRIVATE $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>)
-target_link_libraries(cslol-manager PRIVATE Qt::Core Qt::Gui Qt::Quick Threads::Threads)
+target_link_libraries(cslol-manager PRIVATE Qt::Core Qt::Gui Qt::Quick Qt::Network Threads::Threads)
 target_include_directories(cslol-manager PRIVATE src/)
 
 qt_import_qml_plugins(cslol-manager)
