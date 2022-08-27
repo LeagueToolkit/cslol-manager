@@ -19,6 +19,8 @@ ColumnLayout {
 
     property string search: ""
 
+    property int checkedAll: Qt.PartiallyChecked
+
     signal modRemoved(string fileName)
 
     signal modExport(string fileName)
@@ -145,6 +147,7 @@ ColumnLayout {
             let obj = model.get(i)
             model.setProperty(i, "Enabled", mods[obj["FileName"]] === true)
         }
+        checkedUpdate()
     }
 
     function updateModInfo_model(fileName, info, model) {
@@ -174,6 +177,52 @@ ColumnLayout {
             }
         }
         return -1;
+    }
+
+    function checkAll(doEnable) {
+        for(let i = 0; i < cslolModsViewModel.count; i++) {
+            let obj = cslolModsViewModel.get(i)
+            if (obj["Enabled"] !== doEnable) {
+                cslolModsViewModel.setProperty(i, "Enabled", doEnable)
+            }
+        }
+        for(let j = 0; j < cslolModsViewModel2.count; j++) {
+            let obj = cslolModsViewModel2.get(j)
+            if (obj["Enabled"] !== doEnable) {
+                cslolModsViewModel2.setProperty(i, "Enabled", doEnable)
+            }
+        }
+    }
+
+    function checkedUpdate() {
+        let hasEnabled = false
+        let hasDisabled = false
+        for(let i = 0; i < cslolModsViewModel.count; i++) {
+            let obj = cslolModsViewModel.get(i)
+            if (obj["Enabled"]) {
+                hasEnabled = true;
+            } else {
+                hasDisabled = true;
+            }
+        }
+        for(let j = 0; j < cslolModsViewModel2.count; j++) {
+            let obj = cslolModsViewModel2.get(j)
+            if (obj["Enabled"]) {
+                hasEnabled = true;
+            } else {
+                hasDisabled = true;
+            }
+        }
+        let newState = Qt.PartiallyChecked
+        if (hasEnabled && !hasDisabled) {
+            newState = Qt.Checked;
+        }
+        if (!hasEnabled && hasDisabled) {
+            newState = Qt.Unchecked;
+        }
+        if (newState != cslolModsView.checkedAll) {
+            cslolModsView.checkedAll = newState;
+        }
     }
 
     ListModel {
@@ -240,6 +289,7 @@ ColumnLayout {
                         onCheckedChanged: {
                             if (checked != installed) {
                                 cslolModsViewModel.setProperty(index, "Enabled", checked)
+                                cslolModsView.checkedUpdate()
                             }
                         }
                         ToolTip {
