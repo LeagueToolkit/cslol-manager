@@ -394,7 +394,7 @@ ColumnLayout {
     }
 
     RowLayout {
-        enabled: !isBussy
+        enabled: !isBussy || window.patcherRunning
         spacing: cslolModsScrollView.spacing
         Layout.fillWidth:  true
         Layout.margins: cslolModsScrollView.padding

@@ -6,7 +6,6 @@ ToolBar {
     id: cslolToolBar
 
     property bool isBussy: false
-    property bool patcherRunning: false
     property var profilesModel: []
     property alias profilesCurrentIndex: profilesComboBox.currentIndex
     property alias profilesCurrentName: profilesComboBox.currentText
@@ -104,15 +103,15 @@ ToolBar {
             }
         }
         ToolButton {
-            text: patcherRunning ? qsTr("Stop") : qsTr("Run")
+            text: window.patcherRunning ? qsTr("Stop") : qsTr("Run")
             onClicked: {
-                if (patcherRunning) {
+                if (window.patcherRunning) {
                     cslolToolBar.stopProfile()
                 } else {
                     cslolToolBar.saveProfileAndRun(true)
                 }
             }
-            enabled: !isBussy || patcherRunning
+            enabled: !isBussy || window.patcherRunning
             ToolTip {
                 text: qsTr("Runs patcher for currently selected mods")
                 visible: parent.hovered
