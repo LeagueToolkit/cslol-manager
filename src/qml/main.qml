@@ -113,12 +113,6 @@ ApplicationWindow {
         onRemoveProfile: function() {
             cslolTools.deleteProfile(cslolToolBar.profilesCurrentName)
         }
-
-        onEnableAllCheckedChanged: {
-            if (cslolToolBar.enableAllState !== Qt.PartiallyChecked) {
-                cslolModsView.checkAll(enableAllChecked)
-            }
-        }
     }
 
     onClosing: {
@@ -219,11 +213,6 @@ ApplicationWindow {
             if (checkGamePath()) {
                 cslolDialogNewMod.open()
                 cslolDialogNewMod.clear()
-            }
-        }
-        onCheckedAllChanged: {
-            if (cslolToolBar.enableAllState !== checkedAll) {
-                cslolToolBar.enableAllState  = checkedAll
             }
         }
         onTryRefresh: cslolTools.refreshMods()

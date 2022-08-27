@@ -10,9 +10,6 @@ ToolBar {
     property alias profilesCurrentIndex: profilesComboBox.currentIndex
     property alias profilesCurrentName: profilesComboBox.currentText
     property alias menuButtonHeight: mainMenuButton.height
-    property alias enableAllState: enableAllCheckbox.checkState
-    property alias enableAllChecked: enableAllCheckbox.checked
-
 
     signal openSideMenu()
     signal saveProfileAndRun(bool run)
@@ -52,19 +49,6 @@ ToolBar {
             font.family: "FontAwesome"
             onClicked: {
                 Qt.openUrlExternally("https://github.com/morilli")
-            }
-        }
-        CheckBox {
-            id: enableAllCheckbox
-            enabled: !isBussy
-            tristate: true
-            checkState: Qt.PartiallyChecked
-            nextCheckState: function() {
-                return checkState === Qt.Checked ? Qt.Unchecked : Qt.Checked
-            }
-            ToolTip {
-                text: qsTr("Enable all mods")
-                visible: parent.hovered
             }
         }
         ToolButton {
