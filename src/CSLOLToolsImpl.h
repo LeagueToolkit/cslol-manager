@@ -43,6 +43,7 @@ signals:
     void modInfoChanged(QString fileName, QJsonObject infoData, QString image);
     void modWadsAdded(QString modFileName, QJsonArray wads);
     void modWadsRemoved(QString modFileName, QJsonArray wads);
+    void refreshed(QJsonObject mods);
     void reportError(QString name, QString message, QString stack_trace);
 
 public slots:
@@ -58,6 +59,7 @@ public slots:
     void deleteProfile(QString name);
     void stopProfile();
     void makeMod(QString fileName, QJsonObject infoData, QString image);
+    void refreshMods();
 
     void startEditMod(QString fileName);
     void changeModInfo(QString fileName, QJsonObject infoData, QString image);

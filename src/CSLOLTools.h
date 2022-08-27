@@ -43,6 +43,7 @@ signals:
     void modInfoChanged(QString fileName, QJsonObject infoData, QString image);
     void modWadsAdded(QString modFileName, QJsonArray wads);
     void modWadsRemoved(QString modFileName, QJsonArray wads);
+    void refreshed(QJsonObject mods);
     void reportError(QString name, QString message, QString stack_trace);
 
     void changeLeaguePath(QString newLeaguePath);
@@ -61,6 +62,8 @@ signals:
     void changeModInfo(QString fileName, QJsonObject infoData, QString image);
     void addModWad(QString modFileName, QString wad, bool removeUnknownNames);
     void removeModWads(QString modFileName, QJsonArray wads);
+    void refreshMods();
+
 public slots:
     CSLOLToolsImpl::CSLOLState getState();
     QString getStatus();

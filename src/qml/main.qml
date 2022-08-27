@@ -227,6 +227,7 @@ ApplicationWindow {
                 cslolToolBar.enableAllState  = checkedAll
             }
         }
+        onTryRefresh: cslolTools.refreshMods()
     }
 
     footer: CSLOLStatusBar {
@@ -376,6 +377,9 @@ ApplicationWindow {
         }
         onModWadsRemoved: function(fileName, wads) {
             cslolDialogEditMod.wadsRemoved(wads)
+        }
+        onRefreshed: {
+            cslolModsView.refereshedMods(mods)
         }
         onReportError: function(name, message, trace) {
             let log_data = "";

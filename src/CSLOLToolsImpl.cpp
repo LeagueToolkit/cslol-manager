@@ -392,6 +392,21 @@ void CSLOLToolsImpl::makeMod(QString fileName, QJsonObject infoData, QString ima
     }
 }
 
+void CSLOLToolsImpl::refreshMods() {
+    if (state_ == CSLOLState::StateIdle) {
+        setState(CSLOLState::StateBusy);
+
+        QJsonObject mods;
+        for (auto name : modList()) {
+            auto info = modInfoRead(name);
+            mods.insert(name, info);
+        }
+        emit refreshed(mods);
+
+        setState(CSLOLState::StateIdle);
+    }
+}
+
 void CSLOLToolsImpl::saveProfile(QString name, QJsonObject mods, bool run, bool skipConflict) {
     if (state_ == CSLOLState::StateIdle) {
         setState(CSLOLState::StateBusy);
