@@ -33,6 +33,8 @@ ColumnLayout {
 
     signal createNewMod()
 
+    signal tryRefresh()
+
     function addMod(fileName, info, enabled) {
         let infoData = {
             "FileName": fileName,
@@ -225,6 +227,34 @@ ColumnLayout {
         }
     }
 
+    function refereshedMods(mods) {
+        for (let fileName in mods) {
+            if (updateModInfo_model(fileName, mods[fileName], cslolModsViewModel) === -1) {
+                if (updateModInfo_model(fileName, mods[fileName], cslolModsViewModel2) === -1) {
+                    addMod(fileName, mods[fileName], false)
+                }
+            }
+        }
+        let i = 0;
+        while (i < cslolModsViewModel2.count) {
+            let obj = cslolModsViewModel2.get(i)
+            if (!(obj["FileName"] in mods)) {
+                cslolModsViewModel2.remove(i, 1)
+            } else {
+                i++;
+            }
+        }
+        let j = 0;
+        while (j < cslolModsViewModel.count) {
+            let obj2 = cslolModsViewModel.get(j)
+            if (!(obj2["FileName"] in mods)) {
+                cslolModsViewModel.remove(j, 1)
+            } else {
+                j++;
+            }
+        }
+    }
+
     ListModel {
         id: cslolModsViewModel
     }
@@ -408,7 +438,16 @@ ColumnLayout {
                 searchUpdate()
             }
         }
-
+        RoundButton {
+            text: "\uf021"
+            font.family: "FontAwesome"
+            onClicked: cslolModsView.tryRefresh()
+            Material.background: Material.primaryColor
+            ToolTip {
+                text: qsTr("Refresh")
+                visible: parent.hovered
+            }
+        }
         RoundButton {
             text: "\uf067"
             font.family: "FontAwesome"
