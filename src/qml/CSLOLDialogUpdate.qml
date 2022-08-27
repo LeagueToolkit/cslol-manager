@@ -29,7 +29,7 @@ Dialog {
         }
     }
 
-    property bool disableUpdates: false
+    property int enableUpdates: Qt.PartiallyChecked
 
     function makeRequest(url, onDone) {
         let request = new XMLHttpRequest();
@@ -44,25 +44,42 @@ Dialog {
 
     function checkForUpdates() {
         let url = "https://api.github.com/repos/LoL-Fantome/cslol-manager";
-        makeRequest(url + "/releases/latest", function(latest) {
-            if (disableUpdates && !(latest["body"].includes("mandatory") || latest["body"].includes("important"))) {
-                return;
-            }
-            let tag_name = latest["tag_name"];
-            makeRequest(url + "/git/ref/tags/" + tag_name, function(ref) {
-                let commit_sha = ref["object"]["sha"];
-                let commit_url = ref["object"]["url"];
-                if (commit_sha === CSLOL_COMMIT) {
-                    return;
-                }
-                makeRequest(commit_url, function(commit) {
-                    let current_date = Date.parse(CSLOL_DATE)
-                    let commit_date = Date.parse(commit["committer"]["date"]);
-                    if (commit_date > current_date) {
-                        cslolDialogUpdate.open();
+        makeRequest(url + "/releases", function(releases) {
+            for (let release in releases) {
+                switch (enableUpdates) {
+                case Qt.Unchecked:
+                    // recieve only mandatory updates
+                    if (release["prerelease"] || !release["body"].includes("mandatory")) {
+                        continue;
                     }
+                    break;
+                case Qt.PartiallyChecked:
+                    // only receive non-prerelease updates
+                    if (release["prerelease"]) {
+                        continue;
+                    }
+                    break;
+                case Qt.Checked:
+                    // allways receive the update
+                    break;
+                }
+                let tag_name = release["tag_name"];
+                console.log("Fetching release " + tag_name)
+                makeRequest(url + "/git/ref/tags/" + tag_name, function(ref) {
+                    let commit_sha = ref["object"]["sha"];
+                    let commit_url = ref["object"]["url"];
+                    if (commit_sha === CSLOL_COMMIT) {
+                        return;
+                    }
+                    makeRequest(commit_url, function(commit) {
+                        let current_date = Date.parse(CSLOL_DATE)
+                        let commit_date = Date.parse(commit["committer"]["date"]);
+                        if (commit_date > current_date) {
+                            cslolDialogUpdate.open();
+                        }
+                    })
                 })
-            })
+            }
         })
     }
 }
