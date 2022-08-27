@@ -19,8 +19,6 @@ ColumnLayout {
 
     property string search: ""
 
-    property int checkedAll: Qt.PartiallyChecked
-
     signal modRemoved(string fileName)
 
     signal modExport(string fileName)
@@ -222,8 +220,8 @@ ColumnLayout {
         if (!hasEnabled && hasDisabled) {
             newState = Qt.Unchecked;
         }
-        if (newState != cslolModsView.checkedAll) {
-            cslolModsView.checkedAll = newState;
+        if (enableAllCheckbox.checkState !== newState) {
+            enableAllCheckbox.checkState = newState
         }
     }
 
@@ -428,6 +426,25 @@ ColumnLayout {
         Layout.fillWidth:  true
         Layout.margins: cslolModsScrollView.padding
 
+        CheckBox {
+            id: enableAllCheckbox
+            enabled: !isBussy
+            tristate: true
+            checkState: Qt.PartiallyChecked
+            nextCheckState: function() {
+                return checkState === Qt.Checked ? Qt.Unchecked : Qt.Checked
+            }
+            Layout.leftMargin: 10
+            ToolTip {
+                text: qsTr("Enable all mods")
+                visible: parent.hovered
+            }
+            onCheckedChanged: {
+                if (checkState !== Qt.PartiallyChecked) {
+                    cslolModsView.checkAll(enableAllCheckbox.checked)
+                }
+            }
+        }
         TextField {
             id: cslolModsViewSearchBox
             enabled: !isBussy || window.patcherRunning
