@@ -45,7 +45,8 @@ Dialog {
     function checkForUpdates() {
         let url = "https://api.github.com/repos/LoL-Fantome/cslol-manager";
         makeRequest(url + "/releases", function(releases) {
-            for (let release in releases) {
+            for (let index in releases) {
+                let release = releases[index]
                 switch (enableUpdates) {
                 case Qt.Unchecked:
                     // recieve only mandatory updates
@@ -79,6 +80,7 @@ Dialog {
                         }
                     })
                 })
+                break;
             }
         })
     }

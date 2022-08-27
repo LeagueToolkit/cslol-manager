@@ -320,7 +320,7 @@ ColumnLayout {
                                 cslolModsView.checkedUpdate()
                             }
                         }
-                        ToolTip {
+                        CSLOLToolTip {
                             text: qsTr("Enable this mod")
                             visible: parent.hovered
                         }
@@ -358,7 +358,7 @@ ColumnLayout {
                                 cslolModsViewModel.remove(index, 1)
                                 cslolModsView.modRemoved(modName)
                             }
-                            ToolTip {
+                            CSLOLToolTip {
                                 text: qsTr("Remove this mod")
                                 visible: parent.hovered
                             }
@@ -370,7 +370,7 @@ ColumnLayout {
                                 let modName = model.FileName
                                 cslolModsView.modExport(modName)
                             }
-                            ToolTip {
+                            CSLOLToolTip {
                                 text: qsTr("Export this mod")
                                 visible: parent.hovered
                             }
@@ -382,7 +382,7 @@ ColumnLayout {
                                 let modName = model.FileName
                                 cslolModsView.modEdit(modName)
                             }
-                            ToolTip {
+                            CSLOLToolTip {
                                 text: qsTr("Edit this mod")
                                 visible: parent.hovered
                             }
@@ -396,7 +396,7 @@ ColumnLayout {
                                     Qt.openUrlExternally(url)
                                 }
                             }
-                            ToolTip {
+                            CSLOLToolTip {
                                 text: qsTr("Mod updates")
                                 visible: parent.hovered
                             }
@@ -410,7 +410,7 @@ ColumnLayout {
                                     Qt.openUrlExternally(url)
                                 }
                             }
-                            ToolTip {
+                            CSLOLToolTip {
                                 text: qsTr("Support this author")
                                 visible: parent.hovered
                             }
@@ -434,7 +434,7 @@ ColumnLayout {
             nextCheckState: function() {
                 return checkState === Qt.Checked ? Qt.Unchecked : Qt.Checked
             }
-            ToolTip {
+            CSLOLToolTip {
                 text: qsTr("Enable all mods")
                 visible: parent.hovered
             }
@@ -460,7 +460,7 @@ ColumnLayout {
             font.family: "FontAwesome"
             onClicked: cslolModsView.tryRefresh()
             Material.background: Material.primaryColor
-            ToolTip {
+            CSLOLToolTip {
                 text: qsTr("Refresh")
                 visible: parent.hovered
             }
@@ -471,7 +471,7 @@ ColumnLayout {
             font.family: "FontAwesome"
             onClicked: cslolModsView.createNewMod()
             Material.background: Material.primaryColor
-            ToolTip {
+            CSLOLToolTip {
                 text: qsTr("Create new mod")
                 visible: parent.hovered
             }
@@ -482,7 +482,7 @@ ColumnLayout {
             font.family: "FontAwesome"
             onClicked: cslolModsView.installFantomeZip()
             Material.background: Material.primaryColor
-            ToolTip {
+            CSLOLToolTip {
                 text: qsTr("Import new mod")
                 visible: parent.hovered
             }

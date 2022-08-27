@@ -76,7 +76,7 @@ Dialog {
                     logTextArea.copy()
                     logTextArea.deselect()
                 }
-                ToolTip {
+                CSLOLToolTip {
                     text: qsTr("Puts log contents in your clipboard")
                     visible: parent.hovered
                 }
