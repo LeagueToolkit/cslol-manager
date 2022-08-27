@@ -63,11 +63,15 @@ Dialog {
 
             TabButton {
                 text: qsTr("Game")
-                width: settingsStackLayout.width / 2
+                width: settingsStackLayout.width / 3
+            }
+            TabButton {
+                text: qsTr("System")
+                width: settingsStackLayout.width / 3
             }
             TabButton {
                 text: qsTr("Theme")
-                width: settingsStackLayout.width / 2
+                width: settingsStackLayout.width / 3
             }
         }
 
@@ -101,6 +105,20 @@ Dialog {
                     id: ignorebadCheck
                     text: qsTr("Ignore faulty .wad's")
                     checked: false
+                    Layout.fillWidth: true
+                }
+            }
+            ColumnLayout {
+                id: settingsSystemTab
+                spacing: 5
+                Button {
+                    text: qsTr("Logs")
+                    onClicked: Qt.openUrlExternally(CSLOLUtils.toFile("./log.txt"))
+                    Layout.fillWidth: true
+                }
+                Button {
+                    text: qsTr("Updates")
+                    onClicked: Qt.openUrlExternally(cslolDialogUpdate.update_url)
                     Layout.fillWidth: true
                 }
                 Switch {

@@ -149,6 +149,10 @@ ApplicationWindow {
                 }
             }
             MenuItem {
+                text: qsTr("Logs")
+                onTriggered: Qt.openUrlExternally(CSLOLUtils.toFile("./log.txt"))
+            }
+            MenuItem {
                 text: qsTr("Updates")
                 onTriggered: Qt.openUrlExternally(cslolDialogUpdate.update_url)
             }
