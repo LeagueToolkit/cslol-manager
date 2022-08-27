@@ -53,14 +53,13 @@ ApplicationWindow {
     }
 
     function checkGamePath() {
-        if (cslolTools.leaguePath === "") {
-            let detected = CSLOLUtils.detectGamePath();
-            if (detected === "") {
-                cslolDialogGame.open();
-                return false;
-            } else {
-                cslolTools.leaguePath = detected;
-            }
+        let detected = CSLOLUtils.detectGamePath();
+        if (detected === "" && cslolTools.leaguePath === "") {
+            cslolDialogGame.open();
+            return false;
+        }
+        if (detected !== "") {
+            cslolTools.leaguePath = detected;
         }
         return true;
     }
