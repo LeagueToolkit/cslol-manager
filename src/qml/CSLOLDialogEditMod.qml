@@ -168,7 +168,7 @@ Dialog {
                 checked: true
                 text: qsTr("Remove unknown")
                 Layout.leftMargin: 5
-                ToolTip {
+                CSLOLToolTip {
                     text: qsTr("Uncheck this if you are adding new files to game!")
                     visible: parent.hovered
                 }

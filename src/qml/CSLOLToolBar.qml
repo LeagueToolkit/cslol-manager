@@ -27,7 +27,7 @@ ToolBar {
             text: "\uf013"
             font.family: "FontAwesome"
             onClicked: cslolToolBar.openSideMenu()
-            ToolTip {
+            CSLOLToolTip {
                 text: qsTr("Open settings dialog")
                 visible: parent.hovered
             }
@@ -38,7 +38,7 @@ ToolBar {
             currentIndex: 0
             enabled: !isBussy
             model: cslolToolBar.profilesModel
-            ToolTip {
+            CSLOLToolTip {
                 text: qsTr("Select a profile to save, load or remove")
                 visible: parent.hovered
             }
@@ -55,7 +55,7 @@ ToolBar {
             text: qsTr("Save")
             onClicked: cslolToolBar.saveProfileAndRun(false)
             enabled: !isBussy
-            ToolTip {
+            CSLOLToolTip {
                 text: qsTr("Save enabled mods for selected profile")
                 visible: parent.hovered
             }
@@ -64,7 +64,7 @@ ToolBar {
             text: qsTr("Load")
             onClicked: cslolToolBar.loadProfile()
             enabled: !isBussy
-            ToolTip {
+            CSLOLToolTip {
                 text: qsTr("Load enabled mods for selected profile")
                 visible: parent.hovered
             }
@@ -73,7 +73,7 @@ ToolBar {
             text: qsTr("Delete")
             onClicked: cslolToolBar.removeProfile()
             enabled: !isBussy
-            ToolTip {
+            CSLOLToolTip {
                 text: qsTr("Delete selected profile")
                 visible: parent.hovered
             }
@@ -82,7 +82,7 @@ ToolBar {
             text: qsTr("New")
             onClicked: cslolToolBar.newProfile()
             enabled: !isBussy
-            ToolTip {
+            CSLOLToolTip {
                 text: qsTr("Create new profile")
                 visible: parent.hovered
             }
@@ -97,7 +97,7 @@ ToolBar {
                 }
             }
             enabled: !isBussy || window.patcherRunning
-            ToolTip {
+            CSLOLToolTip {
                 text: qsTr("Runs patcher for currently selected mods")
                 visible: parent.hovered
             }
