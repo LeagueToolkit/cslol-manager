@@ -2,6 +2,7 @@ import QtQuick 2.15
 import QtQuick.Layouts 1.12
 import QtQuick.Controls 2.15
 import Qt.labs.settings 1.0
+import Qt.labs.platform 1.0
 import customskinlol.tools 1.0
 import QtQuick.Controls.Material 2.15
 
@@ -24,6 +25,7 @@ ApplicationWindow {
         property alias suppressInstallConflicts: cslolDialogSettings.suppressInstallConflicts
         property alias disableUpdates: cslolDialogSettings.disableUpdates
         property alias enableAutoRun: cslolDialogSettings.enableAutoRun
+        property alias enableSystray: cslolDialogSettings.enableSystray
         property alias themeDarkMode: cslolDialogSettings.themeDarkMode
         property alias themePrimaryColor: cslolDialogSettings.themePrimaryColor
         property alias themeAccentColor: cslolDialogSettings.themeAccentColor
@@ -116,6 +118,50 @@ ApplicationWindow {
         onEnableAllCheckedChanged: {
             if (cslolToolBar.enableAllState !== Qt.PartiallyChecked) {
                 cslolModsView.checkAll(enableAllChecked)
+            }
+        }
+    }
+
+    onClosing: {
+        if (cslolTrayIcon.available && settings.enableSystray) {
+            close.accepted = false
+            window.hide()
+        }
+    }
+
+    SystemTrayIcon {
+        id: cslolTrayIcon
+        visible: settings.enableSystray
+        iconSource: "qrc:/icon.png"
+        menu: Menu {
+            MenuItem {
+                text: !window.visible ? qsTr("Show") : qsTr("Minimize")
+                onTriggered: window.visible ? window.hide() : window.show()
+            }
+            MenuItem {
+                text: cslolToolBar.patcherRunning ? qsTr("Stop") : qsTr("Run")
+                onTriggered: {
+                    if (cslolToolBar.patcherRunning) {
+                        cslolToolBar.stopProfile()
+                    } else if (!window.isBussy) {
+                        cslolToolBar.saveProfileAndRun(true)
+                    }
+                }
+            }
+            MenuItem {
+                text: qsTr("Updates")
+                onTriggered: Qt.openUrlExternally(cslolDialogUpdate.update_url)
+            }
+            MenuItem {
+                text: qsTr("Exit")
+                onTriggered: Qt.quit()
+            }
+        }
+        onActivated: {
+            if (reason === SystemTrayIcon.Context) {
+                menu.open()
+            } else if(reason === SystemTrayIcon.DoubleClick) {
+                window.show()
             }
         }
     }

@@ -26,6 +26,7 @@ Dialog {
     property alias themePrimaryColor: themePrimaryColorBox.currentIndex
     property alias themeAccentColor: themeAccentColorBox.currentIndex
     property alias suppressInstallConflicts: suppressInstallConflictsCheck.checked
+    property alias enableSystray: enableSystrayCheck.checked
     property alias enableAutoRun: enableAutoRunCheck.checked
 
     property var colors_LIST: [
@@ -109,8 +110,14 @@ Dialog {
                     Layout.fillWidth: true
                 }
                 Switch {
+                    id: enableSystrayCheck
+                    text: qsTr("Enable systray icon")
+                    checked: false
+                    Layout.fillWidth: true
+                }
+                Switch {
                     id: enableAutoRunCheck
-                    text: qsTr("Auto Run on start")
+                    text: qsTr("Auto Run on program start")
                     checked: false
                     Layout.fillWidth: true
                 }
