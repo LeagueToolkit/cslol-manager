@@ -220,10 +220,16 @@ struct Context {
     }
 };
 
+static bool skinhack_detected() {
+    std::error_code ec = {};
+    return fs::exists("C:/Fraps/LOLPRO.exe", ec);
+}
+
 auto patcher::run(std::function<bool(Message, char const*)> update,
                   fs::path const& profile_path,
                   fs::path const& config_path,
                   fs::path const& game_path) -> void {
+    lol_throw_if(skinhack_detected());
     auto ctx = Context{};
     ctx.set_prefix(profile_path);
     ctx.load_config(config_path);
