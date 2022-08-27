@@ -28,6 +28,7 @@ Dialog {
     property alias suppressInstallConflicts: suppressInstallConflictsCheck.checked
     property alias enableSystray: enableSystrayCheck.checked
     property alias enableAutoRun: enableAutoRunCheck.checked
+    property alias updateUrls: updateUrlsTextArea.text
 
     property var colors_LIST: [
         "Red",
@@ -78,7 +79,7 @@ Dialog {
         StackLayout {
             id: settingsStackLayout
             width: parent.width
-            Layout.fillHeight: true
+            height: parent.height - settingsTabBar.height - 5
             currentIndex: settingsTabBar.currentIndex
             ColumnLayout {
                 id: settingsGameTab
@@ -108,6 +109,7 @@ Dialog {
                     Layout.fillWidth: true
                 }
             }
+
             ColumnLayout {
                 id: settingsSystemTab
                 spacing: 5
@@ -120,6 +122,19 @@ Dialog {
                     text: qsTr("Updates")
                     onClicked: Qt.openUrlExternally(cslolDialogUpdate.update_url)
                     Layout.fillWidth: true
+                }
+                ScrollView {
+                    Layout.fillHeight: true
+                    Layout.fillWidth: true
+                    ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                    ScrollBar.vertical.policy: ScrollBar.AlwaysOn
+                    padding: ScrollBar.vertical.width
+                    clip: true
+                    TextArea {
+                        id: updateUrlsTextArea
+                        placeholderText: qsTr("Update urls")
+                        textFormat: TextEdit.PlainText
+                    }
                 }
                 CheckBox {
                     id: enableUpdatesCheck
