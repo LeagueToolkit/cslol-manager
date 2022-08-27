@@ -23,6 +23,7 @@ ApplicationWindow {
         property alias ignorebad: cslolDialogSettings.ignorebad
         property alias suppressInstallConflicts: cslolDialogSettings.suppressInstallConflicts
         property alias disableUpdates: cslolDialogSettings.disableUpdates
+        property alias enableAutoRun: cslolDialogSettings.enableAutoRun
         property alias themeDarkMode: cslolDialogSettings.themeDarkMode
         property alias themePrimaryColor: cslolDialogSettings.themePrimaryColor
         property alias themeAccentColor: cslolDialogSettings.themeAccentColor
@@ -270,7 +271,9 @@ ApplicationWindow {
             for(let fileName in mods) {
                 cslolModsView.addMod(fileName, mods[fileName], fileName in profileMods)
             }
-            checkGamePath()
+            if(checkGamePath() && settings.enableAutoRun) {
+                cslolToolBar.saveProfileAndRun(true)
+            }
         }
         onModDeleted: {}
         onInstalledMod: function(fileName, infoData) {
