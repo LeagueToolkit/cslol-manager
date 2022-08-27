@@ -15,6 +15,7 @@ Dialog {
     Overlay.modal: Rectangle {
         color: "#aa333333"
     }
+    onOpened: window.show()
 
     property alias text: warningTextLabel.text
 

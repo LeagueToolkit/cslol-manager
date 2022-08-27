@@ -14,6 +14,7 @@ Dialog {
     Overlay.modal: Rectangle {
         color: "#aa333333"
     }
+    onOpened: window.show()
 
     property string update_url: "https://github.com/LoL-Fantome/cslol-manager/releases/latest"
 
