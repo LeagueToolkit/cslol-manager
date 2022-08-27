@@ -424,7 +424,7 @@ ColumnLayout {
     RowLayout {
         spacing: cslolModsScrollView.spacing
         Layout.fillWidth:  true
-        Layout.margins: cslolModsScrollView.padding
+        Layout.margins: cslolModsScrollView.padding * 2
 
         CheckBox {
             id: enableAllCheckbox
@@ -434,7 +434,6 @@ ColumnLayout {
             nextCheckState: function() {
                 return checkState === Qt.Checked ? Qt.Unchecked : Qt.Checked
             }
-            Layout.leftMargin: 10
             ToolTip {
                 text: qsTr("Enable all mods")
                 visible: parent.hovered
