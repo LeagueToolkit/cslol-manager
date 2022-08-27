@@ -26,6 +26,7 @@ Dialog {
         let scrollbar = logTextScroll.ScrollBar;
         scrollbar.horizontal.position = 0
         scrollbar.vertical.setPosition(1.0 - scrollbar.vertical.size)
+        window.show()
     }
 
     ColumnLayout {
