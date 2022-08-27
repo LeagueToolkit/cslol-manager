@@ -424,13 +424,13 @@ ColumnLayout {
     }
 
     RowLayout {
-        enabled: !isBussy || window.patcherRunning
         spacing: cslolModsScrollView.spacing
         Layout.fillWidth:  true
         Layout.margins: cslolModsScrollView.padding
 
         TextField {
             id: cslolModsViewSearchBox
+            enabled: !isBussy || window.patcherRunning
             Layout.fillWidth:  true
             placeholderText: "Search..."
             onTextEdited: {
@@ -439,6 +439,7 @@ ColumnLayout {
             }
         }
         RoundButton {
+            enabled: !isBussy
             text: "\uf021"
             font.family: "FontAwesome"
             onClicked: cslolModsView.tryRefresh()
@@ -449,6 +450,7 @@ ColumnLayout {
             }
         }
         RoundButton {
+            enabled: !isBussy
             text: "\uf067"
             font.family: "FontAwesome"
             onClicked: cslolModsView.createNewMod()
@@ -459,6 +461,7 @@ ColumnLayout {
             }
         }
         RoundButton {
+            enabled: !isBussy
             text: "\uf1c6"
             font.family: "FontAwesome"
             onClicked: cslolModsView.installFantomeZip()
