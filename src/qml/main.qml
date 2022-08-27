@@ -40,6 +40,7 @@ ApplicationWindow {
         fileName: "config.ini"
     }
 
+    property bool patcherRunning: cslolTools.state === CSLOLTools.StateRunning
     property bool isBussy: cslolTools.state !== CSLOLTools.StateIdle
     property var validName: new RegExp(/[\p{L}\p{M}\p{Z}\p{N}\w]{3,50}/u)
     property var validVersion: new RegExp(/([0-9]{1,3})(\.[0-9]{1,3}){0,3}/)
@@ -85,7 +86,6 @@ ApplicationWindow {
     header: CSLOLToolBar {
         id: cslolToolBar
         isBussy: window.isBussy
-        patcherRunning: cslolTools.state === CSLOLTools.StateRunning
 
         profilesModel: [ "Default Profile" ]
 
@@ -139,9 +139,9 @@ ApplicationWindow {
                 onTriggered: window.visible ? window.hide() : window.show()
             }
             MenuItem {
-                text: cslolToolBar.patcherRunning ? qsTr("Stop") : qsTr("Run")
+                text: window.patcherRunning ? qsTr("Stop") : qsTr("Run")
                 onTriggered: {
-                    if (cslolToolBar.patcherRunning) {
+                    if (window.patcherRunning) {
                         cslolToolBar.stopProfile()
                     } else if (!window.isBussy) {
                         cslolToolBar.saveProfileAndRun(true)
