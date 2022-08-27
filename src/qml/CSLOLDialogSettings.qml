@@ -26,6 +26,7 @@ Dialog {
     property alias themePrimaryColor: themePrimaryColorBox.currentIndex
     property alias themeAccentColor: themeAccentColorBox.currentIndex
     property alias suppressInstallConflicts: suppressInstallConflictsCheck.checked
+    property alias enableAutoRun: enableAutoRunCheck.checked
 
     property var colors_LIST: [
         "Red",
@@ -104,6 +105,12 @@ Dialog {
                 Switch {
                     id: disableUpdatesCheck
                     text: qsTr("Disable updates")
+                    checked: false
+                    Layout.fillWidth: true
+                }
+                Switch {
+                    id: enableAutoRunCheck
+                    text: qsTr("Auto Run on start")
                     checked: false
                     Layout.fillWidth: true
                 }
