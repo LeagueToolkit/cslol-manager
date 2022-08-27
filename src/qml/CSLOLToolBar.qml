@@ -56,6 +56,7 @@ ToolBar {
         }
         CheckBox {
             id: enableAllCheckbox
+            enabled: !isBussy
             tristate: true
             checkState: Qt.PartiallyChecked
             nextCheckState: function() {
