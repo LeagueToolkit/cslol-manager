@@ -21,7 +21,7 @@ Dialog {
     property bool isBussy: false
     property alias blacklist: blacklistCheck.checked
     property alias ignorebad: ignorebadCheck.checked
-    property alias disableUpdates: disableUpdatesCheck.checked
+    property alias enableUpdates: enableUpdatesCheck.checkState
     property alias themeDarkMode: themeDarkModeCheck.checked
     property alias themePrimaryColor: themePrimaryColorBox.currentIndex
     property alias themeAccentColor: themeAccentColorBox.currentIndex
@@ -121,10 +121,11 @@ Dialog {
                     onClicked: Qt.openUrlExternally(cslolDialogUpdate.update_url)
                     Layout.fillWidth: true
                 }
-                Switch {
-                    id: disableUpdatesCheck
-                    text: qsTr("Disable updates")
-                    checked: false
+                CheckBox {
+                    id: enableUpdatesCheck
+                    text: qsTr("Enable updates")
+                    checkState: Qt.PartiallyChecked
+                    tristate: true
                     Layout.fillWidth: true
                 }
                 Switch {

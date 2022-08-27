@@ -23,7 +23,7 @@ ApplicationWindow {
         property alias blacklist: cslolDialogSettings.blacklist
         property alias ignorebad: cslolDialogSettings.ignorebad
         property alias suppressInstallConflicts: cslolDialogSettings.suppressInstallConflicts
-        property alias disableUpdates: cslolDialogSettings.disableUpdates
+        property alias enableUpdates: cslolDialogSettings.enableUpdates
         property alias enableAutoRun: cslolDialogSettings.enableAutoRun
         property alias enableSystray: cslolDialogSettings.enableSystray
         property alias themeDarkMode: cslolDialogSettings.themeDarkMode
@@ -304,7 +304,7 @@ ApplicationWindow {
 
     CSLOLDialogUpdate {
         id: cslolDialogUpdate
-        disableUpdates: settings.disableUpdates
+        enableUpdates: settings.enableUpdates
     }
 
     CSLOLTools {

@@ -29,7 +29,31 @@ jobs:
       run: |
         ./make-release.sh build
         7z a cslol-manager-windows.exe -sfx7z.sfx cslol-manager/
+    - name: Build Changelog
+      id: github_release
+      uses: mikepenz/release-changelog-builder-action@v3
+      with:
+        failOnError: 'true'
+        commitMode: 'true'
+        toTag: ${{ github.ref_name }}
+        configurationJson: |
+            {
+              "tag_resolver": {
+                "method": "sort",
+                "filter": {
+                  "pattern": "\\d+-\\d+-\\d+-.+",
+                  "flags": "gu"
+                }
+              },
+              "pr_template": "- #{{MERGE_SHA}}: #{{TITLE}}",
+              "template": "#{{UNCATEGORIZED}}"
+            }
+        ignorePreReleases: ${{ endsWith(github.ref_name, '-prerelease') || endsWith(github.ref_name, '-test') }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - name: "Release"
       uses: softprops/action-gh-release@v1
       with:
         files: cslol-manager-windows.exe
+        prerelease: ${{ endsWith(github.ref_name, '-prerelease') || endsWith(github.ref_name, '-test') }}
+        body: ${{ steps.github_release.outputs.changelog }}
