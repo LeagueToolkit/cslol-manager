@@ -11,13 +11,14 @@
 #    include <psapi.h>
 #    include <tlhelp32.h>
 // do not reorder
+#    include <comdef.h>
 #    include <comutil.h>
 #    include <wbemcli.h>
 #    include <wrl/client.h>
 // do not reorder
 #    define last_error() std::error_code((int)GetLastError(), std::system_category())
 #    define hassert(...) \
-        if (auto hres = __VA_ARGS__; FAILED(hres)) lol_throw_msg("Failed: {}", #__VA_ARGS__);
+        if (auto hres = __VA_ARGS__; FAILED(hres)) _com_issue_error(hres);
 
 namespace {
     static inline constexpr DWORD PROCESS_NEEDED_ACCESS =
@@ -40,7 +41,7 @@ namespace {
         return std::unique_ptr<handle_value, deleter>(handle);
     }
 
-    static DWORD find_pid(char const* name) {
+    static DWORD find_pid_wmi(char const* name) {
         using namespace Microsoft::WRL;
 
         static auto service = []() {
@@ -79,6 +80,28 @@ namespace {
             auto var = VARIANT{};
             clsobj->Get(L"ProcessId", 0, &var, NULL, NULL);
             return var.intVal;
+        }
+
+        return 0;
+    }
+
+    static DWORD find_pid(char const* name) {
+        auto entry = PROCESSENTRY32{.dwSize = sizeof(PROCESSENTRY32)};
+        auto handle = SafeWinHandle(CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0));
+        for (bool i = Process32First(handle.get(), &entry); i; i = Process32Next(handle.get(), &entry)) {
+            std::filesystem::path ExeFile = entry.szExeFile;
+            if (ExeFile.filename().generic_string() == name) {
+                return entry.th32ProcessID;
+            }
+        }
+
+        if (static bool cache_wmi_failed = 0; !cache_wmi_failed) {
+            try {
+                return find_pid_wmi(name);
+            } catch (_com_error const& error) {
+                cache_wmi_failed = true;
+                logw("Failed to use WMI: {}", static_cast<const char*>(error.ErrorMessage()));
+            }
         }
         return 0;
     }
