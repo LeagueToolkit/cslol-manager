@@ -77,7 +77,7 @@ auto Mounted::read_from_game_file(fs::path const& path, fs::path const& game_pat
         return "Unknown wad version";
     }
     if (toc.entries.size() == 0) {
-        return "Empty wad file";
+        return nullptr;
     }
     archive = Archive::read_from_toc(src, toc);
     archive.mark_optimal();
