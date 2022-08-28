@@ -378,7 +378,6 @@ ApplicationWindow {
             cslolModsView.refereshedMods(mods)
         }
         onUpdatedMods: function(mods) {
-            console.log("updated: " + JSON.stringify(mods))
             cslolDialogUpdateMods.updatedMods = mods
             cslolDialogUpdateMods.open()
         }

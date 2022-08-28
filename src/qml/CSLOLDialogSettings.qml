@@ -126,7 +126,7 @@ Dialog {
                 ScrollView {
                     Layout.fillHeight: true
                     Layout.fillWidth: true
-                    ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                    ScrollBar.horizontal.policy: ScrollBar.AsNeeded
                     ScrollBar.vertical.policy: ScrollBar.AlwaysOn
                     padding: ScrollBar.vertical.width
                     clip: true
