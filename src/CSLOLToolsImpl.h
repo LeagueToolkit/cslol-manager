@@ -1,14 +1,18 @@
 #ifndef QMODMANAGERWORKER_H
 #define QMODMANAGERWORKER_H
+#include <QByteArray>
 #include <QFile>
 #include <QJsonArray>
+#include <QJsonDocument>
 #include <QJsonObject>
 #include <QLockFile>
 #include <QMap>
 #include <QNetworkAccessManager>
+#include <QNetworkRequest>
 #include <QObject>
 #include <QProcess>
 #include <QString>
+#include <vector>
 
 class CSLOLToolsImpl : public QObject {
     Q_OBJECT
