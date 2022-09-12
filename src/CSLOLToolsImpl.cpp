@@ -16,6 +16,11 @@
 #include <fstream>
 
 #include "CSLOLVersion.h"
+#ifdef _WIN32
+#define MOD_TOOLS_EXE "/cslol-tools/mod-tools.exe"
+#else
+#define MOD_TOOLS_EXE "/cslol-tools/mod-tools"
+#endif
 
 CSLOLToolsImpl::CSLOLToolsImpl(QObject* parent) : QObject(parent), prog_(QCoreApplication::applicationDirPath()) {
     logFile_ = new QFile(prog_ + "/log.txt", this);
@@ -279,7 +284,7 @@ void CSLOLToolsImpl::init() {
         }
 
         setStatus("Check mod-tools");
-        if (QFileInfo modtools(prog_ + "/cslol-tools/mod-tools.exe"); !modtools.exists()) {
+        if (QFileInfo modtools(prog_ + MOD_TOOLS_EXE); !modtools.exists()) {
             doReportError("Check mod-tools",
                           "Make sure you installed properly and that anti-virus isn't blocking any executables.",
                           "cslol-tools/mod-tools.exe is missing");
@@ -677,7 +682,7 @@ void CSLOLToolsImpl::runTool(QStringList args, std::function<void(int code, QPro
             process->deleteLater();
         }
     });
-    process->start(prog_ + "/cslol-tools/mod-tools.exe", args);
+    process->start(prog_ + MOD_TOOLS_EXE, args);
 }
 
 void CSLOLToolsImpl::runPatcher(QStringList args) {
@@ -713,5 +718,5 @@ void CSLOLToolsImpl::runPatcher(QStringList args) {
             }
         });
     }
-    patcherProcess_->start(prog_ + "/cslol-tools/mod-tools.exe", args);
+    patcherProcess_->start(prog_ + MOD_TOOLS_EXE, args);
 }
