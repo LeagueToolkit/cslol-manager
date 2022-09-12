@@ -90,6 +90,13 @@ auto sys::file_munmap(void* data, std::size_t count) noexcept -> void {
 #    define last_error() std::error_code((int)errno, std::system_category())
 
 auto sys::file_open(std::filesystem::path const& path, bool write) noexcept -> Result<std::intptr_t> {
+    if (write) {
+        std::error_code ec = {};
+        std::filesystem::create_directories(path.parent_path(), ec);
+        if (ec) [[unlikely]] {
+            return {ec};
+        }
+    }
     int fd = write ? ::open(path.string().c_str(), O_RDWR | O_CREAT, 0644) : ::open(path.string().c_str(), O_RDONLY);
     if (!handle_ok(fd)) [[unlikely]] {
         return {last_error()};
