@@ -6,8 +6,12 @@ using namespace lol::io;
 #define handle_ok(handle) ((std::intptr_t)handle != 0 && (std::intptr_t)handle != -1)
 
 #ifdef _WIN32
-#    define NOMINMAX
-#    define WIN32_LEAN_AND_MEAN
+#    ifndef WIN32_LEAN_AND_MEAN
+#        define WIN32_LEAN_AND_MEAN
+#    endif
+#    ifndef NOMINMAX
+#        define NOMINMAX
+#    endif
 #    include <windows.h>
 #    define last_error() std::error_code((int)GetLastError(), std::system_category())
 

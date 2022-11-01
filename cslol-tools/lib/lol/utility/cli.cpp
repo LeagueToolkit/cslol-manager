@@ -6,8 +6,12 @@
 using namespace lol;
 
 #ifdef _WIN32
-#    define WIN32_LEAN_AND_MEAN
-#    define NOMINMAX
+#    ifndef WIN32_LEAN_AND_MEAN
+#        define WIN32_LEAN_AND_MEAN
+#    endif
+#    ifndef NOMINMAX
+#        define NOMINMAX
+#    endif
 #    include <windows.h>
 // do not reorder
 #    include <processenv.h>

@@ -235,7 +235,7 @@ auto patcher::run(std::function<bool(Message, char const*)> update,
     ctx.load_config(config_path);
     (void)game_path;
     for (;;) {
-        auto process = Process::Find("League of Legends.exe");
+        auto process = Process::Find("League of Legends.exe", "League of Legends (TM) Client");
         if (!process) {
             if (!update(M_WAIT_START, "")) return;
             std::this_thread::sleep_for(250ms);
