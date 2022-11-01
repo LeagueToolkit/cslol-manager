@@ -12,8 +12,6 @@
 #    include <tlhelp32.h>
 // do not reorder
 #    define last_error() std::error_code((int)GetLastError(), std::system_category())
-#    define hassert(...) \
-        if (auto hres = __VA_ARGS__; FAILED(hres)) _com_issue_error(hres);
 
 namespace {
     static inline constexpr DWORD PROCESS_NEEDED_ACCESS =
@@ -188,9 +186,21 @@ auto Process::WriteMemory(void* address, void const* src, size_t size) const -> 
     lol_trace_func(lol_trace_var("{:p}", address), lol_trace_var("{:p}", src), lol_trace_var("{:#x}", size));
     lol_throw_if(address == nullptr);
     lol_throw_if(size != 0 && src == nullptr);
+#    if defined(CSLOL_TRASH_PC_SUPPORT)
+    static DWORD(NTAPI * NtWriteVirtualMemory)(HANDLE ProcessHandle,
+                                               LPVOID BaseAddress,
+                                               LPCVOID Buffer,
+                                               ULONG BytesToWrite,
+                                               PULONG BytesWritten) =
+        (decltype(NtWriteVirtualMemory))GetProcAddress(LoadLibraryA("ntdll.dll"), "NtWriteVirtualMemory");
+    if (auto error = NtWriteVirtualMemory(handle_, address, src, size, nullptr)) {
+        lol_throw_msg("WriteProcessMemory: 0x{:08X}", error);
+    }
+#    else
     if (!WriteProcessMemory(handle_, address, src, size, nullptr)) {
         lol_throw_msg("WriteProcessMemory: {}", last_error());
     }
+#    endif
 }
 
 auto Process::MarkMemoryWritable(void* address, size_t size) const -> void {

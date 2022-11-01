@@ -5,6 +5,8 @@ project(cslol-tools LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+option(CSLOL_TRASH_PC_SUPPORT "Support trash PCs running windows 7" OFF)
+
 add_subdirectory(dep)
 
 add_library(cslol-lib STATIC
@@ -65,6 +67,10 @@ if (WIN32)
         res/longpath.manifest
         res/utf8.manifest
     )
+endif()
+
+if (CSLOL_TRASH_PC_SUPPORT)
+    target_compile_definitions(cslol-lib PRIVATE -DCSLOL_TRASH_PC_SUPPORT)
 endif()
 
 target_compile_definitions(cslol-lib PUBLIC -D_CRT_SECURE_NO_WARNINGS) # lmao, fuck off
