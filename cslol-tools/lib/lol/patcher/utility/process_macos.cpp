@@ -39,7 +39,7 @@ Process::~Process() noexcept {
     }
 }
 
-auto Process::Find(char const* name) -> std::optional<Process> {
+auto Process::Find(char const* name, char const* window) -> std::optional<Process> {
     lol_trace_func();
     pid_t pids[4096];
     int bytes = proc_listpids(PROC_ALL_PIDS, 0, pids, sizeof(pids));

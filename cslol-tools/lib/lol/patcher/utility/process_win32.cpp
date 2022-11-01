@@ -11,11 +11,6 @@
 #    include <psapi.h>
 #    include <tlhelp32.h>
 // do not reorder
-#    include <comdef.h>
-#    include <comutil.h>
-#    include <wbemcli.h>
-#    include <wrl/client.h>
-// do not reorder
 #    define last_error() std::error_code((int)GetLastError(), std::system_category())
 #    define hassert(...) \
         if (auto hres = __VA_ARGS__; FAILED(hres)) _com_issue_error(hres);
@@ -25,82 +20,24 @@ namespace {
         PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_QUERY_INFORMATION | SYNCHRONIZE;
     static inline constexpr size_t DUMP_SIZE = 0x4000000;
 
-    struct deleter {
-        inline void operator()(HANDLE handle) const noexcept {
-            if (handle) {
-                CloseHandle(handle);
+    static DWORD find_pid(char const* name, char const* window) {
+        if (name) {
+            auto entry = PROCESSENTRY32{.dwSize = sizeof(PROCESSENTRY32)};
+            auto handle = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+            for (bool i = Process32First(handle, &entry); i; i = Process32Next(handle, &entry)) {
+                std::filesystem::path ExeFile = entry.szExeFile;
+                if (ExeFile.filename().generic_string() == name) {
+                    CloseHandle(handle);
+                    return entry.th32ProcessID;
+                }
             }
+            CloseHandle(handle);
         }
-    };
-
-    static inline auto SafeWinHandle(HANDLE handle) noexcept {
-        if (handle == INVALID_HANDLE_VALUE) {
-            handle = nullptr;
-        }
-        using handle_value = std::remove_pointer_t<HANDLE>;
-        return std::unique_ptr<handle_value, deleter>(handle);
-    }
-
-    static DWORD find_pid_wmi(char const* name) {
-        using namespace Microsoft::WRL;
-
-        static auto service = []() {
-            hassert(CoInitializeEx(0, COINIT_MULTITHREADED));
-
-            auto pLoc = ComPtr<IWbemLocator>{};
-            hassert(CoCreateInstance(CLSID_WbemLocator, 0, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(pLoc.GetAddressOf())));
-
-            auto pSvc = ComPtr<IWbemServices>{};
-            hassert(pLoc->ConnectServer(bstr_t(L"ROOT\\CIMV2"), 0, 0, 0, 0, 0, 0, pSvc.GetAddressOf()));
-
-            hassert(CoSetProxyBlanket(pSvc.Get(),
-                                      RPC_C_AUTHN_WINNT,
-                                      RPC_C_AUTHZ_NONE,
-                                      NULL,
-                                      RPC_C_AUTHN_LEVEL_CALL,
-                                      RPC_C_IMP_LEVEL_IMPERSONATE,
-                                      NULL,
-                                      EOAC_NONE));
-            return pSvc;
-        }();
-
-        auto query = "SELECT * FROM Win32_Process WHERE Name = '" + std::string(name) + "'";
-        auto enumerator = ComPtr<IEnumWbemClassObject>{};
-        hassert(service->ExecQuery(bstr_t("WQL"),
-                                   bstr_t(query.c_str()),
-                                   WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
-                                   NULL,
-                                   enumerator.GetAddressOf()));
-
-        while (enumerator) {
-            auto clsobj = ComPtr<IWbemClassObject>{};
-            if (ULONG res = 0; FAILED(enumerator->Next(WBEM_INFINITE, 1, clsobj.GetAddressOf(), &res)) || !res) {
-                break;
-            }
-            auto var = VARIANT{};
-            clsobj->Get(L"ProcessId", 0, &var, NULL, NULL);
-            return var.intVal;
-        }
-
-        return 0;
-    }
-
-    static DWORD find_pid(char const* name) {
-        auto entry = PROCESSENTRY32{.dwSize = sizeof(PROCESSENTRY32)};
-        auto handle = SafeWinHandle(CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0));
-        for (bool i = Process32First(handle.get(), &entry); i; i = Process32Next(handle.get(), &entry)) {
-            std::filesystem::path ExeFile = entry.szExeFile;
-            if (ExeFile.filename().generic_string() == name) {
-                return entry.th32ProcessID;
-            }
-        }
-
-        if (static bool cache_wmi_failed = 0; !cache_wmi_failed) {
-            try {
-                return find_pid_wmi(name);
-            } catch (_com_error const& error) {
-                cache_wmi_failed = true;
-                logw("Failed to use WMI: {}", static_cast<const char*>(error.ErrorMessage()));
+        if (window) {
+            if (auto hwnd = FindWindowExA(nullptr, nullptr, nullptr, window)) {
+                auto pid = DWORD{};
+                GetWindowThreadProcessId(hwnd, &pid);
+                return pid;
             }
         }
         return 0;
@@ -141,8 +78,8 @@ Process::~Process() noexcept {
     }
 }
 
-auto Process::Find(char const* name) -> std::optional<Process> {
-    if (auto pid = find_pid(name)) {
+auto Process::Find(char const* name, char const* window) -> std::optional<Process> {
+    if (auto pid = find_pid(name, window)) {
         auto process = Process(pid);
         if (!process.handle_) {
             lol_throw_msg("OpenProcess: {}", last_error());

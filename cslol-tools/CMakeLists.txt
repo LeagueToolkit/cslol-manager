@@ -65,7 +65,6 @@ if (WIN32)
         res/longpath.manifest
         res/utf8.manifest
     )
-    target_link_libraries(cslol-lib PRIVATE comsuppw.lib wbemuuid.lib)
 endif()
 
 target_compile_definitions(cslol-lib PUBLIC -D_CRT_SECURE_NO_WARNINGS) # lmao, fuck off
