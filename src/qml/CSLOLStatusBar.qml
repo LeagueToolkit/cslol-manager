@@ -15,12 +15,5 @@ ToolBar {
             id: statusMessageLabel
             text: statusMessage
         }
-        ProgressBar {
-            Layout.rightMargin: 5
-            id: progressBarData
-            from: 0
-            to: 1
-            indeterminate: true
-        }
     }
 }
