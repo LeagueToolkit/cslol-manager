@@ -17,6 +17,7 @@ Dialog {
     onOpened: window.show()
 
     property string update_url: "https://github.com/LoL-Fantome/cslol-manager/releases/latest"
+    property int lastUpdateUTCMinutes: 0
 
     onAccepted: Qt.openUrlExternally(update_url)
 
@@ -43,6 +44,11 @@ Dialog {
     }
 
     function checkForUpdates() {
+        let cur_time = Date.now() / (1000 * 60)
+        if (cur_time - lastUpdateUTCMinutes < 60) {
+            return
+        }
+        lastUpdateUTCMinutes = cur_time
         let url = "https://api.github.com/repos/LoL-Fantome/cslol-manager";
         makeRequest(url + "/releases", function(releases) {
             for (let index in releases) {

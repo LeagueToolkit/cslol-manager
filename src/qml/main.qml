@@ -37,6 +37,7 @@ ApplicationWindow {
         property alias windowHeight: window.height
         property alias windowWidth: window.width
         property bool windowMaximised
+        property alias lastUpdateUTCMinutes: cslolDialogUpdate.lastUpdateUTCMinutes
 
         fileName: "config.ini"
     }
