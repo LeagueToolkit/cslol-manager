@@ -15,6 +15,7 @@ namespace LineConfigImpl {
             }
         }
         constexpr auto operator<=>(CTStr const&) const noexcept = default;
+        constexpr auto match(CTStr const& other) const noexcept -> bool { return *this == other; }
     };
 
     template <typename T, CTStr name>
@@ -22,13 +23,13 @@ namespace LineConfigImpl {
         static constexpr auto NAME = name;
         T value = {};
         template <CTStr what>
-            requires(name == what)
+            requires(name.match(what))
         constexpr auto get() && noexcept { return value; }
         template <CTStr what>
-            requires(name == what)
+            requires(name.match(what))
         constexpr auto& get() & noexcept { return value; }
         template <CTStr what>
-            requires(name == what)
+            requires(name.match(what))
         constexpr auto const& get() const& noexcept { return value; }
     };
 
