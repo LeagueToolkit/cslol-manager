@@ -49,7 +49,7 @@ struct Context {
         }
     }
 
-    auto scan(lol::Process const& process) -> void {
+    auto scan(Process const& process) -> void {
         auto data = process.Dump();
         auto macho = MachO{};
         macho.parse_data((MachO::data_t)data.data(), data.size());
@@ -64,7 +64,7 @@ struct Context {
         }
     }
 
-    auto patch(lol::Process const& process) -> void {
+    auto patch(Process const& process) -> void {
         auto payload = Payload{};
         memcpy(payload.prefix, prefix.c_str(), prefix.size() + 1);
         payload.fopen_org_ptr = process.Rebase(off_fopen_org);
@@ -109,10 +109,10 @@ auto patcher::run(std::function<bool(Message, char const*)> update,
         if (!update(M_FOUND, "")) return;
 
         if (!update(M_SCAN, "")) return;
-        impl_->scan(*process);
+        ctx.scan(*process);
 
         if (!update(M_PATCH, "")) return;
-        impl_->patch(*process, prefix);
+        ctx.patch(*process);
 
         for (std::uint32_t timeout = 3 * 60 * 60 * 1000; timeout; timeout -= 250) {
             if (!update(M_WAIT_EXIT, "")) return;

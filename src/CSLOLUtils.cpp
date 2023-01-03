@@ -29,7 +29,7 @@ static QString try_game_path(QString path) {
     if (auto info = QFileInfo(path + "/League of Legends.exe"); info.exists()) {
         return info.canonicalPath();
     }
-    if (auto info = QFileInfo(path + "/League of Legends.app"); info.exists()) {
+    if (auto info = QFileInfo(path + "/LeagueofLegends.app"); info.exists()) {
         return info.canonicalPath();
     }
     return "";
@@ -38,6 +38,9 @@ static QString try_game_path(QString path) {
 QString CSLOLUtils::checkGamePath(QString pathRaw) {
     if (pathRaw.isEmpty()) {
         return pathRaw;
+    }
+    if (auto result = try_game_path(pathRaw + "/Contents/LoL/Game"); !result.isEmpty()) {
+        return result;
     }
     if (auto result = try_game_path(pathRaw); !result.isEmpty()) {
         return result;
