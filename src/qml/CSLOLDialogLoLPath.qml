@@ -6,8 +6,8 @@ import Qt.labs.platform 1.0
 FileDialog {
     id: lolPathDialog
     visible: false
-    title: qsTr("Select League of Legends.exe")
+    title: qsTr("Select League of Legends Executable")
     fileMode: FileDialog.OpenFile
-    nameFilters: "League of Legends.exe (*.exe)"
+    nameFilters: ""
     folder: ""
 }

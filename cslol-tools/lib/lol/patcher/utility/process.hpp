@@ -46,6 +46,7 @@ namespace lol::patcher {
         mutable PtrStorage base_ = {};
         mutable uint32_t checksum_ = {};
         mutable std::filesystem::path path_ = {};
+        mutable uint32_t pid_ = {};
 
     public:
         Process() noexcept;
