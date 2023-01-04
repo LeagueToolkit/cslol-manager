@@ -94,8 +94,8 @@ auto sys::file_munmap(void* data, std::size_t count) noexcept -> void {
 #    include <sys/resource.h>
 #    define last_error() std::error_code((int)errno, std::system_category())
 
-static ResourceLimit {
-    ResourceLimit() {
+static struct ResourceLimit {
+    public: ResourceLimit() {
         rlimit resourceLimit;
         getrlimit(RLIMIT_NOFILE, &resourceLimit);
         resourceLimit.rlim_cur = resourceLimit.rlim_max;
