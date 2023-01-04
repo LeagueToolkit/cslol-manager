@@ -9,11 +9,15 @@
 #    include <mach/mach_vm.h>
 #    include <unistd.h>
 
+using namespace lol;
+using namespace lol::patcher;
+
 Process::Process() noexcept = default;
 
 Process::Process(std::uint32_t pid) noexcept {
     if (mach_port_t task = {}; !task_for_pid(mach_task_self(), pid, &task)) {
         handle_ = (void*)(std::uintptr_t)task;
+        pid_ = pid;
     }
 }
 
@@ -22,6 +26,7 @@ Process::Process(Process&& other) noexcept {
     std::swap(base_, other.base_);
     std::swap(checksum_, other.checksum_);
     std::swap(path_, other.path_);
+    std::swap(pid_, other.pid_);
 }
 
 Process& Process::operator=(Process&& other) noexcept {
@@ -30,6 +35,7 @@ Process& Process::operator=(Process&& other) noexcept {
     std::swap(base_, other.base_);
     std::swap(checksum_, other.checksum_);
     std::swap(path_, other.path_);
+    std::swap(pid_, other.pid_);
     return *this;
 }
 
@@ -80,8 +86,8 @@ auto Process::Path() const -> fs::path {
     lol_trace_func();
     if (!path_.empty()) return path_;
     char pathbuf[PROC_PIDPATHINFO_MAXSIZE] = {};
-    if (auto const ret = proc_pidpath(pid, pathbuf, sizeof(pathbuf)); ret < 0) {
-        lol_throw_msg("proc_pidpath(pid: {}): {:#x}", (std::uint32_t)ret);
+    if (auto const ret = proc_pidpath(pid_, pathbuf, sizeof(pathbuf)); ret <= 0) {
+        lol_throw_msg("proc_pidpath(pid: {}): {:#x}", pid_, (std::uint32_t)ret);
     } else {
         path_ = std::string{pathbuf, pathbuf + ret};
     }
@@ -98,6 +104,8 @@ auto Process::Dump() const -> std::vector<char> {
         buffer.resize(size);
         fread(buffer.data(), buffer.size(), 1, file);
         fclose(file);
+    } else {
+        lol_throw_msg("fopen(path: {}, \"rb\") failed", path.c_str());
     }
     return buffer;
 }
@@ -110,7 +118,7 @@ auto Process::WaitExit(uint32_t timeout) const noexcept -> bool {
 
 auto Process::WaitInitialized(uint32_t timeout) const noexcept -> bool { return true; }
 
-auto Process::TryReadMemory(void* address, void* dest, size_t size) const -> bool {
+auto Process::TryReadMemory(void* address, void* dest, size_t size) const noexcept -> bool {
     mach_msg_type_number_t orgdata_read = 0;
     vm_offset_t offset = {};
     if (auto const err =

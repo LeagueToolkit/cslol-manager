@@ -91,7 +91,17 @@ auto sys::file_munmap(void* data, std::size_t count) noexcept -> void {
 #    include <sys/param.h>
 #    include <sys/stat.h>
 #    include <unistd.h>
+#    include <sys/resource.h>
 #    define last_error() std::error_code((int)errno, std::system_category())
+
+static ResourceLimit {
+    ResourceLimit() {
+        rlimit resourceLimit;
+        getrlimit(RLIMIT_NOFILE, &resourceLimit);
+        resourceLimit.rlim_cur = resourceLimit.rlim_max;
+        setrlimit(RLIMIT_NOFILE, &resourceLimit);
+    }
+} resourceLimit_ = {};
 
 auto sys::file_open(std::filesystem::path const& path, bool write) noexcept -> Result<std::intptr_t> {
     if (write) {

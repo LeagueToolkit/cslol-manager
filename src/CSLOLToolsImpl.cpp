@@ -241,7 +241,7 @@ void CSLOLToolsImpl::changeLeaguePath(QString newLeaguePath) {
         if (auto info = QFileInfo(newLeaguePath + "/League of Legends.exe"); info.exists()) {
             newLeaguePath = info.canonicalPath();
         }
-        if (auto info = QFileInfo(newLeaguePath + "/League of Legends.app"); info.exists()) {
+        if (auto info = QFileInfo(newLeaguePath + "/LeagueofLegends.app"); info.exists()) {
             newLeaguePath = info.canonicalPath();
         }
         if (game_ != newLeaguePath) {
