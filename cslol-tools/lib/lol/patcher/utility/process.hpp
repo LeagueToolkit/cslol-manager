@@ -10,11 +10,7 @@ namespace lol::patcher {
     template <typename T>
     Ptr(T *) -> Ptr<T>;
 
-#ifdef WIN32
-    using PtrStorage = uint32_t;
-#else
     using PtrStorage = uint64_t;
-#endif
 
     template <>
     struct Ptr<void> {
