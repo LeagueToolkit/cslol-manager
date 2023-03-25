@@ -98,7 +98,7 @@ endif()
 FetchContent_Declare(
     fmtlog
     GIT_REPOSITORY https://github.com/MengRao/fmtlog.git
-    GIT_TAG        16183b638d302042faf5f9cf2d089ab367ace933
+    GIT_TAG        fc4c01dc6cc9bce193bd5ca81f684c04c069ae05
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
 )
