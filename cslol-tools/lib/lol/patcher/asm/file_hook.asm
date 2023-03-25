@@ -1,13 +1,13 @@
 %include 'defines.asm'
 
 ; args
-%define arg_lpFileName 8
-%define arg_dwDesiredAccess 12
-%define arg_dwShareMode 16
-%define arg_lpSecurityAttributes 20
-%define arg_dwCreationDisposition 24
-%define arg_dwFlagsAndAttributes 28
-%define arg_hTemplateFile 32
+%define arg_lpFileName 16
+%define arg_dwDesiredAccess 24
+%define arg_dwShareMode 32
+%define arg_lpSecurityAttributes 40
+%define arg_dwCreationDisposition 48
+%define arg_dwFlagsAndAttributes 56
+%define arg_hTemplateFile 72
 
 ; locals
 %define local_buffer_size 0x1000
@@ -15,30 +15,37 @@
 
 ; prologue
 enter local_buffer_size, 0
-push ebx
-push edi
-push esi
+push rbx
+push rdi
+push rsi
+sub rsp, 72
+
+; use original functions shadow stack to preserve original args
+mov arg_lpSecurityAttributes[rbp], r9
+mov arg_dwShareMode[rbp], r8
+mov arg_dwDesiredAccess[rbp], rdx
+mov arg_lpFileName[rbp], rcx
 
 ; get pointer to data after function
 call back
-back:   pop ebx
-        and ebx, 0xFFFFF000
+back:   pop rbx
+        and rbx, 0xFFFFFFFFFFFFF000
 
 ; prepare buffer for writing
-lea edi, DWORD local_buffer[ebp]
+lea rdi, QWORD local_buffer[rbp]
 
 ; write prefix
-mov esi, DWORD payload_prefix_open_ptr[ebx]
+mov rsi, QWORD payload_prefix_open_ptr[rbx]
 write_prefix:   lodsw
                 stosw
                 test ax, ax
                 jne write_prefix
 
 ; remove null terminator
-sub edi, 2
+sub rdi, 2
 
 ; write path
-mov esi, DWORD arg_lpFileName[ebp]
+mov rsi, arg_lpFileName[rbp]
 mov ah, 0
 write_path: lodsb
             cmp al, 47
@@ -49,34 +56,43 @@ write_path_skip:
             test al, al
             jne write_path
 
-; call original with modified buffer
-lea eax, DWORD local_buffer[ebp]
-push DWORD arg_hTemplateFile[ebp]
-push DWORD arg_dwFlagsAndAttributes[ebp]
-push DWORD arg_dwCreationDisposition[ebp]
-push DWORD arg_lpSecurityAttributes[ebp]
-push DWORD arg_dwShareMode[ebp]
-push DWORD arg_dwDesiredAccess[ebp]
-push eax
-call DWORD payload_wopen[ebx]
 
+; call wide with modified buffer
+mov rax, arg_hTemplateFile[rbp]
+mov [rsp+48], rax
+mov rax, arg_dwFlagsAndAttributes[rbp]
+mov [rsp+40], rax
+mov rax, arg_dwCreationDisposition[rbp]
+mov [rsp+32], rax
+mov r9, arg_lpSecurityAttributes[rbp]
+mov r8, arg_dwShareMode[rbp]
+mov rdx, arg_dwDesiredAccess[rbp]
+lea rcx, QWORD local_buffer[rbp]
+call QWORD payload_wopen[rbx]
+
+; restore original arguments
 ; check for success
-cmp eax, -1
+cmp rax, -1
 jne done
 
 ; just call original
-push DWORD arg_hTemplateFile[ebp]
-push DWORD arg_dwFlagsAndAttributes[ebp]
-push DWORD arg_dwCreationDisposition[ebp]
-push DWORD arg_lpSecurityAttributes[ebp]
-push DWORD arg_dwShareMode[ebp]
-push DWORD arg_dwDesiredAccess[ebp]
-push DWORD arg_lpFileName[ebp]
-call DWORD payload_org_open_ptr[ebx]
+mov rax, arg_hTemplateFile[rbp]
+mov [rsp+48], rax
+mov rax, arg_dwFlagsAndAttributes[rbp]
+mov [rsp+40], rax
+mov rax, arg_dwCreationDisposition[rbp]
+mov [rsp+32], rax
+mov r9, arg_lpSecurityAttributes[rbp]
+mov r8, arg_dwShareMode[rbp]
+mov rdx, arg_dwDesiredAccess[rbp]
+mov rcx, arg_lpFileName[rbp]
+call QWORD payload_org_open_ptr[rbx]
+
 
 ; epilogue
-done: pop esi
-      pop edi
-      pop ebx
+done: add rsp, 72
+      pop rsi
+      pop rdi
+      pop rbx
       leave
-      ret 28
+      ret

@@ -1,38 +1,38 @@
 %include 'defines.asm'
 
 ; config
-%define config_scan_size 0x40
+%define config_scan_size 0x80
 
 ; args
-%define arg_str 8
-%define arg_file 12
-%define arg_line 16
+%define arg_str rcx
+%define arg_file rdx
+%define arg_line r8
 
 ; prologue
 enter 0, 0
-push ebx
-push esi
+push rbx
+push rsi
 call back
-back:   pop ebx
-        and ebx, 0xFFFFF000
+back:   pop rbx
+        and rbx, 0xFFFFFFFFFFFFF000
 
 ; scanning the stack
-mov esi, DWORD payload_find_ret_addr[ebx]
-mov eax, ebp
-add eax, config_scan_size
-scan:   sub eax, 4
-        cmp eax, ebp
+mov rsi, QWORD payload_find_ret_addr[rbx]
+mov rax, rbp
+add rax, config_scan_size
+scan:   sub rax, 8
+        cmp rax, rbp
         je done
-        cmp esi, DWORD [eax]
+        cmp rsi, QWORD [rax]
         jne scan
-        mov esi, DWORD payload_hook_ret_addr[ebx]
-        mov DWORD [eax], esi
+        mov rsi, QWORD payload_hook_ret_addr[rbx]
+        mov QWORD [rax], rsi
 
 ; fetch resume address
-done:   mov eax, DWORD payload_org_alloc_ptr[ebx]
+done:   mov rax, QWORD payload_org_alloc_ptr[rbx]
 
 ; epilogue
-pop esi
-pop ebx
+pop rsi
+pop rbx
 leave
-jmp eax
+jmp rax

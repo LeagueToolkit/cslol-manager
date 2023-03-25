@@ -134,7 +134,7 @@ auto Process::Checksum() const -> uint32_t {
         if (dos->e_magic != IMAGE_DOS_SIGNATURE) {
             lol_throw_msg("Failed to get dos header signature!");
         }
-        auto const nt = (PIMAGE_NT_HEADERS32)(raw + dos->e_lfanew);
+        auto const nt = (PIMAGE_NT_HEADERS64)(raw + dos->e_lfanew);
         if (nt->Signature != IMAGE_NT_SIGNATURE) {
             lol_throw_msg("Failed to get nt header signature!");
         }
