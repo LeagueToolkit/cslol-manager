@@ -90,7 +90,8 @@ auto Archive::write_to_file(fs::path const& path) const -> void {
             XXH3_128bits_update(&hashstate, &name, sizeof(name));
             XXH3_128bits_update(&hashstate, &checksum, sizeof(checksum));
         }
-        new_header.signature = std::bit_cast<TOC::Signature>(XXH3_128bits_digest(&hashstate));
+        auto const hashdigest = XXH3_128bits_digest(&hashstate);
+        std::memcpy((char*)&new_header.signature, (char const*)&hashdigest, sizeof(TOC::Signature));
     }
 
     if (auto old_header = HeaderT{}; file.readsome(0, &old_header, sizeof(HeaderT)) == sizeof(HeaderT)) {
