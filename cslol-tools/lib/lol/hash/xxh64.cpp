@@ -6,7 +6,15 @@
 using namespace lol;
 using namespace lol::hash;
 
-Xxh64::Xxh64(std::string_view str) noexcept : value_(XXH64(str.data(), str.size(), 0)) {}
+Xxh64::Xxh64(std::string_view str) noexcept {
+    XXH64_state_t state;
+    XXH64_reset(&state, 0);
+    for (std::uint8_t c: str) {
+        c = c >= 'A' && c <= 'Z' ? (c - 'A') + 'a' : c;
+        XXH64_update(&state, (char const*)&c, 1);
+    }
+    value_ = XXH64_digest(&state);
+}
 
 auto Xxh64::from_path(std::string_view str) noexcept -> Xxh64 {
     while (str.starts_with('.') || str.starts_with('/')) str.remove_prefix(1);
