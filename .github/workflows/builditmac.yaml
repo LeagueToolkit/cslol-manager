@@ -25,10 +25,12 @@ jobs:
         cp dist/SOURCE.URL cslol-manager-macos/
         cp build/cslol-tools/wad-* cslol-manager-macos/
         cp -R build/cslol-manager.app cslol-manager-macos/
-        cp build/cslol-tools/mod-tools cslol-manager-macos/cslol-manager.app/Contents/MacOS/
+        mkdir cslol-manager-macos/cslol-manager.app/Contents/MacOS/cslol-tools
+        cp build/cslol-tools/mod-tools cslol-manager-macos/cslol-manager.app/Contents/MacOS/cslol-tools
+        tar caf cslol-manager-macos.tar.xz cslol-manager-macos/
     - name: 'Upload Artifact'
       uses: actions/upload-artifact@v2
       with:
         name: cslol-manager-macos
-        path: cslol-manager-macos/
+        path: cslol-manager-macos.tar.xz
         retention-days: 15
