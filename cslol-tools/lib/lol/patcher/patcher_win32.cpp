@@ -259,6 +259,12 @@ static bool skinhack_detected() {
     return fs::exists("C:/Fraps/LOLPRO.exe", ec);
 }
 
+[[noreturn]] static void newpatch_detected() {
+    lol_trace_func("Skipping first game on a new patch for config...");
+    lol_trace_func("Patching should work normally next game!");
+    lol_throw_msg("NEW PATCH DETECTED, THIS IS NOT AN ERROR!\n");
+}
+
 auto patcher::run(std::function<bool(Message, char const*)> update,
                   fs::path const& profile_path,
                   fs::path const& config_path,
@@ -293,6 +299,8 @@ auto patcher::run(std::function<bool(Message, char const*)> update,
 
             if (!update(M_NEED_SAVE, "")) return;
             ctx.save_config(config_path);
+
+            newpatch_detected();
         } else {
             for (std::uint32_t timeout = 3 * 60 * 1000; timeout; timeout -= 1) {
                 if (!update(M_WAIT_PATCHABLE, "")) return;
