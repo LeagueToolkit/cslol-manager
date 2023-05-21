@@ -226,6 +226,13 @@ void CSLOLToolsImpl::doReportError(QString name, QString message, QString trace)
     if (!trace.isEmpty()) {
         logFile_->write(trace.toUtf8() + "\n");
     }
+    if (message.contains("OpenProcess: ") || trace.contains("OpenProcess: ")) {
+        QFile file(prog_ + "/allow_admin.txt");
+        file.open(QIODevice::WriteOnly);
+        file.close();
+        trace += '\n';
+        trace += ">>Run as administrator<< is now enabled!";
+    }
     emit reportError(name, message, trace);
 }
 
