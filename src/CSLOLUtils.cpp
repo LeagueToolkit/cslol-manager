@@ -119,8 +119,79 @@ bool CSLOLUtils::isUnnecessaryAdmin() {
     return result;
 }
 #else
-// TODO: macos implementation
-QString CSLOLUtils::detectGamePath() { return ""; }
+#include <iostream>
+#include <filesystem>
+#include <string.h>
+#include <libproc.h>
+
+QString CSLOLUtils::detectGamePath() {
+    pid_t pid_list[2048];
+    int bytes = proc_listallpids(
+        pid_list, 
+        sizeof(pid_list));
+
+    //
+    //  Something went wrong trying
+    //  to find all the processes.
+    //
+    if (bytes == -1) {
+        return "";
+    }
+
+    for (int i = 0; i < bytes / sizeof(pid_list[0]); i++)
+    {
+        struct proc_bsdinfo proc;
+
+        //
+        //  Info about this PID.
+        //
+        int st = proc_pidinfo (
+            pid_list[i],
+            PROC_PIDTBSDINFO,
+            0,
+            &proc,
+            PROC_PIDTBSDINFO_SIZE);
+
+        //
+        //  We're looking for a LeagueClient PID.
+        //
+        if (strcmp(
+            proc.pbi_name, 
+            "LeagueClient") == 0) {
+            char game_path[PROC_PIDPATHINFO_MAXSIZE];
+
+            //
+            //  Find the parent path
+            //  of the LeagueClient PID.
+            //
+            int len = proc_pidpath (
+                proc.pbi_pid,
+                game_path,
+                sizeof(game_path));
+
+            //
+            //  Something went wrong.
+            //
+            if (len == 0)
+                std::cout << "UNABLE TO LOCATE PARENT PATH OF LeagueClient PID!" << "\n";
+
+            else {
+                (void)strtok(game_path, ".");
+
+                strcat(game_path, ".app/Contents/LoL/Game");
+
+                //
+                //  Ensure that /Applications/League of Legends.app/Contents/LoL/Game
+                //  is a valid directory.
+                //
+                if (std::filesystem::is_directory(game_path))
+                    return game_path;
+            }
+        }
+    }
+
+    return ""; 
+}
 
 // TODO: macos implementation
 bool CSLOLUtils::isUnnecessaryAdmin() { return false; }
