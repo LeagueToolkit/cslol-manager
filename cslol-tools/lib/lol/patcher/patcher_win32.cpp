@@ -17,21 +17,26 @@ using namespace lol::patcher;
 using namespace std::chrono_literals;
 
 // clang-format off
+constexpr inline char PAT_REVISION[] = "patcher-win64-v3";
 constexpr auto const find_open =
-    &ppp::any<"44 8B C3 "
-              "41 8B D6 "
+    &ppp::any<"C7 44 24 20 03 00 00 00 "
+              "45 8D 41 01 "
+              "FF 15 r[?? ?? ?? ??]"_pattern,
+              "BA 89 00 12 00 "
               "89 7C 24 ?? "
-              "49 8B CC "
-              "FF 15 o[r[?? ?? ?? ??]]"_pattern>;
+              "48 8B C8 4C "
+              "89 ?? 24 ?? ?? ?? ?? "
+              "FF 15 r[?? ?? ?? ??]"_pattern>;
 constexpr auto const find_ret =
     &ppp::any<"B9 A0 02 00 00 "
               "48 89 ?? ?? ?? "
               "E8 ?? ?? ?? ?? "
               "o[??]"_pattern>;
 constexpr auto const find_wopen =
-    &ppp::any<"BA 9F 01 12 00 "
-              "C7 44 24 ?? 02 00 00 00 "
-              "45 8D ?? ?? "
+    &ppp::any<"C7 45 ?? 18 00 00 00 "
+              "48 89 75 ?? "
+              "89 45 ?? 4C "
+              "89 75 ?? "
               "FF 15 r[?? ?? ?? ??]"_pattern>;
 constexpr auto const find_alloc =
     &ppp::any<"48 83 C4 28 "
@@ -111,10 +116,9 @@ struct CodePayload {
 
 struct Context {
     LineConfig<std::uint64_t,
-               "patcher-win64-v1",
+               PAT_REVISION,
                "checksum",
                "open",
-               "open_ref",
                "wopen",
                "ret",
                "alloc_ptr",
@@ -177,8 +181,7 @@ struct Context {
         auto const alloc_match = find_alloc(data_span, base);
         lol_throw_if_msg(!alloc_match, "Failed to find alloc!");
 
-        config.get<"open_ref">() = process.Debase((PtrStorage)std::get<1>(*open_match));
-        config.get<"open">() = process.Debase((PtrStorage)std::get<2>(*open_match));
+        config.get<"open">() = process.Debase((PtrStorage)std::get<1>(*open_match));
         config.get<"wopen">() = process.Debase((PtrStorage)std::get<1>(*wopen_match));
         config.get<"ret">() = process.Debase((PtrStorage)std::get<1>(*ret_match));
         config.get<"alloc_ptr">() = process.Debase((PtrStorage)std::get<1>(*alloc_match) + 8);
@@ -191,19 +194,20 @@ struct Context {
     }
 
     auto is_patchable(const Process& process) const noexcept -> bool {
-        auto const open_ref = process.Rebase<PtrStorage>(config.get<"open_ref">());
-        auto const open_diff = (std::uint32_t)(config.get<"open">() - (config.get<"open_ref">() + 4));
-        if (auto result = process.TryRead(open_ref); !result || (std::uint32_t)*result != open_diff) {
+        auto is_valid_ptr = [](PtrStorage ptr) { return ptr > 0x10000 && ptr < (1ull << 48); };
+
+        auto const alloc_ptr = process.Rebase<PtrStorage>(config.get<"alloc_ptr">());
+        if (auto result = process.TryRead(alloc_ptr); !result || !is_valid_ptr(*result)) {
             return false;
         }
 
-        auto const alloc_ptr = process.Rebase<PtrStorage>(config.get<"alloc_ptr">());
-        if (auto result = process.TryRead(alloc_ptr); !result || *result == 0) {
+        auto const open = process.Rebase<PtrStorage>(config.get<"open">());
+        if (auto result = process.TryRead(open); !result || !is_valid_ptr(*result)) {
             return false;
         }
 
         auto const wopen = process.Rebase<PtrStorage>(config.get<"wopen">());
-        if (auto result = process.TryRead(wopen); !result || *result == 0) {
+        if (auto result = process.TryRead(wopen); !result || !is_valid_ptr(*result)) {
             return false;
         }
         return true;
@@ -300,7 +304,7 @@ auto patcher::run(std::function<bool(Message, char const*)> update,
             if (!update(M_NEED_SAVE, "")) return;
             ctx.save_config(config_path);
 
-            newpatch_detected();
+            // newpatch_detected();
         } else {
             for (std::uint32_t timeout = 3 * 60 * 1000; timeout; timeout -= 1) {
                 if (!update(M_WAIT_PATCHABLE, "")) return;
