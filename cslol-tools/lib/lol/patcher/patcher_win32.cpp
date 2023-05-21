@@ -17,15 +17,15 @@ using namespace lol::patcher;
 using namespace std::chrono_literals;
 
 // clang-format off
-constexpr inline char PAT_REVISION[] = "patcher-win64-v3";
+constexpr inline char PAT_REVISION[] = "patcher-win64-v4";
 constexpr auto const find_open =
     &ppp::any<"C7 44 24 20 03 00 00 00 "
               "45 8D 41 01 "
               "FF 15 r[?? ?? ?? ??]"_pattern,
-              "BA 89 00 12 00 "
+              "44 8B C3 "
+              "41 8B D6 "
               "89 7C 24 ?? "
-              "48 8B C8 4C "
-              "89 ?? 24 ?? ?? ?? ?? "
+              "49 8B CC "
               "FF 15 r[?? ?? ?? ??]"_pattern>;
 constexpr auto const find_ret =
     &ppp::any<"B9 A0 02 00 00 "
