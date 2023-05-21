@@ -48,7 +48,7 @@ ToolBar {
             text: "\uf004"
             font.family: "FontAwesome"
             onClicked: {
-                Qt.openUrlExternally("https://github.com/morilli")
+                Qt.openUrlExternally("https://github.com/LeagueToolkit/cslol-manager/graphs/contributors")
             }
         }
         ToolButton {

@@ -1,3 +1,4 @@
+#include <QCoreApplication>
 #include <QCryptographicHash>
 #include <QFileInfo>
 #include <QSysInfo>
@@ -99,7 +100,28 @@ QString CSLOLUtils::detectGamePath() {
     CloseHandle(snapshot);
     return "";
 }
+
+
+bool CSLOLUtils::isUnnecessaryAdmin() {
+    if (QFileInfo info(QCoreApplication::applicationDirPath() + "/allow_admin.txt"); info.exists()) {
+        return false;
+    }
+    bool result = 0;
+    HANDLE token = {};
+    if (OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &token)) {
+        TOKEN_ELEVATION elevation = {};
+        DWORD size = sizeof(TOKEN_ELEVATION);
+        if (GetTokenInformation(token, TokenElevation, &elevation, sizeof(elevation), &size)) {
+            result = elevation.TokenIsElevated;
+        }
+        CloseHandle(token);
+    }
+    return result;
+}
 #else
 // TODO: macos implementation
 QString CSLOLUtils::detectGamePath() { return ""; }
+
+// TODO: macos implementation
+bool CSLOLUtils::isUnnecessaryAdmin() { return false; }
 #endif
