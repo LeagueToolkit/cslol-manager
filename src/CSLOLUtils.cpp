@@ -198,3 +198,4 @@ QString CSLOLUtils::detectGamePath() {
 
 // TODO: macos implementation
 bool CSLOLUtils::isUnnecessaryAdmin() { return false; }
+#endif
