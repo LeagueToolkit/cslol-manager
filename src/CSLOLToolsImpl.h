@@ -75,6 +75,9 @@ public slots:
 
     CSLOLToolsImpl::CSLOLState getState();
     QString getLeaguePath();
+#if __APPLE__
+    int isUnderRosetta();
+#endif
 
 private:
     QNetworkAccessManager* networkManager_ = nullptr;

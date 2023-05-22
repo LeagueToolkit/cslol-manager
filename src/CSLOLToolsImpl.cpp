@@ -43,6 +43,30 @@ void CSLOLToolsImpl::setState(CSLOLState value) {
     }
 }
 
+#if __APPLE__
+#include <sys/types.h>
+#include <sys/sysctl.h>
+
+int CSLOLToolsImpl::isUnderRosetta() {
+    int ret = 0;
+    size_t size = sizeof(ret);
+
+    if (sysctlbyname("sysctl.proc_translated", &ret, &size, NULL, 0) == -1)
+        return ret;
+
+    //
+    //  sysctl variable is missing,
+    //  AKA, Rosetta 2 is missing.
+    //
+    //  Meaning we're on x86/x64.
+    //
+    if (errno == ENOENT)
+        return 0;
+
+    return -1;
+}
+#endif
+
 void CSLOLToolsImpl::setStatus(QString status) {
     if (status_ != status) {
         logFile_->write((status.toUtf8() + "\n"));
@@ -277,6 +301,16 @@ void CSLOLToolsImpl::changeIgnorebad(bool ignorebad) {
 }
 
 void CSLOLToolsImpl::init() {
+    #if __APPLE__
+        // 
+        //  TODO:   Wait for user to click “Discard” then exit.
+        // 
+        if (isUnderRosetta() != 0)
+        {
+            doReportError("Invalid architecture", "Cannot run on ARM64, only x86/x64.", "");
+        }
+    #endif
+
     if (state_ == CSLOLState::StateUnitialized) {
         setState(CSLOLState::StateBusy);
 
