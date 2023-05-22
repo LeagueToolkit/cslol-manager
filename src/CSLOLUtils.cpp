@@ -1,3 +1,5 @@
+#include "CSLOLUtils.h"
+
 #include <QCoreApplication>
 #include <QCryptographicHash>
 #include <QFileInfo>
@@ -5,7 +7,6 @@
 #include <QUrl>
 #include <QUrlQuery>
 
-#include "CSLOLUtils.h"
 #include "CSLOLVersion.h"
 
 CSLOLUtils::CSLOLUtils(QObject *parent) : QObject(parent) {}
@@ -101,7 +102,6 @@ QString CSLOLUtils::detectGamePath() {
     return "";
 }
 
-
 bool CSLOLUtils::isUnnecessaryAdmin() {
     if (QFileInfo info(QCoreApplication::applicationDirPath() + "/allow_admin.txt"); info.exists()) {
         return false;
@@ -118,10 +118,92 @@ bool CSLOLUtils::isUnnecessaryAdmin() {
     }
     return result;
 }
-#else
-// TODO: macos implementation
-QString CSLOLUtils::detectGamePath() { return ""; }
+#elif defined(__APPLE__)
+#    include <libproc.h>
+#    include <string.h>
+
+QString CSLOLUtils::detectGamePath() {
+    pid_t *pid_list;
+
+    //
+    //  Get necessary size for `pid_list`
+    //
+    int n_pids = proc_listallpids(nullptr, 0);
+
+    //
+    //  Something went wrong trying
+    //  to find all the processes.
+    //
+    if (n_pids <= 0) {
+        return "";
+    }
+
+    pid_list = (pid_t *)malloc(n_pids * sizeof(pid_t));
+
+    n_pids = proc_listallpids(pid_list, n_pids * sizeof(pid_t));
+
+    for (int i = 0; i < n_pids; i++) {
+        struct proc_bsdinfo proc;
+
+        //
+        //  Info about this PID.
+        //
+        int st = proc_pidinfo(pid_list[i], PROC_PIDTBSDINFO, 0, &proc, PROC_PIDTBSDINFO_SIZE);
+
+        //
+        //  We're looking for a LeagueClient PID.
+        //
+        if (strcmp(proc.pbi_name, "LeagueClient") == 0) {
+            char game_path[PROC_PIDPATHINFO_MAXSIZE];
+
+            //
+            //  Find the parent path
+            //  of the LeagueClient PID.
+            //
+            int len = proc_pidpath(proc.pbi_pid, game_path, sizeof(game_path));
+
+            //
+            //  Something went wrong.
+            //
+            if (len == 0)
+                qDebug() << "UNABLE TO LOCATE PARENT PATH OF LeagueClient PID!";
+
+            else {
+                //
+                //  `strtok()` will return the original
+                //  string we passed in, but it'll be modified.
+                //
+                //  We'll have the first part of the “split”,
+                //  in this case that's `/Applications/League of Legends`,
+                //  so we need to add the rest of the path to it.
+                //
+                //  This modification will persist for `game_path`.
+                //
+                strcat(strtok(game_path, "."), ".app/Contents/LoL/Game");
+
+                //
+                //  Ensure that /Applications/League of Legends.app/Contents/LoL/Game
+                //  is a valid directory.
+                //
+                if (QFileInfo info(game_path); info.isDir()) {
+                    free(pid_list);
+
+                    return game_path;
+                }
+            }
+        }
+    }
+
+    free(pid_list);
+
+    return "";
+}
 
 // TODO: macos implementation
+bool CSLOLUtils::isUnnecessaryAdmin() { return false; }
+
+#else
+QString CSLOLUtils::detectGamePath() { return ""; }
+
 bool CSLOLUtils::isUnnecessaryAdmin() { return false; }
 #endif
