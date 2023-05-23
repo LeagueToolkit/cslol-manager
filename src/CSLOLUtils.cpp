@@ -118,12 +118,9 @@ bool CSLOLUtils::isUnnecessaryAdmin() {
     }
     return result;
 }
-#elif __APPLE__
+#elif defined(__APPLE__)
 #    include <libproc.h>
 #    include <string.h>
-
-#    include <filesystem>
-#    include <iostream>
 
 QString CSLOLUtils::detectGamePath() {
     pid_t *pid_list;
@@ -131,21 +128,21 @@ QString CSLOLUtils::detectGamePath() {
     //
     //  Get necessary size for `pid_list`
     //
-    int bytes = proc_listallpids(nullptr, 0);
+    int n_pids = proc_listallpids(nullptr, 0);
 
     //
     //  Something went wrong trying
     //  to find all the processes.
     //
-    if (bytes <= 0) {
+    if (n_pids <= 0) {
         return "";
     }
 
-    pid_list = (pid_t *)malloc(bytes * sizeof(pid_t));
+    pid_list = (pid_t *)malloc(n_pids * sizeof(pid_t));
 
-    bytes = proc_listallpids(pid_list, bytes * sizeof(pid_t));
+    n_pids = proc_listallpids(pid_list, n_pids * sizeof(pid_t));
 
-    for (int i = 0; i < bytes / sizeof(pid_list[0]); i++) {
+    for (int i = 0; i < n_pids; i++) {
         struct proc_bsdinfo proc;
 
         //
@@ -169,7 +166,7 @@ QString CSLOLUtils::detectGamePath() {
             //  Something went wrong.
             //
             if (len == 0)
-                qDebug("UNABLE TO LOCATE PARENT PATH OF LeagueClient PID!");
+                qDebug() << "UNABLE TO LOCATE PARENT PATH OF LeagueClient PID!";
 
             else {
                 //
@@ -188,14 +185,25 @@ QString CSLOLUtils::detectGamePath() {
                 //  Ensure that /Applications/League of Legends.app/Contents/LoL/Game
                 //  is a valid directory.
                 //
-                if (std::filesystem::is_directory(game_path)) return game_path;
+                if (QFileInfo info(game_path); info.isDir()) {
+                    free(pid_list);
+
+                    return game_path;
+                }
             }
         }
     }
+
+    free(pid_list);
 
     return "";
 }
 
 // TODO: macos implementation
+bool CSLOLUtils::isUnnecessaryAdmin() { return false; }
+
+#else
+QString CSLOLUtils::detectGamePath() { return ""; }
+
 bool CSLOLUtils::isUnnecessaryAdmin() { return false; }
 #endif
