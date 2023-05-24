@@ -25,7 +25,7 @@ jobs:
         cp dist/SOURCE.URL cslol-manager-macos/
         cp build/cslol-tools/wad-* cslol-manager-macos/
         cp -R build/cslol-manager.app cslol-manager-macos/
-        cp build/cslol-manager-elevation cslol-manager-macos/cslol-manager.app/Contents/MacOS/
+        cp build/cslol-manager-elevate cslol-manager-macos/cslol-manager.app/Contents/MacOS/
         mkdir cslol-manager-macos/cslol-manager.app/Contents/MacOS/cslol-tools
         cp build/cslol-tools/mod-tools cslol-manager-macos/cslol-manager.app/Contents/MacOS/cslol-tools
         tar caf cslol-manager-macos.tar.xz cslol-manager-macos/
