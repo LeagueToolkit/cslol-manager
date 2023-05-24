@@ -308,6 +308,8 @@ void CSLOLToolsImpl::init() {
         if (isUnderRosetta() != 0)
         {
             doReportError("Invalid architecture", "Cannot run on ARM64, only x86/x64.", "");
+
+            return;
         }
     #endif
 
