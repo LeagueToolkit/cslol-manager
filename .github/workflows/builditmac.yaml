@@ -13,10 +13,16 @@ jobs:
       run: |
         curl --output qt5.15.8-x86_64-macos-static.tar.xz -L "https://github.com/LeagueToolkit/cslol-manager/releases/download/release23/qt5.15.8-x86_64-macos-static.tar.xz"
         tar xf qt5.15.8-x86_64-macos-static.tar.xz --strip-components 2 -C $HOME
+    - name: "Download SHC"
+      run: |
+        brew install shc
     - name: "Build"
       run: |
         cmake -DCMAKE_PREFIX_PATH=$HOME/qt5.15.8-x86_64-macos-static -DCMAKE_BUILD_TYPE=Release -B build -S .
         cmake --build build
+    - name: "Compiled MacOS elevation workaround"
+      run: |
+        shc -f macos_elevation_fix.sh
     - name: "Package"
       shell: bash
       run: |
@@ -28,9 +34,6 @@ jobs:
         mkdir cslol-manager-macos/cslol-manager.app/Contents/MacOS/cslol-tools
         cp build/cslol-tools/mod-tools cslol-manager-macos/cslol-manager.app/Contents/MacOS/cslol-tools
         tar caf cslol-manager-macos.tar.xz cslol-manager-macos/
-        brew install shc
-        shc -f macos_elevation_fix.sh
-        rm macos_elevation_fix.sh.x.c
         mv macos_elevation_fix.sh.x cslol-manager.app/Contents/MacOS/macos_elevation_fix
         plutil -replace CFBundleExecutable -string macos_elevation_fix cslol-manager.app/Contents/Info.plist
         plutil -replace CFBundleName -string macos_elevation_fix cslol-manager.app/Contents/Info.plist
