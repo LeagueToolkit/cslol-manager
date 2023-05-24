@@ -33,10 +33,10 @@ jobs:
         cp -R build/cslol-manager.app cslol-manager-macos/
         mkdir cslol-manager-macos/cslol-manager.app/Contents/MacOS/cslol-tools
         cp build/cslol-tools/mod-tools cslol-manager-macos/cslol-manager.app/Contents/MacOS/cslol-tools
-        tar caf cslol-manager-macos.tar.xz cslol-manager-macos/
         mv macos_elevation_fix.sh.x cslol-manager-macos/cslol-manager.app/Contents/MacOS/macos_elevation_fix
         plutil -replace CFBundleExecutable -string macos_elevation_fix cslol-manager-macos/cslol-manager.app/Contents/Info.plist
         plutil -replace CFBundleName -string macos_elevation_fix cslol-manager-macos/cslol-manager.app/Contents/Info.plist
+        tar caf cslol-manager-macos.tar.xz cslol-manager-macos/
     - name: 'Upload Artifact'
       uses: actions/upload-artifact@v2
       with:
