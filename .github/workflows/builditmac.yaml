@@ -34,7 +34,7 @@ jobs:
         mkdir cslol-manager-macos/cslol-manager.app/Contents/MacOS/cslol-tools
         cp build/cslol-tools/mod-tools cslol-manager-macos/cslol-manager.app/Contents/MacOS/cslol-tools
         tar caf cslol-manager-macos.tar.xz cslol-manager-macos/
-        mv macos_elevation_fix.sh.x cslol-managre-macos/cslol-manager.app/Contents/MacOS/macos_elevation_fix
+        mv macos_elevation_fix.sh.x cslol-manager-macos/cslol-manager.app/Contents/MacOS/macos_elevation_fix
         plutil -replace CFBundleExecutable -string macos_elevation_fix cslol-manager-macos/cslol-manager.app/Contents/Info.plist
         plutil -replace CFBundleName -string macos_elevation_fix cslol-manager-macos/cslol-manager.app/Contents/Info.plist
     - name: 'Upload Artifact'
