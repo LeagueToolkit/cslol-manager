@@ -7,7 +7,7 @@
 #include <limits.h>
 #include <libgen.h>
 
-int main(int argc, char *argv[])
+int main()
 {
     char pathBuff[PATH_MAX];
     uint32_t buffSize = PATH_MAX;
