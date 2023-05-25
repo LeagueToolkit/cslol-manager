@@ -28,26 +28,8 @@ int main()
 
     char str[COMMAND_CHAR_COUNT_MAX];
 
-    int len = snprintf(
-        NULL, 
-        0, 
-        "do shell script \"sudo %s/cslol-manager >/dev/null 2>&1 &\""
-        " with prompt \"CSLOL-Manager needs administrator privileges to restart.\""
-        " with administrator privileges"
-        " without altering line endings",
-        parentDir
-    );
-
-    //
-    //  Something went wrong trying
-    //  to obtain the necessary length of the string.
-    //
-    if (len <= 0)
-        return 1;
-
-    snprintf(
+    sprintf(
         str, 
-        len + 1,
         "do shell script \"sudo %s/cslol-manager >/dev/null 2>&1 &\""
         " with prompt \"CSLOL-Manager needs administrator privileges to restart.\""
         " with administrator privileges"
