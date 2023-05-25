@@ -7,6 +7,8 @@
 #include <limits.h>
 #include <libgen.h>
 
+#define COMMAND_CHAR_COUNT_MAX  1000 + PATH_MAX
+
 int main()
 {
     char pathBuff[PATH_MAX];
@@ -24,7 +26,8 @@ int main()
     //
     char *parentDir = dirname(pathBuff);
 
-    char *str;
+    char str[COMMAND_CHAR_COUNT_MAX];
+
     int len = snprintf(
         NULL, 
         0, 
@@ -42,8 +45,6 @@ int main()
     if (len <= 0)
         return 1;
 
-    str = (char *)malloc(len + 1);
-
     snprintf(
         str, 
         len + 1,
@@ -60,8 +61,6 @@ int main()
         "-e",
         str,
         NULL);
-
-    free(str);
 
     return code;
 }
