@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(cslol-manager LANGUAGES CXX)
+project(cslol-manager LANGUAGES CXX C)
 
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOUIC ON)
@@ -50,6 +52,9 @@ elseif(APPLE)
     add_executable(cslol-manager MACOSX_BUNDLE
         src/main.cpp
         src/res/icon.icns
+        )
+    add_executable(cslol-manager-elevate
+        src/main_elevate.c
         )
     set_target_properties(cslol-manager
         PROPERTIES
