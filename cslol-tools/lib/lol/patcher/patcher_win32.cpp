@@ -290,6 +290,7 @@ auto patcher::run(std::function<bool(Message, char const*)> update,
 
         if (!update(M_FOUND, "")) return;
 
+        auto patchable = false;
         if (!ctx.check(*process)) {
             for (std::uint32_t timeout = 3 * 60 * 1000; timeout; timeout -= 1) {
                 if (!update(M_WAIT_INIT, "")) return;
@@ -304,17 +305,33 @@ auto patcher::run(std::function<bool(Message, char const*)> update,
             if (!update(M_NEED_SAVE, "")) return;
             ctx.save_config(config_path);
 
+            patchable = true;
             // newpatch_detected();
         } else {
-            for (std::uint32_t timeout = 3 * 60 * 1000; timeout; timeout -= 1) {
+            if (!update(M_WAIT_PATCHABLE, "")) return;
+            // Fast patch this will pin core to 100% for a few seconds.
+            for (auto const start = std::chrono::high_resolution_clock::now();;) {
+                if (ctx.is_patchable(*process)) {
+                    patchable = true;
+                    break;
+                }
+                auto const end = std::chrono::high_resolution_clock::now();
+                auto const diff = std::chrono::duration_cast<std::chrono::seconds>(end - start);
+                if (diff.count() > 10) {
+                    break;
+                }
+            }
+            for (std::uint32_t timeout = 3 * 60 * 1000; !patchable && timeout; timeout -= 1) {
                 if (!update(M_WAIT_PATCHABLE, "")) return;
                 if (ctx.is_patchable(*process)) {
+                    patchable = true;
                     break;
                 }
                 std::this_thread::sleep_for(1ms);
             }
         }
 
+        lol_throw_if_msg(!patchable, "Patchable timeout!");
         if (!update(M_PATCH, ctx.config_str.c_str())) return;
         ctx.patch(*process);
 
