@@ -15,6 +15,7 @@
 #include <QVersionNumber>
 #include <fstream>
 
+#include "CSLOLUtils.h"
 #include "CSLOLVersion.h"
 #ifdef _WIN32
 #define MOD_TOOLS_EXE "/cslol-tools/mod-tools.exe"
@@ -227,7 +228,7 @@ void CSLOLToolsImpl::doReportError(QString name, QString message, QString trace)
         logFile_->write(trace.toUtf8() + "\n");
     }
     if (message.contains("OpenProcess: ") || trace.contains("OpenProcess: ")) {
-        QFile file(prog_ + "/allow_admin.txt");
+        QFile file(prog_ + "/admin_allow.txt");
         file.open(QIODevice::WriteOnly);
         file.close();
         trace += '\n';
@@ -279,6 +280,14 @@ void CSLOLToolsImpl::changeIgnorebad(bool ignorebad) {
 void CSLOLToolsImpl::init() {
     if (state_ == CSLOLState::StateUnitialized) {
         setState(CSLOLState::StateBusy);
+
+        if (CSLOLUtils utils{}; utils.isUnnecessaryAdmin()) {
+            doReportError("Unnecessary admin",
+                          "Try running without admin at least once.\nIf this issue still persist import FIX-ADMIN.reg",
+                          "Running as admin is disabled by default");
+            setState(CSLOLState::StateCriticalError);
+            return;
+        }
 
         patcherProcess_ = nullptr;
         setStatus("Acquire lock");
