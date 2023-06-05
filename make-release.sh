@@ -4,6 +4,7 @@ copy2folder() {
     mkdir -p "$2/cslol-tools"
 
     cp "./dist/"*.bat "$2/cslol-tools"
+    cp "./dist/FIX-ADMIN.reg" "$2"
     cp "./dist/FIX-NON-ENGLISH.reg" "$2"
     cp "./dist/SOURCE.URL" "$2"
     cp "./LICENSE" "$2"

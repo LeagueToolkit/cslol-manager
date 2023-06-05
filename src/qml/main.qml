@@ -405,11 +405,7 @@ ApplicationWindow {
             }
         }
         firstTick = true;
-        if (CSLOLUtils.isUnnecessaryAdmin()) {
-            window.showUserError("Unnecessary admin",  "Running as admin is disabled by default.\nTry running without admin at least once.")
-        } else {
-            cslolTools.init()
-        }
+        cslolTools.init()
         cslolDialogUpdate.checkForUpdates()
     }
 }
