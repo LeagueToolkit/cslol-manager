@@ -124,6 +124,7 @@ struct CodePayload {
 extern "C" {
 extern void* GetModuleHandleA(char const* name);
 extern void* GetProcAddress(void* module, char const* name);
+extern void* FindWindowExA(void* parent, void* after, char const* klass, char const* name);
 }
 
 struct Kernel32 {
@@ -270,9 +271,29 @@ struct Context {
     }
 };
 
-static bool skinhack_detected() {
-    std::error_code ec = {};
-    return fs::exists("C:/Fraps/LOLPRO.exe", ec);
+// I know it is tempting to remove this but:
+// - modskinpro hooks some of the functions we hook as well
+// - skin changers asume default skin which most of proper custom skins use
+//   this in turns make any people go "wHy No WeRk??"
+static auto skinhack_detected() -> char const* {
+    static constexpr char const* forbiden_files[] = {
+        "C:/Fraps/LOLPRO.exe",
+        "C:/Fraps/data",
+    };
+    static constexpr char const* forbiden_titles[] = {
+        "R3nzSkin",
+    };
+    for (auto item : forbiden_files) {
+        if (std::error_code ec = {}; fs::exists(item, ec)) {
+            return item;
+        }
+    }
+    for (auto item : forbiden_titles) {
+        if (FindWindowExA(nullptr, nullptr, nullptr, item)) {
+            return item;
+        }
+    }
+    return nullptr;
 }
 
 [[noreturn]] static void newpatch_detected() {
