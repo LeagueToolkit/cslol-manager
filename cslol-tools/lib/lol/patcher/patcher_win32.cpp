@@ -17,33 +17,46 @@ using namespace lol::patcher;
 using namespace std::chrono_literals;
 
 // clang-format off
-constexpr inline char PAT_REVISION[] = "patcher-win64-v4";
-constexpr auto const find_open =
-    &ppp::any<"C7 44 24 20 03 00 00 00 "
-              "45 8D 41 01 "
-              "FF 15 r[?? ?? ?? ??]"_pattern,
-              "44 8B C3 "
-              "41 8B D6 "
-              "89 7C 24 ?? "
-              "49 8B CC "
-              "FF 15 r[?? ?? ?? ??]"_pattern>;
-constexpr auto const find_ret =
-    &ppp::any<"B9 A0 02 00 00 "
-              "48 89 ?? ?? ?? "
-              "E8 ?? ?? ?? ?? "
-              "o[??]"_pattern>;
-constexpr auto const find_wopen =
-    &ppp::any<"C7 45 ?? 18 00 00 00 "
-              "48 89 75 ?? "
-              "89 45 ?? 4C "
-              "89 75 ?? "
-              "FF 15 r[?? ?? ?? ??]"_pattern>;
-constexpr auto const find_alloc =
-    &ppp::any<"48 83 C4 28 "
-              "C3 "
-              "C7 05 r[?? ?? ?? ??] 00 00 00 00 "
-              "48 83 C4 28 "
-              "E9 r[?? ?? ?? ??]"_pattern>;
+constexpr inline char PAT_REVISION[] = "patcher-win64-v6";
+constexpr auto const find_ptr_CreateFileA =
+    &ppp::any<
+        "C7 44 24 20 03 00 00 00 "
+        "45 8D 41 01 "
+        "FF 15 r[?? ?? ?? ??]"_pattern,
+        "44 8B C3 "
+        "41 8B D6 "
+        "89 7C 24 ?? "
+        "49 8B CC "
+        "FF 15 r[?? ?? ?? ??]"_pattern>;
+
+constexpr auto const find_ptr_CRYPTO_free =
+    &ppp::any<
+        "48 83 C4 28 "
+        "C3 "
+        "C7 05 r[?? ?? ?? ??] 00 00 00 00 "
+        "48 83 C4 28 "
+        "E9 "_pattern,
+        "81 00 00 00 "
+        "00 00 00 00 "
+        "o[08] 00 00 00 "
+        "00 00 00 00 "
+        "?? ?? ?? ?? ?? ?? 00 00 "
+        "?? ?? ?? ?? ?? ?? 00 00 "
+        "?? ?? ?? ?? ?? ?? 00 00"_pattern,
+        "80 00 00 00 "
+        "01 00 00 00 "
+        "o[FF] FF FF FF "
+        "01 00 00 00 "
+        "?? ?? ?? ?? ?? ?? 00 00 "
+        "?? ?? ?? ?? ?? ?? 00 00 "
+        "?? ?? ?? ?? ?? ?? 00 00"_pattern>;
+
+constexpr auto const find_ret_CRYPTO_free =
+    &ppp::any<
+        "41 B9 ?? 00 00 00 "
+        "48 8B ?? "
+        "E8 ?? ?? ?? ?? "
+        "u[48 8B 7C 24 ?? 8B C3 ??]"_pattern>;
 // clang-format on
 
 struct ImportTrampoline {
@@ -57,77 +70,95 @@ struct ImportTrampoline {
 };
 
 struct CodePayload {
-    // Pointers to be consumed by shellcode
-    Ptr<uint8_t> org_open_ptr = {};
-    Ptr<char16_t> prefix_open_ptr = {};
-    Ptr<uint8_t> wopen_ptr = {};
-    Ptr<uint8_t> org_alloc_ptr = {};
-    Ptr<uint8_t> find_ret_addr = {};
-    Ptr<uint8_t> hook_ret_addr = {};
-
     // clang-format off
-    // Actual data and shellcode storage
-    uint8_t hook_open_data[0xC0] = {
+    // Hooking CRYPTO_free impl ptr to redirect control flow in int_rsa_verify
+    uint8_t hook_CRYPTO_free[0x40] = {
+        0x48, 0x85, 0xc9, 0x74, 0x22, 0x53, 0x48, 0x89,
+        0xcb, 0x48, 0x83, 0xec, 0x20, 0xff, 0x15, 0x2d,
+        0x00, 0x00, 0x00, 0x48, 0x89, 0xc1, 0x48, 0x31,
+        0xd2, 0x49, 0x89, 0xd8, 0xff, 0x15, 0x26, 0x00,
+        0x00, 0x00, 0x48, 0x83, 0xc4, 0x20, 0x5b, 0x48,
+        0x8b, 0x0c, 0x24, 0x48, 0x8b, 0x09, 0x48, 0x8b,
+        0x15, 0x1b, 0x00, 0x00, 0x00, 0x48, 0x39, 0xd1,
+        0x74, 0x1e, 0xc3, 0x90, 0x90, 0x90, 0x90, 0x90,
+    };
+    Ptr<uint8_t> ptr_GetProcessHeap = {};
+    Ptr<uint8_t> ptr_HeapFree = {};
+    uint8_t ret_match[8] = {0x48, 0x8B, 0x7C, 0x24, 0x70, 0x8B, 0xC3, 0x48};
+    uint8_t hook_ret[8] = {0xbb, 0x01, 0x00, 0x00, 0x00, 0xc3};
+
+    // Hooking CreateFileA import trampoline
+    uint8_t hook_CreateFileA[0x100] = {
         0xc8, 0x00, 0x10, 0x00, 0x53, 0x57, 0x56, 0x48,
         0x83, 0xec, 0x48, 0x4c, 0x89, 0x4d, 0x28, 0x4c,
         0x89, 0x45, 0x20, 0x48, 0x89, 0x55, 0x18, 0x48,
-        0x89, 0x4d, 0x10, 0xe8, 0x00, 0x00, 0x00, 0x00,
-        0x5b, 0x48, 0x81, 0xe3, 0x00, 0xf0, 0xff, 0xff,
-        0x48, 0x8d, 0xbd, 0x00, 0xf0, 0xff, 0xff, 0x48,
-        0x8b, 0x73, 0x08, 0x66, 0xad, 0x66, 0xab, 0x66,
-        0x85, 0xc0, 0x75, 0xf7, 0x48, 0x83, 0xef, 0x02,
-        0x48, 0x8b, 0x75, 0x10, 0xb4, 0x00, 0xac, 0x3c,
-        0x2f, 0x75, 0x02, 0xb0, 0x5c, 0x66, 0xab, 0x84,
-        0xc0, 0x75, 0xf3, 0x48, 0x8b, 0x45, 0x48, 0x48,
-        0x89, 0x44, 0x24, 0x30, 0x48, 0x8b, 0x45, 0x38,
-        0x48, 0x89, 0x44, 0x24, 0x28, 0x48, 0x8b, 0x45,
-        0x30, 0x48, 0x89, 0x44, 0x24, 0x20, 0x4c, 0x8b,
-        0x4d, 0x28, 0x4c, 0x8b, 0x45, 0x20, 0x48, 0x8b,
-        0x55, 0x18, 0x48, 0x8d, 0x8d, 0x00, 0xf0, 0xff,
-        0xff, 0xff, 0x53, 0x10, 0x48, 0x83, 0xf8, 0xff,
-        0x75, 0x2d, 0x48, 0x8b, 0x45, 0x48, 0x48, 0x89,
-        0x44, 0x24, 0x30, 0x48, 0x8b, 0x45, 0x38, 0x48,
-        0x89, 0x44, 0x24, 0x28, 0x48, 0x8b, 0x45, 0x30,
-        0x48, 0x89, 0x44, 0x24, 0x20, 0x4c, 0x8b, 0x4d,
-        0x28, 0x4c, 0x8b, 0x45, 0x20, 0x48, 0x8b, 0x55,
-        0x18, 0x48, 0x8b, 0x4d, 0x10, 0xff, 0x13, 0x48,
-        0x83, 0xc4, 0x48, 0x5e, 0x5f, 0x5b, 0xc9, 0xc3
+        0x89, 0x4d, 0x10, 0x48, 0x8d, 0xbd, 0x00, 0xf0,
+        0xff, 0xff, 0x48, 0x8d, 0x35, 0xe7, 0x00, 0x00,
+        0x00, 0x66, 0xad, 0x66, 0xab, 0x66, 0x85, 0xc0,
+        0x75, 0xf7, 0x48, 0x83, 0xef, 0x02, 0x48, 0x8b,
+        0x75, 0x10, 0xb4, 0x00, 0xac, 0x3c, 0x2f, 0x75,
+        0x02, 0xb0, 0x5c, 0x66, 0xab, 0x84, 0xc0, 0x75,
+        0xf3, 0x48, 0x8b, 0x45, 0x48, 0x48, 0x89, 0x44,
+        0x24, 0x30, 0x48, 0x8b, 0x45, 0x38, 0x48, 0x89,
+        0x44, 0x24, 0x28, 0x48, 0x8b, 0x45, 0x30, 0x48,
+        0x89, 0x44, 0x24, 0x20, 0x4c, 0x8b, 0x4d, 0x28,
+        0x4c, 0x8b, 0x45, 0x20, 0x48, 0x8b, 0x55, 0x18,
+        0x48, 0x8d, 0x8d, 0x00, 0xf0, 0xff, 0xff, 0x48,
+        0x8b, 0x05, 0x8a, 0x00, 0x00, 0x00, 0xff, 0xd0,
+        0x48, 0x83, 0xf8, 0xff, 0x75, 0x34, 0x48, 0x8b,
+        0x45, 0x48, 0x48, 0x89, 0x44, 0x24, 0x30, 0x48,
+        0x8b, 0x45, 0x38, 0x48, 0x89, 0x44, 0x24, 0x28,
+        0x48, 0x8b, 0x45, 0x30, 0x48, 0x89, 0x44, 0x24,
+        0x20, 0x4c, 0x8b, 0x4d, 0x28, 0x4c, 0x8b, 0x45,
+        0x20, 0x48, 0x8b, 0x55, 0x18, 0x48, 0x8b, 0x4d,
+        0x10, 0x48, 0x8b, 0x05, 0x48, 0x00, 0x00, 0x00,
+        0xff, 0xd0, 0x48, 0x83, 0xc4, 0x48, 0x5e, 0x5f,
+        0x5b, 0xc9, 0xc3, 0x90, 0x90, 0x90, 0x90, 0x90,
     };
-    uint8_t hook_alloc_data[0x40] = {
-        0xc8, 0x00, 0x00, 0x00, 0x53, 0x56, 0xe8, 0x00,
-        0x00, 0x00, 0x00, 0x5b, 0x48, 0x81, 0xe3, 0x00,
-        0xf0, 0xff, 0xff, 0x48, 0x8b, 0x73, 0x20, 0x48,
-        0x89, 0xe8, 0x48, 0x05, 0x80, 0x00, 0x00, 0x00,
-        0x48, 0x83, 0xe8, 0x08, 0x48, 0x39, 0xe8, 0x74,
-        0x0c, 0x48, 0x3b, 0x30, 0x75, 0xf2, 0x48, 0x8b,
-        0x73, 0x28, 0x48, 0x89, 0x30, 0x48, 0x8b, 0x43,
-        0x18, 0x5e, 0x5b, 0xc9, 0xff, 0xe0
-    };
-    uint8_t hook_ret_data[0x40] = {
-        0xe8, 0x00, 0x00, 0x00, 0x00, 0x58, 0x48, 0x25,
-        0x00, 0xf0, 0xff, 0xff, 0x48, 0x8b, 0x40, 0x20,
-        0x50, 0x48, 0x31, 0xc0, 0x48, 0xff, 0xc0, 0xc3
-    };
-    // clang-format on
-
-    ImportTrampoline org_open_data = {};
+    Ptr<uint8_t> ptr_CreateFileA = {};
+    Ptr<uint8_t> ptr_CreateFileW = {};
     char16_t prefix_open_data[0x400] = {};
+    // clang-format on
+};
+
+extern "C" {
+extern void* GetModuleHandleA(char const* name);
+extern void* GetProcAddress(void* module, char const* name);
+}
+
+struct Kernel32 {
+    Ptr<uint8_t> ptr_CreateFileA;
+    Ptr<uint8_t> ptr_CreateFileW;
+    Ptr<uint8_t> ptr_GetProcessHeap;
+    Ptr<uint8_t> ptr_HeapFree;
+
+    static auto load() -> Kernel32 {
+        static auto kernel32 = GetModuleHandleA("KERNEL32.dll");
+        static auto kernel32_ptr_CreateFileA = GetProcAddress(kernel32, "CreateFileA");
+        static auto kernel32_ptr_CreateFileW = GetProcAddress(kernel32, "CreateFileW");
+        static auto kernel32_ptr_GetProcessHeap = GetProcAddress(kernel32, "GetProcessHeap");
+        static auto kernel32_ptr_HeapFree = GetProcAddress(kernel32, "HeapFree");
+        lol_throw_if_msg(!kernel32_ptr_CreateFileA, "Failed to find kernel32 ptr CreateFileA");
+        lol_throw_if_msg(!kernel32_ptr_CreateFileW, "Failed to find kernel32 ptr CreateFileW");
+        lol_throw_if_msg(!kernel32_ptr_GetProcessHeap, "Failed to find kernel32 ptr GetProcessHeap");
+        lol_throw_if_msg(!kernel32_ptr_HeapFree, "Failed to find kernel32 ptr HeapFree");
+        return Kernel32{
+            .ptr_CreateFileA = Ptr<uint8_t>(kernel32_ptr_CreateFileA),
+            .ptr_CreateFileW = Ptr<uint8_t>(kernel32_ptr_CreateFileW),
+            .ptr_GetProcessHeap = Ptr<uint8_t>(kernel32_ptr_GetProcessHeap),
+            .ptr_HeapFree = Ptr<uint8_t>(kernel32_ptr_HeapFree),
+        };
+    }
 };
 
 struct Context {
-    LineConfig<std::uint64_t,
-               PAT_REVISION,
-               "checksum",
-               "open",
-               "wopen",
-               "ret",
-               "alloc_ptr",
-               "alloc_fn">
-        config;
+    LineConfig<std::uint64_t, PAT_REVISION, "checksum", "ptr_CreateFileA", "ptr_CRYPTO_free"> config;
+    Kernel32 kernel32;
     std::string config_str;
     std::u16string prefix;
 
     auto load_config(fs::path const& path) -> void {
+        kernel32 = Kernel32::load();
         if (std::ifstream file(path, std::ios::binary); file) {
             if (auto str = std::string{}; std::getline(file, str)) {
                 config.from_string(str);
@@ -169,23 +200,14 @@ struct Context {
         auto const data = process.Dump();
         auto const data_span = std::span<char const>(data);
 
-        auto const open_match = find_open(data_span, base);
-        lol_throw_if_msg(!open_match, "Failed to find fopen!");
+        auto const match_ptr_CreateFileA = find_ptr_CreateFileA(data_span, base);
+        lol_throw_if_msg(!match_ptr_CreateFileA, "Failed to find ref to ptr to CreateFileA!");
 
-        auto const wopen_match = find_wopen(data_span, base);
-        lol_throw_if_msg(!wopen_match, "Failed to find wfopen!");
+        auto const match_ptr_CRYPTO_free = find_ptr_CRYPTO_free(data_span, base);
+        lol_throw_if_msg(!match_ptr_CRYPTO_free, "Failed to find ref to ptr to match_ptr_CRYPTO_free!");
 
-        auto const ret_match = find_ret(data_span, base);
-        lol_throw_if_msg(!ret_match, "Failed to find ret!");
-
-        auto const alloc_match = find_alloc(data_span, base);
-        lol_throw_if_msg(!alloc_match, "Failed to find alloc!");
-
-        config.get<"open">() = process.Debase((PtrStorage)std::get<1>(*open_match));
-        config.get<"wopen">() = process.Debase((PtrStorage)std::get<1>(*wopen_match));
-        config.get<"ret">() = process.Debase((PtrStorage)std::get<1>(*ret_match));
-        config.get<"alloc_ptr">() = process.Debase((PtrStorage)std::get<1>(*alloc_match) + 8);
-        config.get<"alloc_fn">() = process.Debase((PtrStorage)std::get<2>(*alloc_match));
+        config.get<"ptr_CreateFileA">() = process.Debase((PtrStorage)std::get<1>(*match_ptr_CreateFileA));
+        config.get<"ptr_CRYPTO_free">() = process.Debase((PtrStorage)std::get<1>(*match_ptr_CRYPTO_free)) + 0x18;
         config.get<"checksum">() = process.Checksum();
     }
 
@@ -196,18 +218,17 @@ struct Context {
     auto is_patchable(const Process& process) const noexcept -> bool {
         auto is_valid_ptr = [](PtrStorage ptr) { return ptr > 0x10000 && ptr < (1ull << 48); };
 
-        auto const alloc_ptr = process.Rebase<PtrStorage>(config.get<"alloc_ptr">());
-        if (auto result = process.TryRead(alloc_ptr); !result || !is_valid_ptr(*result)) {
+        auto const ptr_CRYPTO_free = process.Rebase<PtrStorage>(config.get<"ptr_CRYPTO_free">());
+        if (auto result = process.TryRead(ptr_CRYPTO_free); !result || !is_valid_ptr(*result)) {
+            return false;
+        } else if (!process.TryRead(Ptr<PtrStorage>(*result))) {
             return false;
         }
 
-        auto const open = process.Rebase<PtrStorage>(config.get<"open">());
-        if (auto result = process.TryRead(open); !result || !is_valid_ptr(*result)) {
+        auto const ptr_CreateFileA = process.Rebase<PtrStorage>(config.get<"ptr_CreateFileA">());
+        if (auto result = process.TryRead(ptr_CreateFileA); !result || !is_valid_ptr(*result)) {
             return false;
-        }
-
-        auto const wopen = process.Rebase<PtrStorage>(config.get<"wopen">());
-        if (auto result = process.TryRead(wopen); !result || !is_valid_ptr(*result)) {
+        } else if (!process.TryRead(Ptr<PtrStorage>(*result))) {
             return false;
         }
         return true;
@@ -218,35 +239,26 @@ struct Context {
         lol_throw_if_msg(!config.check(), "Config invalid");
 
         // Prepare pointers
-        auto mod_code = process.Allocate<CodePayload>();
-        auto ptr_org_open = Ptr<Ptr<ImportTrampoline>>(process.Rebase(config.get<"open">()));
-        auto ptr_wopen = Ptr<Ptr<uint8_t>>(process.Rebase(config.get<"wopen">()));
-        auto find_ret_addr = process.Rebase(config.get<"ret">());
-        auto ptr_alloc = Ptr<Ptr<uint8_t>>(process.Rebase(config.get<"alloc_ptr">()));
-        auto org_alloc_ptr = Ptr<uint8_t>(process.Rebase(config.get<"alloc_fn">()));
-
-        // Read pointers to pointers
-        auto org_open = process.Read(ptr_org_open);
-        auto wopen = process.Read(ptr_wopen);
+        auto ptr_payload = process.Allocate<CodePayload>();
+        auto ptr_CreateFileA = Ptr<Ptr<ImportTrampoline>>(process.Rebase(config.get<"ptr_CreateFileA">()));
+        auto ptr_CRYPTO_free = Ptr<Ptr<uint8_t>>(process.Rebase(config.get<"ptr_CRYPTO_free">()));
+        auto ptr_code_CreateFileA = process.Read(ptr_CreateFileA);
 
         // Prepare payload
         auto payload = CodePayload{};
-        payload.org_open_ptr = Ptr(mod_code->org_open_data.data);
-        payload.prefix_open_ptr = Ptr(mod_code->prefix_open_data);
-        payload.wopen_ptr = wopen;
-        payload.org_alloc_ptr = org_alloc_ptr;
-        payload.find_ret_addr = find_ret_addr;
-        payload.hook_ret_addr = Ptr(mod_code->hook_ret_data);
-        payload.org_open_data = process.Read(org_open);
+        payload.ptr_GetProcessHeap = kernel32.ptr_GetProcessHeap;
+        payload.ptr_HeapFree = kernel32.ptr_HeapFree;
+        payload.ptr_CreateFileA = kernel32.ptr_CreateFileA;
+        payload.ptr_CreateFileW = kernel32.ptr_CreateFileW;
         std::copy_n(prefix.data(), prefix.size(), payload.prefix_open_data);
 
         // Write payload
-        process.Write(mod_code, payload);
-        process.MarkExecutable(mod_code);
+        process.Write(ptr_payload, payload);
+        process.MarkExecutable(ptr_payload);
 
         // Write hooks
-        process.Write(ptr_alloc, Ptr(mod_code->hook_alloc_data));
-        process.Write(org_open, ImportTrampoline::make(mod_code->hook_open_data));
+        process.Write(ptr_CRYPTO_free, Ptr(ptr_payload->hook_CRYPTO_free));
+        process.Write(ptr_code_CreateFileA, ImportTrampoline::make(ptr_payload->hook_CreateFileA));
     }
 
     auto verify_path(Process const& process, fs::path game_path) -> void {

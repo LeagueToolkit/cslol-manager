@@ -1,4 +1,4 @@
-%include 'defines.asm'
+[bits 64]
 
 ; args
 %define arg_lpFileName 16
@@ -26,16 +26,11 @@ mov arg_dwShareMode[rbp], r8
 mov arg_dwDesiredAccess[rbp], rdx
 mov arg_lpFileName[rbp], rcx
 
-; get pointer to data after function
-call back
-back:   pop rbx
-        and rbx, 0xFFFFFFFFFFFFF000
-
 ; prepare buffer for writing
 lea rdi, QWORD local_buffer[rbp]
 
 ; write prefix
-mov rsi, QWORD payload_prefix_open_ptr[rbx]
+lea rsi, QWORD [rel prefix]
 write_prefix:   lodsw
                 stosw
                 test ax, ax
@@ -68,7 +63,7 @@ mov r9, arg_lpSecurityAttributes[rbp]
 mov r8, arg_dwShareMode[rbp]
 mov rdx, arg_dwDesiredAccess[rbp]
 lea rcx, QWORD local_buffer[rbp]
-call QWORD payload_wopen[rbx]
+call QWORD [rel ptr_CreateFileW]
 
 ; restore original arguments
 ; check for success
@@ -86,8 +81,7 @@ mov r9, arg_lpSecurityAttributes[rbp]
 mov r8, arg_dwShareMode[rbp]
 mov rdx, arg_dwDesiredAccess[rbp]
 mov rcx, arg_lpFileName[rbp]
-call QWORD payload_org_open_ptr[rbx]
-
+call QWORD [rel ptr_CreateFileA]
 
 ; epilogue
 done: add rsp, 72
@@ -96,3 +90,15 @@ done: add rsp, 72
       pop rbx
       leave
       ret
+
+; runtime data comes after
+align 0x100
+
+ptr_CreateFileA:
+    dq   0x11223344556677
+
+ptr_CreateFileW:
+    dq   0x11223344556677
+
+prefix:
+    dq   0x11223344556677
