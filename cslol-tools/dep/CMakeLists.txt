@@ -5,7 +5,7 @@ include(FetchContent)
 FetchContent_Declare(
     xxhash
     GIT_REPOSITORY https://github.com/Cyan4973/xxHash.git
-    GIT_TAG        v0.8.1
+    GIT_TAG        35b0373c697b5f160d3db26b1cbb45a0d5ba788c # v0.8.1
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
 )
@@ -22,7 +22,7 @@ endif()
 FetchContent_Declare(
     zstd
     GIT_REPOSITORY https://github.com/facebook/zstd.git
-    GIT_TAG        v1.5.2
+    GIT_TAG        63779c798237346c2b245c546c40b72a5a5913fe # v1.5.5
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
 )
@@ -48,7 +48,7 @@ endif()
 FetchContent_Declare(
     libdeflate
     GIT_REPOSITORY https://github.com/ebiggers/libdeflate.git
-    GIT_TAG        v1.12
+    GIT_TAG        495fee110ebb48a5eb63b75fd67e42b2955871e2 # v1.18
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
 )
@@ -69,7 +69,7 @@ endif()
 FetchContent_Declare(
     miniz
     GIT_REPOSITORY https://github.com/richgel999/miniz.git
-    GIT_TAG        76b3a872855388c735c564905da030f26334f3b3
+    GIT_TAG        d9d197c92606da7be59cee2be2fbc6830b73c480 # 3.0.2
 )
 FetchContent_GetProperties(miniz)
 if(NOT miniz_POPULATED)
@@ -82,7 +82,7 @@ endif()
 FetchContent_Declare(
     fmt
     GIT_REPOSITORY https://github.com/fmtlib/fmt.git
-    GIT_TAG        8.1.1
+    GIT_TAG        a33701196adfad74917046096bf5a2aa0ab0bb50 # 9.1.0
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
 )
@@ -98,7 +98,7 @@ endif()
 FetchContent_Declare(
     fmtlog
     GIT_REPOSITORY https://github.com/MengRao/fmtlog.git
-    GIT_TAG        fc4c01dc6cc9bce193bd5ca81f684c04c069ae05
+    GIT_TAG        5aea0764c820358ec1a842cd34cb6d494f65cfa1 # 2.2.1
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
 )
