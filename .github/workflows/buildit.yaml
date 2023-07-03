@@ -52,7 +52,7 @@ jobs:
         if: github.event_name == 'release'
         uses: svenstaro/upload-release-action@e74ff71f7d8a4c4745b560a485cc5fdb9b5b999d
         with:
-          repo: ${{ secrets.GITHUB_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: cslol-manager-windows.zip
           tag: ${{ github.ref }}
           file_glob: true
