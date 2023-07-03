@@ -1,35 +1,58 @@
 name: BuildIt
+
 on:
-  workflow_dispatch:
+  release:
+    types:
+      - created
+      - prereleased
+      - edited
+      - published
+
 jobs:
   build:
+    permissions: write-all
     runs-on: windows-2022
     steps:
-    - name: "Clone source"
-      uses: actions/checkout@v2
-      with:
-        submodules: 'true'
-    - name: "Setup msvc"
-      uses: ilammy/msvc-dev-cmd@v1
-    - name: "Download Qt5"
-      shell: bash
-      run: |
-        curl --output C:/qt5.7z -L "https://github.com/LoL-Fantome/lolcustomskin-tools/releases/download/release23/qt5.15.5-x86_64-msvc-static.7z"
-        7z x -oC:/ C:/qt5.7z
-    - name: "Build"
-      run: |
-        mkdir build
-        cd build
-        cmake -G "NMake Makefiles" "-DCMAKE_PREFIX_PATH:PATH=C:/qt5.15.5-x86_64-msvc-static" "-DCMAKE_MSVC_RUNTIME_LIBRARY:STRING=MultiThreaded" "-DCMAKE_BUILD_TYPE:STRING=Release" ..
-        cmake --build .
-    - name: "Package"
-      shell: bash
-      run: |
-        ./make-release.sh build
-        7z a cslol-manager-windows.zip cslol-manager/
-    - name: 'Upload Artifact'
-      uses: actions/upload-artifact@v2
-      with:
-        name: cslol-manager-windows
-        path: cslol-manager-windows.zip
-        retention-days: 15
+      - name: "Clone source"
+        uses: actions/checkout@v3
+        with:
+          submodules: 'true'
+          ref: master
+
+      - name: "Setup msvc"
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: "Download Qt5"
+        shell: bash
+        run: |
+          curl --output C:/qt5.7z -L "https://github.com/LoL-Fantome/lolcustomskin-tools/releases/download/release23/qt5.15.5-x86_64-msvc-static.7z"
+          7z x -oC:/ C:/qt5.7z
+
+      - name: "Build"
+        run: |
+          mkdir build
+          cd build
+          cmake -G "NMake Makefiles" "-DCMAKE_PREFIX_PATH:PATH=C:/qt5.15.5-x86_64-msvc-static" "-DCMAKE_MSVC_RUNTIME_LIBRARY:STRING=MultiThreaded" "-DCMAKE_BUILD_TYPE:STRING=Release" ..
+          cmake --build .
+
+      - name: "Package"
+        shell: bash
+        run: |
+          ./make-release.sh build
+          7z a cslol-manager-windows.zip cslol-manager/
+
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v2
+        with:
+          name: cslol-manager-windows
+          path: cslol-manager-windows.zip
+          retention-days: 15
+
+      - name: 'Upload to Release'
+        if: github.event_name == 'release'
+        uses: svenstaro/upload-release-action@e74ff71f7d8a4c4745b560a485cc5fdb9b5b999d
+        with:
+          repo: ${{ secrets.GITHUB_TOKEN }}
+          file: cslol-manager-windows.zip
+          tag: ${{ github.ref }}
+          file_glob: true
