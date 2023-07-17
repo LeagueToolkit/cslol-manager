@@ -26,6 +26,32 @@ mov arg_dwShareMode[rbp], r8
 mov arg_dwDesiredAccess[rbp], rdx
 mov arg_lpFileName[rbp], rcx
 
+; GENERIC_READ
+cmp dword arg_dwDesiredAccess[rbp], 0x80000000
+jne original
+
+; FILE_SHARE_READ
+cmp dword arg_dwShareMode[rbp], 1
+jne original
+
+; OPEN_EXISTING
+cmp dword arg_dwCreationDisposition[rbp], 0x3
+jne original
+
+; FILE_ATTRIBUTE_NORMAL
+cmp dword arg_dwFlagsAndAttributes[rbp], 0x80
+jne original
+
+; only DATA
+cmp byte [rcx], 'D'
+jne original
+cmp byte [rcx+1], 'A'
+jne original
+cmp byte [rcx+2], 'T'
+jne original
+cmp byte [rcx+3], 'A'
+jne original
+
 ; prepare buffer for writing
 lea rdi, QWORD local_buffer[rbp]
 
@@ -51,7 +77,6 @@ write_path_skip:
             test al, al
             jne write_path
 
-
 ; call wide with modified buffer
 mov rax, arg_hTemplateFile[rbp]
 mov [rsp+48], rax
@@ -71,17 +96,18 @@ cmp rax, -1
 jne done
 
 ; just call original
-mov rax, arg_hTemplateFile[rbp]
-mov [rsp+48], rax
-mov rax, arg_dwFlagsAndAttributes[rbp]
-mov [rsp+40], rax
-mov rax, arg_dwCreationDisposition[rbp]
-mov [rsp+32], rax
-mov r9, arg_lpSecurityAttributes[rbp]
-mov r8, arg_dwShareMode[rbp]
-mov rdx, arg_dwDesiredAccess[rbp]
-mov rcx, arg_lpFileName[rbp]
-call QWORD [rel ptr_CreateFileA]
+original:
+    mov rax, arg_hTemplateFile[rbp]
+    mov [rsp+48], rax
+    mov rax, arg_dwFlagsAndAttributes[rbp]
+    mov [rsp+40], rax
+    mov rax, arg_dwCreationDisposition[rbp]
+    mov [rsp+32], rax
+    mov r9, arg_lpSecurityAttributes[rbp]
+    mov r8, arg_dwShareMode[rbp]
+    mov rdx, arg_dwDesiredAccess[rbp]
+    mov rcx, arg_lpFileName[rbp]
+    call QWORD [rel ptr_CreateFileA]
 
 ; epilogue
 done: add rsp, 72

@@ -14,17 +14,9 @@ using namespace lol::patcher;
 
 Process::Process() noexcept = default;
 
-Process::Process(std::uint32_t pid) noexcept {
-    if (mach_port_t task = {}; !task_for_pid(mach_task_self(), pid, &task)) {
-        handle_ = (void*)(std::uintptr_t)task;
-        pid_ = pid;
-    }
-}
-
 Process::Process(Process&& other) noexcept {
     std::swap(handle_, other.handle_);
     std::swap(base_, other.base_);
-    std::swap(checksum_, other.checksum_);
     std::swap(path_, other.path_);
     std::swap(pid_, other.pid_);
 }
@@ -33,7 +25,6 @@ Process& Process::operator=(Process&& other) noexcept {
     if (this == &other) return *this;
     std::swap(handle_, other.handle_);
     std::swap(base_, other.base_);
-    std::swap(checksum_, other.checksum_);
     std::swap(path_, other.path_);
     std::swap(pid_, other.pid_);
     return *this;
@@ -45,20 +36,30 @@ Process::~Process() noexcept {
     }
 }
 
-auto Process::Find(char const* name, char const* window) -> std::optional<Process> {
-    lol_trace_func();
-    pid_t pids[4096];
-    int bytes = proc_listpids(PROC_ALL_PIDS, 0, pids, sizeof(pids));
-    int n_proc = bytes / sizeof(pid_t);
-    char pathbuf[PROC_PIDPATHINFO_MAXSIZE] = {};
-    for (auto p = pids; p != pids + n_proc; p++) {
-        if (auto const ret = proc_pidpath(*p, pathbuf, sizeof(pathbuf)); ret > 0) {
-            if (std::string_view{pathbuf, static_cast<std::size_t>(ret)}.ends_with(name)) {
-                return Process{static_cast<std::uint32_t>(*p)};
+auto Process::FindPid(char const* name) -> std::uint32_t {
+    if (name) {
+        pid_t pids[4096];
+        int bytes = proc_listpids(PROC_ALL_PIDS, 0, pids, sizeof(pids));
+        int n_proc = bytes / sizeof(pid_t);
+        char pathbuf[PROC_PIDPATHINFO_MAXSIZE] = {};
+        for (auto p = pids; p != pids + n_proc; p++) {
+            if (auto const ret = proc_pidpath(*p, pathbuf, sizeof(pathbuf)); ret > 0) {
+                if (std::string_view{pathbuf, static_cast<std::size_t>(ret)}.ends_with(name)) {
+                    return static_cast<std::uint32_t>(*p);
+                }
             }
         }
     }
-    return std::nullopt;
+    return 0;
+}
+
+auto Process::FindPidWindow(char const* window) -> std::uint32_t { return 0; }
+
+auto Process::Open(std::uint32_t pid) -> Process {
+    if (mach_port_t task = {}; !task_for_pid(mach_task_self(), pid, &task)) {
+        return Process((void*)(std::uintptr_t)task, pid);
+    }
+    lol_throw_msg("task_for_pid");
 }
 
 auto Process::Base() const -> PtrStorage {
@@ -82,6 +83,27 @@ auto Process::Base() const -> PtrStorage {
     return base_;
 }
 
+auto Process::TryBase() const noexcept -> std::optional<PtrStorage> {
+    if (!base_) {
+        vm_map_offset_t vmoffset = {};
+        vm_map_size_t vmsize = {};
+        uint32_t nesting_depth = 0;
+        struct vm_region_submap_info_64 vbr[16] = {};
+        mach_msg_type_number_t vbrcount = 16;
+        kern_return_t kr;
+        if (auto const err = mach_vm_region_recurse((mach_port_t)(uintptr_t)handle_,
+                                                    &vmoffset,
+                                                    &vmsize,
+                                                    &nesting_depth,
+                                                    (vm_region_recurse_info_t)&vbr,
+                                                    &vbrcount)) {
+            return std::nullopt;
+        }
+        base_ = vmoffset - 0x100000000;
+    }
+    return base_;
+}
+
 auto Process::Path() const -> fs::path {
     lol_trace_func();
     if (!path_.empty()) return path_;
@@ -93,8 +115,6 @@ auto Process::Path() const -> fs::path {
     }
     return path_;
 }
-
-auto Process::Checksum() const -> uint32_t { return 0; }
 
 auto Process::Dump() const -> std::vector<char> {
     std::vector<char> buffer = {};
@@ -110,7 +130,7 @@ auto Process::Dump() const -> std::vector<char> {
     return buffer;
 }
 
-auto Process::WaitExit(uint32_t timeout) const noexcept -> bool {
+auto Process::IsExited() const noexcept -> bool {
     int p = 0;
     pid_for_task((mach_port_t)(uintptr_t)handle_, &p);
     return p < 0;
