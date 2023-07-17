@@ -15,31 +15,8 @@
 
 namespace {
     static inline constexpr DWORD PROCESS_NEEDED_ACCESS =
-        PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_QUERY_INFORMATION | SYNCHRONIZE;
+        PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_QUERY_INFORMATION;
     static inline constexpr size_t DUMP_SIZE = 0x4000000;
-
-    static DWORD find_pid(char const* name, char const* window) {
-        if (name) {
-            auto entry = PROCESSENTRY32{.dwSize = sizeof(PROCESSENTRY32)};
-            auto handle = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-            for (bool i = Process32First(handle, &entry); i; i = Process32Next(handle, &entry)) {
-                std::filesystem::path ExeFile = entry.szExeFile;
-                if (ExeFile.filename().generic_string() == name) {
-                    CloseHandle(handle);
-                    return entry.th32ProcessID;
-                }
-            }
-            CloseHandle(handle);
-        }
-        if (window) {
-            if (auto hwnd = FindWindowExA(nullptr, nullptr, nullptr, window)) {
-                auto pid = DWORD{};
-                GetWindowThreadProcessId(hwnd, &pid);
-                return pid;
-            }
-        }
-        return 0;
-    }
 }
 
 using namespace lol;
@@ -47,25 +24,19 @@ using namespace lol::patcher;
 
 Process::Process() noexcept = default;
 
-Process::Process(uint32_t pid) noexcept : handle_(OpenProcess(PROCESS_NEEDED_ACCESS, false, pid)) {
-    if (handle_ == INVALID_HANDLE_VALUE) {
-        handle_ = nullptr;
-    }
-}
-
 Process::Process(Process&& other) noexcept {
     std::swap(handle_, other.handle_);
     std::swap(base_, other.base_);
-    std::swap(checksum_, other.checksum_);
     std::swap(path_, other.path_);
+    std::swap(pid_, other.pid_);
 }
 
 Process& Process::operator=(Process&& other) noexcept {
     if (this == &other) return *this;
     std::swap(handle_, other.handle_);
     std::swap(base_, other.base_);
-    std::swap(checksum_, other.checksum_);
     std::swap(path_, other.path_);
+    std::swap(pid_, other.pid_);
     return *this;
 }
 
@@ -76,24 +47,39 @@ Process::~Process() noexcept {
     }
 }
 
-auto Process::Find(char const* name, char const* window) -> std::optional<Process> {
-    if (auto pid = find_pid(name, window)) {
-        auto process = Process(pid);
-        if (!process.handle_) {
-            lol_throw_msg("OpenProcess: {}", last_error());
+auto Process::FindPid(char const* name) -> std::uint32_t {
+    if (name) {
+        auto entry = PROCESSENTRY32{.dwSize = sizeof(PROCESSENTRY32)};
+        auto handle = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+        for (bool i = Process32First(handle, &entry); i; i = Process32Next(handle, &entry)) {
+            std::filesystem::path ExeFile = entry.szExeFile;
+            if (ExeFile.filename().generic_string() == name) {
+                CloseHandle(handle);
+                return entry.th32ProcessID;
+            }
         }
-        HMODULE mod = {};
-        DWORD modSize = {};
-        if (!EnumProcessModules(process.handle_, &mod, sizeof(mod), &modSize)) {
-            return std::nullopt;
-        }
-        char dump[1024] = {};
-        if (!ReadProcessMemory(process.handle_, mod, dump, sizeof(dump), nullptr)) {
-            return std::nullopt;
-        }
-        return std::move(process);
+        CloseHandle(handle);
     }
-    return std::nullopt;
+    return 0;
+}
+
+auto Process::FindPidWindow(char const* window) -> std::uint32_t {
+    if (window) {
+        if (auto hwnd = FindWindowExA(nullptr, nullptr, nullptr, window)) {
+            auto pid = DWORD{};
+            GetWindowThreadProcessId(hwnd, &pid);
+            return pid;
+        }
+    }
+    return 0;
+}
+
+auto Process::Open(std::uint32_t pid) -> Process {
+    auto handle = OpenProcess(PROCESS_NEEDED_ACCESS, false, pid);
+    if (!handle || handle == INVALID_HANDLE_VALUE) {
+        lol_throw_msg("OpenProcess: {}", last_error());
+    }
+    return Process(handle, pid);
 }
 
 auto Process::Base() const -> PtrStorage {
@@ -103,6 +89,18 @@ auto Process::Base() const -> PtrStorage {
         DWORD modSize = {};
         if (!EnumProcessModules(handle_, &mod, sizeof(mod), &modSize)) {
             lol_throw_msg("EnumProcessModules: {}", last_error());
+        }
+        base_ = (PtrStorage)(uintptr_t)(mod);
+    }
+    return base_;
+}
+
+auto Process::TryBase() const noexcept -> std::optional<PtrStorage> {
+    if (!base_) {
+        HMODULE mod = {};
+        DWORD modSize = {};
+        if (!EnumProcessModules(handle_, &mod, sizeof(mod), &modSize)) {
+            return std::nullopt;
         }
         base_ = (PtrStorage)(uintptr_t)(mod);
     }
@@ -122,27 +120,6 @@ auto Process::Path() const -> fs::path {
     return path_;
 }
 
-auto Process::Checksum() const -> uint32_t {
-    lol_trace_func();
-    if (!checksum_) {
-        char raw[1024] = {};
-        auto base = this->Base();
-        if (!TryReadMemory((void*)(uintptr_t)base, raw, sizeof(raw))) {
-            lol_throw_msg("RPM PE header: {}", last_error());
-        }
-        auto const dos = (PIMAGE_DOS_HEADER)(raw);
-        if (dos->e_magic != IMAGE_DOS_SIGNATURE) {
-            lol_throw_msg("Failed to get dos header signature!");
-        }
-        auto const nt = (PIMAGE_NT_HEADERS64)(raw + dos->e_lfanew);
-        if (nt->Signature != IMAGE_NT_SIGNATURE) {
-            lol_throw_msg("Failed to get nt header signature!");
-        }
-        checksum_ = (uint32_t)(nt->OptionalHeader.CheckSum);
-    }
-    return checksum_;
-}
-
 auto Process::Dump() const -> std::vector<char> {
     lol_trace_func();
     auto base = this->Base();
@@ -153,8 +130,8 @@ auto Process::Dump() const -> std::vector<char> {
     return buffer;
 }
 
-auto Process::WaitExit(uint32_t timeout) const noexcept -> bool {
-    switch (WaitForSingleObject(handle_, timeout)) {
+auto Process::IsExited() const noexcept -> bool {
+    switch (WaitForSingleObject(handle_, 1)) {
         case WAIT_OBJECT_0:
             return true;
         case WAIT_TIMEOUT:

@@ -248,28 +248,34 @@ static auto mod_runoverlay(fs::path overlay, fs::path config_file, fs::path game
 
     fmtlog::setLogFile(stdout, false);
     auto old_msg = patcher::M_DONE;
-    patcher::run(
-        [lock, &old_msg](auto msg, char const* arg) {
-            if (msg != old_msg) {
-                old_msg = msg;
-                fprintf(stdout, "Status: %s\n", patcher::STATUS_MSG[msg]);
-                fflush(stdout);
-                if (msg == patcher::M_PATCH) {
-                    *lock = true;
-                    if (arg && *arg) {
-                        fprintf(stdout, "Config: %s\n", arg);
-                        fflush(stdout);
+    try {
+        patcher::run(
+            [lock, &old_msg](auto msg, char const* arg) {
+                if (msg != old_msg) {
+                    old_msg = msg;
+                    fprintf(stdout, "Status: %s\n", patcher::STATUS_MSG[msg]);
+                    fflush(stdout);
+                    if (msg == patcher::M_PATCH || msg == patcher::M_NEED_SAVE) {
+                        *lock = true;
+                        if (arg && *arg) {
+                            fprintf(stdout, "Config: %s\n", arg);
+                            fflush(stdout);
+                        }
+                    } else if (*lock) {
+                        *lock = false;
                     }
                 }
-                if (msg == patcher::M_DONE) {
-                    *lock = false;
-                }
-            }
-            return true;
-        },
-        overlay,
-        config_file,
-        game);
+            },
+            overlay,
+            config_file,
+            game);
+    } catch (patcher::PatcherAborted const&) {
+        // nothing to see here, lol
+        lol::error::stack().clear();
+        return;
+    } catch (...) {
+        throw;
+    }
 }
 
 static auto help(fs::path cmd) -> void {
