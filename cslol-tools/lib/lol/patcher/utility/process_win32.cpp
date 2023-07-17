@@ -56,7 +56,6 @@ Process::Process(uint32_t pid) noexcept : handle_(OpenProcess(PROCESS_NEEDED_ACC
 Process::Process(Process&& other) noexcept {
     std::swap(handle_, other.handle_);
     std::swap(base_, other.base_);
-    std::swap(checksum_, other.checksum_);
     std::swap(path_, other.path_);
 }
 
@@ -64,7 +63,6 @@ Process& Process::operator=(Process&& other) noexcept {
     if (this == &other) return *this;
     std::swap(handle_, other.handle_);
     std::swap(base_, other.base_);
-    std::swap(checksum_, other.checksum_);
     std::swap(path_, other.path_);
     return *this;
 }
@@ -82,16 +80,7 @@ auto Process::Find(char const* name, char const* window) -> std::optional<Proces
         if (!process.handle_) {
             lol_throw_msg("OpenProcess: {}", last_error());
         }
-        HMODULE mod = {};
-        DWORD modSize = {};
-        if (!EnumProcessModules(process.handle_, &mod, sizeof(mod), &modSize)) {
-            return std::nullopt;
-        }
-        char dump[1024] = {};
-        if (!ReadProcessMemory(process.handle_, mod, dump, sizeof(dump), nullptr)) {
-            return std::nullopt;
-        }
-        return std::move(process);
+        return process;
     }
     return std::nullopt;
 }
@@ -109,6 +98,18 @@ auto Process::Base() const -> PtrStorage {
     return base_;
 }
 
+auto Process::TryBase() const noexcept -> std::optional<PtrStorage> {
+    if (!base_) {
+        HMODULE mod = {};
+        DWORD modSize = {};
+        if (!EnumProcessModules(handle_, &mod, sizeof(mod), &modSize)) {
+            return std::nullopt;
+        }
+        base_ = (PtrStorage)(uintptr_t)(mod);
+    }
+    return base_;
+}
+
 auto Process::Path() const -> fs::path {
     lol_trace_func();
     if (!path_.empty()) return path_;
@@ -120,27 +121,6 @@ auto Process::Path() const -> fs::path {
         lol_throw_msg("QueryFullProcessImageNameW: {}", last_error());
     }
     return path_;
-}
-
-auto Process::Checksum() const -> uint32_t {
-    lol_trace_func();
-    if (!checksum_) {
-        char raw[1024] = {};
-        auto base = this->Base();
-        if (!TryReadMemory((void*)(uintptr_t)base, raw, sizeof(raw))) {
-            lol_throw_msg("RPM PE header: {}", last_error());
-        }
-        auto const dos = (PIMAGE_DOS_HEADER)(raw);
-        if (dos->e_magic != IMAGE_DOS_SIGNATURE) {
-            lol_throw_msg("Failed to get dos header signature!");
-        }
-        auto const nt = (PIMAGE_NT_HEADERS64)(raw + dos->e_lfanew);
-        if (nt->Signature != IMAGE_NT_SIGNATURE) {
-            lol_throw_msg("Failed to get nt header signature!");
-        }
-        checksum_ = (uint32_t)(nt->OptionalHeader.CheckSum);
-    }
-    return checksum_;
 }
 
 auto Process::Dump() const -> std::vector<char> {

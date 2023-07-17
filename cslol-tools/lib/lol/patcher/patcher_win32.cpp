@@ -5,6 +5,7 @@
 #    include <fstream>
 #    include <lol/error.hpp>
 #    include <lol/patcher/patcher.hpp>
+#    include <lol/patcher/utility/peex.hpp>
 #    include <thread>
 
 // do not reorder
@@ -152,11 +153,22 @@ struct Kernel32 {
     }
 };
 
+static auto run_until(auto deadline, auto&& func) {
+    for (auto left = std::chrono::duration_cast<std::chrono::milliseconds>(deadline).count(); left; left -= 1) {
+        if (auto result = func()) {
+            return result;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds{1});
+    }
+    throw PatcherTimeout("Timed out");
+}
+
 struct Context {
     LineConfig<std::uint64_t, PAT_REVISION, "checksum", "ptr_CreateFileA", "ptr_CRYPTO_free"> config;
     Kernel32 kernel32;
     std::string config_str;
     std::u16string prefix;
+    PeEx runtime_peex;
 
     auto load_config(fs::path const& path) -> void {
         kernel32 = Kernel32::load();
@@ -195,6 +207,34 @@ struct Context {
         }
     }
 
+    auto parse_pe_runtime(Process const& process) -> bool {
+        auto data = std::array<char, 0x1000>{};
+        if (auto base = process.TryBase()) {
+            if (process.TryReadMemory((void*)*base, data.data(), data.size())) {
+                try {
+                    runtime_peex.parse_data(data.data(), data.size());
+                    return true;
+                } catch (std::exception const& error) {
+                    lol_throw_msg("Failed to parse PE headers: {}\n", error.what());
+                }
+            }
+        }
+        return false;
+    }
+
+    auto needs_update() const noexcept -> bool {
+        return !config.check() || config.get<"checksum">() != runtime_peex.checksum();
+    }
+
+    auto is_scannable(Process const& process) const noexcept -> bool {
+        auto const is_valid_ptr = [](PtrStorage ptr) { return ptr > 0x10000 && ptr < (1ull << 48); };
+        auto const rdata = process.Rebase<PtrStorage>(runtime_peex.offset_rdata());
+        if (auto value = process.TryRead(rdata)) {
+            return is_valid_ptr(*value);
+        }
+        return false;
+    }
+
     auto scan(Process const& process) -> void {
         lol_trace_func();
         auto const base = process.Base();
@@ -209,14 +249,10 @@ struct Context {
 
         config.get<"ptr_CreateFileA">() = process.Debase((PtrStorage)std::get<1>(*match_ptr_CreateFileA));
         config.get<"ptr_CRYPTO_free">() = process.Debase((PtrStorage)std::get<1>(*match_ptr_CRYPTO_free)) + 0x18;
-        config.get<"checksum">() = process.Checksum();
+        config.get<"checksum">() = runtime_peex.checksum();
     }
 
-    auto check(Process const& process) const -> bool {
-        return config.check() && process.Checksum() == config.get<"checksum">();
-    }
-
-    auto is_patchable(const Process& process) const noexcept -> bool {
+    auto is_patchable(Process const& process) const noexcept -> bool {
         auto is_valid_ptr = [](PtrStorage ptr) { return ptr > 0x10000 && ptr < (1ull << 48); };
 
         auto const ptr_CRYPTO_free = process.Rebase<PtrStorage>(config.get<"ptr_CRYPTO_free">());
@@ -302,7 +338,7 @@ static auto skinhack_detected() -> char const* {
     lol_throw_msg("NEW PATCH DETECTED, THIS IS NOT AN ERROR!\n");
 }
 
-auto patcher::run(std::function<bool(Message, char const*)> update,
+auto patcher::run(std::function<void(Message, char const*)> update,
                   fs::path const& profile_path,
                   fs::path const& config_path,
                   fs::path const& game_path) -> void {
@@ -314,68 +350,58 @@ auto patcher::run(std::function<bool(Message, char const*)> update,
     for (;;) {
         auto process = Process::Find("League of Legends.exe", "League of Legends (TM) Client");
         if (!process) {
-            if (!update(M_WAIT_START, "")) return;
-            std::this_thread::sleep_for(250ms);
+            update(M_WAIT_START, "");
+            std::this_thread::sleep_for(10ms);
             continue;
+        } else {
+            update(M_FOUND, "");
         }
 
+        // Wait until process is actually loaded and has its base and data mapped.
+        run_until(3min, [&] {
+            update(M_WAIT_INIT, "");
+            return ctx.parse_pe_runtime(*process);
+        });
+
+        // Ensure that path is correct
         ctx.verify_path(*process, game_path);
 
-        if (!update(M_FOUND, "")) return;
+        // Check if rescan is necessary
+        if (ctx.needs_update()) {
+            // Wait until rdata has been initialized.
+            run_until(3min, [&] {
+                update(M_WAIT_INIT, "");
+                // return ctx.is_scannable(*process);
+                return process->WaitInitialized(1);
+            });
 
-        auto patchable = false;
-        if (!ctx.check(*process)) {
-            for (std::uint32_t timeout = 3 * 60 * 1000; timeout; timeout -= 1) {
-                if (!update(M_WAIT_INIT, "")) return;
-                if (process->WaitInitialized(1)) {
-                    break;
-                }
-            }
-
-            if (!update(M_SCAN, "")) return;
             ctx.scan(*process);
-
-            if (!update(M_NEED_SAVE, "")) return;
+            update(M_NEED_SAVE, "");
             ctx.save_config(config_path);
-
-            patchable = true;
             // newpatch_detected();
-        } else {
-            if (!update(M_WAIT_PATCHABLE, "")) return;
-            // Fast patch this will pin core to 100% for a few seconds.
-            for (auto const start = std::chrono::high_resolution_clock::now();;) {
-                if (ctx.is_patchable(*process)) {
-                    patchable = true;
-                    break;
-                }
-                auto const end = std::chrono::high_resolution_clock::now();
-                auto const diff = std::chrono::duration_cast<std::chrono::seconds>(end - start);
-                if (diff.count() > 10) {
-                    break;
-                }
-            }
-            for (std::uint32_t timeout = 3 * 60 * 1000; !patchable && timeout; timeout -= 1) {
-                if (!update(M_WAIT_PATCHABLE, "")) return;
-                if (ctx.is_patchable(*process)) {
-                    patchable = true;
-                    break;
-                }
-                std::this_thread::sleep_for(1ms);
-            }
         }
 
-        lol_throw_if_msg(!patchable, "Patchable timeout!");
-        if (!update(M_PATCH, ctx.config_str.c_str())) return;
+        // Wait until process is "patchable".
+        run_until(3min, [&] {
+            update(M_WAIT_PATCHABLE, "");
+            return ctx.is_patchable(*process);
+        });
+
+        // Perform paching.
+        update(M_PATCH, ctx.config_str.c_str());
         ctx.patch(*process);
 
-        for (std::uint32_t timeout = 3 * 60 * 60 * 1000; timeout; timeout -= 250) {
-            if (!update(M_WAIT_EXIT, "")) return;
-            if (process->WaitExit(250)) {
-                break;
+        // Wait exit.
+        run_until(3h, [&] {
+            update(M_WAIT_EXIT, "");
+            if (process->WaitExit(1000)) {
+                return true;
             }
-        }
+            return false;
+        });
 
-        if (!update(M_DONE, "")) return;
+        // Signal done.
+        update(M_DONE, "");
     }
 }
 

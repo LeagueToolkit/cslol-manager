@@ -90,7 +90,7 @@ struct Context {
     }
 };
 
-auto patcher::run(std::function<bool(Message, char const*)> update,
+auto patcher::run(std::function<void(Message, char const*)> update,
                   fs::path const& profile_path,
                   fs::path const& config_path,
                   fs::path const& game_path) -> void {
@@ -106,22 +106,22 @@ auto patcher::run(std::function<bool(Message, char const*)> update,
             continue;
         }
 
-        if (!update(M_FOUND, "")) return;
+        update(M_FOUND, "");
 
-        if (!update(M_SCAN, "")) return;
+        update(M_SCAN, "");
         ctx.scan(*process);
 
-        if (!update(M_PATCH, "")) return;
+        update(M_PATCH, "");
         ctx.patch(*process);
 
         for (std::uint32_t timeout = 3 * 60 * 60 * 1000; timeout; timeout -= 250) {
-            if (!update(M_WAIT_EXIT, "")) return;
+            update(M_WAIT_EXIT, "");
             if (process->WaitExit(0)) {
                 break;
             }
             std::this_thread::sleep_for(250ms);
         }
-        if (!update(M_DONE, "")) return;
+        update(M_DONE, "");
     }
 }
 

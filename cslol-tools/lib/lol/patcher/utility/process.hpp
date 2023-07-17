@@ -40,7 +40,6 @@ namespace lol::patcher {
     private:
         void *handle_ = nullptr;
         mutable PtrStorage base_ = {};
-        mutable uint32_t checksum_ = {};
         mutable std::filesystem::path path_ = {};
         mutable uint32_t pid_ = {};
 
@@ -64,9 +63,9 @@ namespace lol::patcher {
 
         auto Base() const -> PtrStorage;
 
-        auto Path() const -> fs::path;
+        auto TryBase() const noexcept -> std::optional<PtrStorage>;
 
-        auto Checksum() const -> uint32_t;
+        auto Path() const -> fs::path;
 
         auto Dump() const -> std::vector<char>;
 
