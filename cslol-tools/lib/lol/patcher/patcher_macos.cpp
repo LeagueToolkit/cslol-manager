@@ -4,7 +4,6 @@
 #    include <cstring>
 #    include <thread>
 
-#    include "utility/lineconfig.hpp"
 #    include "utility/macho.hpp"
 #    include "utility/process.hpp"
 
