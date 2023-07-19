@@ -15,31 +15,8 @@
 
 namespace {
     static inline constexpr DWORD PROCESS_NEEDED_ACCESS =
-        PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_QUERY_INFORMATION | SYNCHRONIZE;
+        PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_QUERY_INFORMATION;
     static inline constexpr size_t DUMP_SIZE = 0x4000000;
-
-    static DWORD find_pid(char const* name, char const* window) {
-        if (name) {
-            auto entry = PROCESSENTRY32{.dwSize = sizeof(PROCESSENTRY32)};
-            auto handle = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-            for (bool i = Process32First(handle, &entry); i; i = Process32Next(handle, &entry)) {
-                std::filesystem::path ExeFile = entry.szExeFile;
-                if (ExeFile.filename().generic_string() == name) {
-                    CloseHandle(handle);
-                    return entry.th32ProcessID;
-                }
-            }
-            CloseHandle(handle);
-        }
-        if (window) {
-            if (auto hwnd = FindWindowExA(nullptr, nullptr, nullptr, window)) {
-                auto pid = DWORD{};
-                GetWindowThreadProcessId(hwnd, &pid);
-                return pid;
-            }
-        }
-        return 0;
-    }
 }
 
 using namespace lol;
@@ -47,16 +24,11 @@ using namespace lol::patcher;
 
 Process::Process() noexcept = default;
 
-Process::Process(uint32_t pid) noexcept : handle_(OpenProcess(PROCESS_NEEDED_ACCESS, false, pid)) {
-    if (handle_ == INVALID_HANDLE_VALUE) {
-        handle_ = nullptr;
-    }
-}
-
 Process::Process(Process&& other) noexcept {
     std::swap(handle_, other.handle_);
     std::swap(base_, other.base_);
     std::swap(path_, other.path_);
+    std::swap(pid_, other.pid_);
 }
 
 Process& Process::operator=(Process&& other) noexcept {
@@ -64,6 +36,7 @@ Process& Process::operator=(Process&& other) noexcept {
     std::swap(handle_, other.handle_);
     std::swap(base_, other.base_);
     std::swap(path_, other.path_);
+    std::swap(pid_, other.pid_);
     return *this;
 }
 
@@ -74,15 +47,35 @@ Process::~Process() noexcept {
     }
 }
 
-auto Process::Find(char const* name, char const* window) -> std::optional<Process> {
-    if (auto pid = find_pid(name, window)) {
-        auto process = Process(pid);
-        if (!process.handle_) {
-            lol_throw_msg("OpenProcess: {}", last_error());
+auto Process::FindPid(char const* name, char const* window) -> std::uint32_t {
+    if (name) {
+        auto entry = PROCESSENTRY32{.dwSize = sizeof(PROCESSENTRY32)};
+        auto handle = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+        for (bool i = Process32First(handle, &entry); i; i = Process32Next(handle, &entry)) {
+            std::filesystem::path ExeFile = entry.szExeFile;
+            if (ExeFile.filename().generic_string() == name) {
+                CloseHandle(handle);
+                return entry.th32ProcessID;
+            }
         }
-        return process;
+        CloseHandle(handle);
     }
-    return std::nullopt;
+    if (window) {
+        if (auto hwnd = FindWindowExA(nullptr, nullptr, nullptr, window)) {
+            auto pid = DWORD{};
+            GetWindowThreadProcessId(hwnd, &pid);
+            return pid;
+        }
+    }
+    return 0;
+}
+
+auto Process::Open(std::uint32_t pid) -> Process {
+    auto handle = OpenProcess(PROCESS_NEEDED_ACCESS, false, pid);
+    if (!handle || handle == INVALID_HANDLE_VALUE) {
+        lol_throw_msg("OpenProcess: {}", last_error());
+    }
+    return Process(handle, pid);
 }
 
 auto Process::Base() const -> PtrStorage {
@@ -133,8 +126,8 @@ auto Process::Dump() const -> std::vector<char> {
     return buffer;
 }
 
-auto Process::WaitExit(uint32_t timeout) const noexcept -> bool {
-    switch (WaitForSingleObject(handle_, timeout)) {
+auto Process::IsExited() const noexcept -> bool {
+    switch (WaitForSingleObject(handle_, 1)) {
         case WAIT_OBJECT_0:
             return true;
         case WAIT_TIMEOUT:
@@ -142,10 +135,6 @@ auto Process::WaitExit(uint32_t timeout) const noexcept -> bool {
         default:
             return true;
     }
-}
-
-auto Process::WaitInitialized(uint32_t timeout) const noexcept -> bool {
-    return WaitForInputIdle(handle_, timeout) == 0;
 }
 
 auto Process::TryReadMemory(void* address, void* dest, size_t size) const noexcept -> bool {

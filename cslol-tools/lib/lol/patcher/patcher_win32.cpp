@@ -9,6 +9,7 @@
 #    include <thread>
 
 // do not reorder
+#    include "utility/delay.hpp"
 #    include "utility/ppp.hpp"
 #    include "utility/process.hpp"
 
@@ -164,16 +165,6 @@ struct Kernel32 {
     }
 };
 
-static auto run_until(auto deadline, char const* what, auto&& func) {
-    for (auto left = std::chrono::duration_cast<std::chrono::milliseconds>(deadline).count(); left; left -= 1) {
-        if (auto result = func()) {
-            return result;
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds{1});
-    }
-    throw PatcherTimeout(std::string("Timed out: ") + what);
-}
-
 struct Context {
     Kernel32 kernel32;
     std::string config_str;
@@ -315,12 +306,6 @@ static auto skinhack_detected() -> char const* {
     return nullptr;
 }
 
-[[noreturn]] static void newpatch_detected() {
-    lol_trace_func("Skipping first game on a new patch for config...");
-    lol_trace_func("Patching should work normally next game!");
-    lol_throw_msg("NEW PATCH DETECTED, THIS IS NOT AN ERROR!\n");
-}
-
 auto patcher::run(std::function<void(Message, char const*)> update,
                   fs::path const& profile_path,
                   fs::path const& config_path,
@@ -330,43 +315,48 @@ auto patcher::run(std::function<void(Message, char const*)> update,
     ctx.set_prefix(profile_path);
     ctx.kernel32 = Kernel32::load();
     for (;;) {
-        auto process = Process::Find("League of Legends.exe", "League of Legends (TM) Client");
-        if (!process) {
+        auto pid = Process::FindPid("League of Legends.exe", "League of Legends (TM) Client");
+        if (!pid) {
             update(M_WAIT_START, "");
             std::this_thread::sleep_for(10ms);
             continue;
         }
 
-        // Signal that process has been found.
-        update(M_FOUND, "");
+        // We can drop the handle to the process after this.
+        {
+            // Signal that process has been found.
+            update(M_FOUND, "");
+            auto process = Process::Open(pid);
 
-        // Wait until process is actually loaded and has its base and data mapped.
-        run_until(1min, "initiliazation", [&] {
-            update(M_WAIT_INIT, "");
-            return ctx.is_initialized(*process);
-        });
+            // Wait until process is actually loaded and has its base and data mapped.
+            run_until(1min, Intervals{1ms, 10ms, 100ms}, "initiliazation", [&] {
+                update(M_WAIT_INIT, "");
+                return ctx.is_initialized(process);
+            });
 
-        // Find necessary offsets and ensure game path.
-        update(M_SCAN, "");
-        ctx.scan(*process, game_path);
+            // Find necessary offsets and ensure game path.
+            update(M_SCAN, "");
+            ctx.scan(process, game_path);
 
-        // Wait until process is "patchable".
-        run_until(1min, "patchable", [&] {
-            update(M_WAIT_PATCHABLE, "");
-            return ctx.is_patchable(*process);
-        });
+            // Wait until process is "patchable".
+            run_until(2min, Intervals{1ms, 10ms, 100ms}, "patchable", [&] {
+                update(M_WAIT_PATCHABLE, "");
+                return ctx.is_patchable(process);
+            });
 
-        // Perform paching.
-        update(M_PATCH, ctx.config_str.c_str());
-        ctx.patch(*process);
+            // Perform paching.
+            update(M_PATCH, ctx.config_str.c_str());
+            ctx.patch(process);
+        }
 
-        // Wait exit.
-        run_until(3h, "exit", [&] {
+        // This uses the dumb way of re-quering for pid to detect when process is finally shutdown.
+        // It used to use WaitForSingleObject but it turns out that is completly broken and unreliable piece of shit.
+        // First of it spuriously can "fail" which leaves us wondering what the fuck happend.
+        // Second it can spuriously succeed which means the process is still somewhat partially alive but not really.
+        // Thirdly it forces us to keep the handle alive for duration of process lifetime.
+        run_until(3h, Intervals{5s, 10s, 15s}, "exit", [&, pid] {
             update(M_WAIT_EXIT, "");
-            if (process->WaitExit(1000)) {
-                return true;
-            }
-            return false;
+            return Process::FindPid("League of Legends.exe", "League of Legends (TM) Client") != pid;
         });
 
         // Signal done.

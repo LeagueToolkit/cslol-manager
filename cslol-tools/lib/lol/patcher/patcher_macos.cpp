@@ -4,6 +4,7 @@
 #    include <cstring>
 #    include <thread>
 
+#    include "utility/delay.hpp"
 #    include "utility/macho.hpp"
 #    include "utility/process.hpp"
 
@@ -98,14 +99,15 @@ auto patcher::run(std::function<void(Message, char const*)> update,
     (void)config_path;
     (void)game_path;
     for (;;) {
-        auto process = Process::Find("/LeagueofLegends");
-        if (!process) {
-            if (!update(M_WAIT_START, "")) return;
-            std::this_thread::sleep_for(250ms);
+        auto pid = Process::FindPid("/LeagueofLegends");
+        if (!pid) {
+            update(M_WAIT_START, "");
+            std::this_thread::sleep_for(10ms);
             continue;
         }
 
         update(M_FOUND, "");
+        auto process = Process::Open(pid);
 
         update(M_SCAN, "");
         ctx.scan(*process);
@@ -113,13 +115,11 @@ auto patcher::run(std::function<void(Message, char const*)> update,
         update(M_PATCH, "");
         ctx.patch(*process);
 
-        for (std::uint32_t timeout = 3 * 60 * 60 * 1000; timeout; timeout -= 250) {
+        run_until(3h, Intervals{5s, 10s}, "exit", [&]() {
             update(M_WAIT_EXIT, "");
-            if (process->WaitExit(0)) {
-                break;
-            }
-            std::this_thread::sleep_for(250ms);
-        }
+            return process->IsExited();
+        });
+
         update(M_DONE, "");
     }
 }

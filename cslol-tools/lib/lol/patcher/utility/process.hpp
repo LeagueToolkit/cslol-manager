@@ -43,9 +43,10 @@ namespace lol::patcher {
         mutable std::filesystem::path path_ = {};
         mutable uint32_t pid_ = {};
 
+        Process(void *handle, std::uint32_t pid) noexcept : handle_(handle), pid_(pid) {}
+
     public:
         Process() noexcept;
-        Process(uint32_t pid) noexcept;
 
         Process(Process const &) = delete;
         Process &operator=(Process const &) = delete;
@@ -59,7 +60,9 @@ namespace lol::patcher {
 
         inline bool operator!() const noexcept { return !handle_; }
 
-        static auto Find(char const *name, char const *window = nullptr) -> std::optional<Process>;
+        static auto Open(std::uint32_t pid) -> Process;
+
+        static auto FindPid(char const *name, char const *window = nullptr) -> std::uint32_t;
 
         auto Base() const -> PtrStorage;
 
@@ -69,9 +72,7 @@ namespace lol::patcher {
 
         auto Dump() const -> std::vector<char>;
 
-        auto WaitExit(uint32_t timeout = 1) const noexcept -> bool;
-
-        auto WaitInitialized(uint32_t timeout = 1) const noexcept -> bool;
+        auto IsExited() const noexcept -> bool;
 
         auto TryReadMemory(void *address, void *dest, size_t size) const noexcept -> bool;
 
