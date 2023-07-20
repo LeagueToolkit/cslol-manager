@@ -104,7 +104,7 @@ QString CSLOLUtils::detectGamePath() {
 
 bool CSLOLUtils::isUnnecessaryAdmin() {
     return false;
-    if (QFileInfo info(QCoreApplication::applicationDirPath() + "/admin_allow.txt"); info.exists()) {
+    if (QFileInfo info(QCoreApplication::applicationDirPath() + "/admin_allowed.txt"); info.exists()) {
         return false;
     }
     bool result = 0;

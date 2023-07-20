@@ -20,6 +20,7 @@ ApplicationWindow {
         id: settings
         property alias leaguePath: cslolTools.leaguePath
 
+        property alias detectGamePath: cslolDialogSettings.detectGamePath
         property alias blacklist: cslolDialogSettings.blacklist
         property alias ignorebad: cslolDialogSettings.ignorebad
         property alias suppressInstallConflicts: cslolDialogSettings.suppressInstallConflicts
@@ -55,7 +56,7 @@ ApplicationWindow {
     }
 
     function checkGamePath() {
-        let detected = CSLOLUtils.detectGamePath();
+        let detected = settings.detectGamePath ? CSLOLUtils.detectGamePath() : "";
         if (detected === "" && cslolTools.leaguePath === "") {
             cslolDialogGame.open();
             return false;
