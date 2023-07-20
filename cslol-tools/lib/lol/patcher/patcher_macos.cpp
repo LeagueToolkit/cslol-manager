@@ -110,15 +110,19 @@ auto patcher::run(std::function<void(Message, char const*)> update,
         auto process = Process::Open(pid);
 
         update(M_SCAN, "");
-        ctx.scan(*process);
+        ctx.scan(process);
 
         update(M_PATCH, "");
-        ctx.patch(*process);
+        ctx.patch(process);
 
-        run_until(3h, Intervals{5s, 10s}, "exit", [&]() {
-            update(M_WAIT_EXIT, "");
-            return process->IsExited();
-        });
+        run_until_or(
+            3h,
+            Intervals{5s, 10s, 15s},
+            [&] {
+                update(M_WAIT_EXIT, "");
+                return process.IsExited();
+            },
+            []() -> bool { throw PatcherTimeout(std::string("Timed out exit")); });
 
         update(M_DONE, "");
     }

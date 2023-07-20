@@ -315,10 +315,23 @@ auto patcher::run(std::function<void(Message, char const*)> update,
     ctx.set_prefix(profile_path);
     ctx.kernel32 = Kernel32::load();
     for (;;) {
-        auto pid = Process::FindPid("League of Legends.exe", "League of Legends (TM) Client");
+        auto pid = run_until_or(
+            30s,
+            Intervals{10ms},
+            [&] {
+                update(M_WAIT_START, "");
+                return Process::FindPid("League of Legends.exe");
+            },
+            []() -> std::uint32_t {
+                if (auto fallback_pid = Process::FindPidWindow("League of Legends (TM) Client")) {
+                    auto pid = Process::FindPid("League of Legends.exe");
+                    // if we can find pid by window but not by normal means then league is running as admin
+                    lol_throw_if_msg(!pid, "OpenProcess: League running as ADMIN!");
+                    return pid;
+                }
+                return 0;
+            });
         if (!pid) {
-            update(M_WAIT_START, "");
-            std::this_thread::sleep_for(10ms);
             continue;
         }
 
@@ -329,20 +342,28 @@ auto patcher::run(std::function<void(Message, char const*)> update,
             auto process = Process::Open(pid);
 
             // Wait until process is actually loaded and has its base and data mapped.
-            run_until(1min, Intervals{1ms, 10ms, 100ms}, "initiliazation", [&] {
-                update(M_WAIT_INIT, "");
-                return ctx.is_initialized(process);
-            });
+            run_until_or(
+                1min,
+                Intervals{1ms, 10ms, 100ms},
+                [&] {
+                    update(M_WAIT_INIT, "");
+                    return ctx.is_initialized(process);
+                },
+                []() -> bool { throw PatcherTimeout(std::string("Timed out initiliazation")); });
 
             // Find necessary offsets and ensure game path.
             update(M_SCAN, "");
             ctx.scan(process, game_path);
 
             // Wait until process is "patchable".
-            run_until(2min, Intervals{1ms, 10ms, 100ms}, "patchable", [&] {
-                update(M_WAIT_PATCHABLE, "");
-                return ctx.is_patchable(process);
-            });
+            run_until_or(
+                2min,
+                Intervals{1ms, 10ms, 100ms},
+                [&] {
+                    update(M_WAIT_PATCHABLE, "");
+                    return ctx.is_patchable(process);
+                },
+                []() -> bool { throw PatcherTimeout(std::string("Timed out patchable")); });
 
             // Perform paching.
             update(M_PATCH, ctx.config_str.c_str());
@@ -354,10 +375,14 @@ auto patcher::run(std::function<void(Message, char const*)> update,
         // First of it spuriously can "fail" which leaves us wondering what the fuck happend.
         // Second it can spuriously succeed which means the process is still somewhat partially alive but not really.
         // Thirdly it forces us to keep the handle alive for duration of process lifetime.
-        run_until(3h, Intervals{5s, 10s, 15s}, "exit", [&, pid] {
-            update(M_WAIT_EXIT, "");
-            return Process::FindPid("League of Legends.exe", "League of Legends (TM) Client") != pid;
-        });
+        run_until_or(
+            3h,
+            Intervals{5s, 10s, 15s},
+            [&, pid] {
+                update(M_WAIT_EXIT, "");
+                return Process::FindPid("League of Legends.exe") != pid;
+            },
+            []() -> bool { throw PatcherTimeout(std::string("Timed out exit")); });
 
         // Signal done.
         update(M_DONE, "");

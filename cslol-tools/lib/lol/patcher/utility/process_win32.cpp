@@ -47,7 +47,7 @@ Process::~Process() noexcept {
     }
 }
 
-auto Process::FindPid(char const* name, char const* window) -> std::uint32_t {
+auto Process::FindPid(char const* name) -> std::uint32_t {
     if (name) {
         auto entry = PROCESSENTRY32{.dwSize = sizeof(PROCESSENTRY32)};
         auto handle = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
@@ -60,6 +60,10 @@ auto Process::FindPid(char const* name, char const* window) -> std::uint32_t {
         }
         CloseHandle(handle);
     }
+    return 0;
+}
+
+auto Process::FindPidWindow(char const* window) -> std::uint32_t {
     if (window) {
         if (auto hwnd = FindWindowExA(nullptr, nullptr, nullptr, window)) {
             auto pid = DWORD{};

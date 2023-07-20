@@ -36,20 +36,24 @@ Process::~Process() noexcept {
     }
 }
 
-auto Process::FindPid(char const* name, char const* window) -> std::uint32_t {
-    pid_t pids[4096];
-    int bytes = proc_listpids(PROC_ALL_PIDS, 0, pids, sizeof(pids));
-    int n_proc = bytes / sizeof(pid_t);
-    char pathbuf[PROC_PIDPATHINFO_MAXSIZE] = {};
-    for (auto p = pids; p != pids + n_proc; p++) {
-        if (auto const ret = proc_pidpath(*p, pathbuf, sizeof(pathbuf)); ret > 0) {
-            if (std::string_view{pathbuf, static_cast<std::size_t>(ret)}.ends_with(name)) {
-                return static_cast<std::uint32_t>(*p);
+auto Process::FindPid(char const* name) -> std::uint32_t {
+    if (name) {
+        pid_t pids[4096];
+        int bytes = proc_listpids(PROC_ALL_PIDS, 0, pids, sizeof(pids));
+        int n_proc = bytes / sizeof(pid_t);
+        char pathbuf[PROC_PIDPATHINFO_MAXSIZE] = {};
+        for (auto p = pids; p != pids + n_proc; p++) {
+            if (auto const ret = proc_pidpath(*p, pathbuf, sizeof(pathbuf)); ret > 0) {
+                if (std::string_view{pathbuf, static_cast<std::size_t>(ret)}.ends_with(name)) {
+                    return static_cast<std::uint32_t>(*p);
+                }
             }
         }
     }
     return 0;
 }
+
+auto Process::FindPidWindow(char const* window) -> std::uint32_t { return 0; }
 
 auto Process::Open(std::uint32_t pid) -> Process {
     if (mach_port_t task = {}; !task_for_pid(mach_task_self(), pid, &task)) {

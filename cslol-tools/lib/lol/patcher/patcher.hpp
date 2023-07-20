@@ -35,6 +35,10 @@ namespace lol::patcher {
                     fs::path const& config_path,
                     fs::path const& game_path) -> void;
 
+    struct PatcherTimeout : std::runtime_error {
+        using std::runtime_error::runtime_error;
+    };
+
     struct PatcherAborted : std::runtime_error {
         PatcherAborted() : std::runtime_error("Aborted as expected") {}
     };

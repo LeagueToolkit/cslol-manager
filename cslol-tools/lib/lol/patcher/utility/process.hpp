@@ -62,7 +62,9 @@ namespace lol::patcher {
 
         static auto Open(std::uint32_t pid) -> Process;
 
-        static auto FindPid(char const *name, char const *window = nullptr) -> std::uint32_t;
+        static auto FindPid(char const *name) -> std::uint32_t;
+
+        static auto FindPidWindow(char const *window) -> std::uint32_t;
 
         auto Base() const -> PtrStorage;
 
