@@ -16,6 +16,8 @@ add_library(cslol-lib STATIC
     lib/lol/error.hpp
     lib/lol/fs.cpp
     lib/lol/fs.hpp
+    lib/lol/log.hpp
+    lib/lol/log.cpp
 
     lib/lol/hash/dict.cpp
     lib/lol/hash/dict.hpp

@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <lol/error.hpp>
 #include <lol/fs.hpp>
+#include <lol/log.hpp>
 #include <lol/utility/cli.hpp>
 #include <lol/wad/archive.hpp>
 
@@ -35,7 +36,7 @@ int main(int argc, char** argv) {
     utility::set_binary_io();
     fmtlog::setHeaderPattern("[{l}] ");
     fmtlog::setLogFile(stdout, false);
-    fmtlog::startPollingThread();
+    lol::init_logging_thread();
     try {
         fs::path exe, src, dst;
         auto flags = utility::argv_parse(utility::argv_fix(argc, argv), exe, src, dst);

@@ -102,7 +102,7 @@ auto patcher::run(std::function<void(Message, char const*)> update,
         auto pid = Process::FindPid("/LeagueofLegends");
         if (!pid) {
             update(M_WAIT_START, "");
-            std::this_thread::sleep_for(10ms);
+            sleep_ms(10);
             continue;
         }
 

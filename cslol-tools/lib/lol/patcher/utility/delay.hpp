@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <stdexcept>
 
+#include "lol/common.hpp"
+
 namespace lol {
     template <std::size_t S>
     struct Intervals {
@@ -14,7 +16,7 @@ namespace lol {
             : intervals{static_cast<std::int64_t>(
                   std::chrono::duration_cast<std::chrono::milliseconds>(intervals).count())...} {}
 
-        std::array<std::int64_t, S> intervals{1.0};
+        std::array<std::int64_t, S> intervals{1};
     };
 
     template <typename... T>
@@ -31,7 +33,7 @@ namespace lol {
                 if (auto result = poll()) {
                     return result;
                 }
-                std::this_thread::sleep_for(std::chrono::milliseconds{interval});
+                sleep_ms(interval);
                 slice -= interval;
             }
         }

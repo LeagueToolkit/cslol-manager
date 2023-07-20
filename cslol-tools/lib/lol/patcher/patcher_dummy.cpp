@@ -18,7 +18,7 @@ auto patcher::run(std::function<void(Message, char const*)> update,
     (void)game_path;
     for (;;) {
         update(M_WAIT_START, "");
-        std::this_thread::sleep_for(250ms);
+        sleep_ms(250);
     }
 }
 
