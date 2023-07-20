@@ -9,4 +9,6 @@
 #include <span>
 #include <utility>
 
-namespace lol {}
+namespace lol {
+    void sleep_ms(std::uint32_t ms);
+}
