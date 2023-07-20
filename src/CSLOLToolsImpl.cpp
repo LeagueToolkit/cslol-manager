@@ -228,7 +228,7 @@ void CSLOLToolsImpl::doReportError(QString name, QString message, QString trace)
         logFile_->write(trace.toUtf8() + "\n");
     }
     if (message.contains("OpenProcess: ") || trace.contains("OpenProcess: ")) {
-        QFile file(prog_ + "/admin_allow.txt");
+        QFile file(prog_ + "/admin_allowed.txt");
         file.open(QIODevice::WriteOnly);
         file.close();
         trace += '\n';
