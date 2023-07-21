@@ -424,6 +424,7 @@ auto patcher::run(std::function<void(Message, char const*)> update,
             auto checksum = ctx.scan_file(process, game_path);
 
             // fallback for config based patcher if it ever becomes necessary
+            ctx.kernel32.ptr_CreateFileA_iat = {};
             if (!ctx.kernel32.ptr_CreateFileA_iat.storage) [[unlikely]] {
                 if (!ctx.config.check() || ctx.config.get<"checksum">() != checksum) {
                     process.WaitInitialized((std::uint32_t)-1);
