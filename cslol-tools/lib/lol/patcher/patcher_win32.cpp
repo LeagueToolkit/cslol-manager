@@ -359,11 +359,13 @@ static auto skinhack_detected() -> char const* {
             return item;
         }
     }
-    for (auto item : forbiden_titles) {
-        if (FindWindowExA(nullptr, nullptr, nullptr, item)) {
-            return item;
-        }
-    }
+    //   turns out people are working-around this check by starting patcher before
+    //   remove the check for now as its just wasting CPU cycles
+    //    for (auto item : forbiden_titles) {
+    //        if (FindWindowExA(nullptr, nullptr, nullptr, item)) {
+    //            return item;
+    //        }
+    //    }
     return nullptr;
 }
 
