@@ -10,6 +10,7 @@
 
 // do not reorder
 #    include "utility/delay.hpp"
+#    include "utility/lineconfig.hpp"
 #    include "utility/ppp.hpp"
 #    include "utility/process.hpp"
 
@@ -130,10 +131,7 @@ struct Kernel32 {
         static auto kernel32_ptr_CreateFileA = GetProcAddress(kernel32, "CreateFileA");
         lol_throw_if_msg(!kernel32_ptr_CreateFileA, "Failed to find kernel32 ptr CreateFileA");
 
-#    if defined(CSLOL_TRASH_PC_SUPPORT)
-#        error "This won't work in windows 7 anymore, please consider just buying a new PC"
-#    endif
-        // starting with windows 10 kernel32.dll imports CreateFileA, parse stub instead of IAT cuz easier
+        // parse stub instead of IAT cuz easier
         static auto kernel32_ptr_CreateFileA_iat = [] {
             std::uint16_t insn;
             std::int32_t disp;
@@ -144,7 +142,6 @@ struct Kernel32 {
             memcpy(&disp, (char const*)kernel32_ptr_CreateFileA + sizeof(insn), sizeof(disp));
             return (void*)(((char const*)kernel32_ptr_CreateFileA + sizeof(insn) + sizeof(disp)) + disp);
         }();
-        lol_throw_if_msg(!kernel32_ptr_CreateFileA_iat, "Failed to find kernel32 ptr CreateFileA_iat");
 
         static auto kernel32_ptr_CreateFileW = GetProcAddress(kernel32, "CreateFileW");
         lol_throw_if_msg(!kernel32_ptr_CreateFileW, "Failed to find kernel32 ptr CreateFileW");
@@ -199,7 +196,23 @@ struct Context {
         return false;
     }
 
-    auto scan(Process const& process, fs::path expected_game_path) -> void {
+    auto scan_runtime(Process const& process, std::uint32_t expected_checksum) -> void {
+        lol_trace_func();
+        auto process_path = fs::absolute(process.Path().parent_path());
+
+        // verify game path
+        if (!expected_game_path.empty()) {
+            lol_trace_func(lol_trace_var("{}", process_path), lol_trace_var("{}", expected_game_path));
+            expected_game_path = fs::absolute(expected_game_path);
+            lol_throw_if_msg(expected_game_path != process_path, "Wrong game directory!");
+        }
+
+        config.get<"ptr_CreateFileA">() = process.Debase((PtrStorage)std::get<1>(*match_ptr_CreateFileA));
+        config.get<"checksum">() = expected_checksum;
+        config_str = config.to_string();
+    }
+
+    auto scan_file(Process const& process, fs::path expected_game_path) -> std::uint32_t {
         lol_trace_func();
         auto process_path = fs::absolute(process.Path().parent_path());
 
@@ -236,21 +249,33 @@ struct Context {
         lol_throw_if_msg(!match_ptr_CRYPTO_free, "Failed to find ref to ptr to match_ptr_CRYPTO_free!");
 
         // convert file offset to virtual offset
-        auto const file_off_CRYPTO_free = peex.raw_to_virtual(std::get<1>(*match_ptr_CRYPTO_free));
-        lol_throw_if_msg(!file_off_CRYPTO_free, "Failed to rebase file_off_CRYPTO_free!");
+        auto const ptr_CRYPTO_free = peex.raw_to_virtual(std::get<1>(*match_ptr_CRYPTO_free));
+        lol_throw_if_msg(!ptr_CRYPTO_free, "Failed to rebase file_off_CRYPTO_free!");
 
         // store pointer and debug string
-        off_CRYPTO_free = (PtrStorage)file_off_CRYPTO_free;
-        config_str = fmt::format("{:X}", off_CRYPTO_free);
+        config.get<"ptr_CRYPTO_free">() = (PtrStorage)ptr_CRYPTO_free;
+        config_str = config.to_string();
+
+        return peex.checksum();
     }
 
     auto is_patchable(Process const& process) const noexcept -> bool {
         auto const is_valid_ptr = [](PtrStorage ptr) { return ptr > 0x10000 && ptr < (1ull << 48); };
-        auto const ptr_CRYPTO_free = process.Rebase<PtrStorage>(off_CRYPTO_free);
+        auto const ptr_CRYPTO_free = process.Rebase<PtrStorage>(config.get<"ptr_CreateFileA">());
+
         if (auto result = process.TryRead(ptr_CRYPTO_free); !result || !is_valid_ptr(*result)) {
             return false;
         } else if (!process.TryRead(Ptr<PtrStorage>(*result))) {
             return false;
+        }
+
+        if (!kernel32.ptr_CreateFileA_iat.storage) [[unlikely]] {
+            auto const ptr_CreateFileA = process.Rebase<PtrStorage>(config.get<"ptr_CreateFileA">());
+            if (auto result = process.TryRead(ptr_CreateFileA); !result || !is_valid_ptr(*result)) {
+                return false;
+            } else if (!process.TryRead(Ptr<PtrStorage>(*result))) {
+                return false;
+            }
         }
         return true;
     }
@@ -260,13 +285,20 @@ struct Context {
 
         // Prepare pointers
         auto ptr_payload = process.Allocate<CodePayload>();
-        auto ptr_CRYPTO_free = Ptr<Ptr<uint8_t>>(process.Rebase(off_CRYPTO_free));
+        auto ptr_CRYPTO_free = Ptr<Ptr<uint8_t>>(process.Rebase(config.get<"ptr_CRYPTO_free">()));
 
         // Prepare payload
         auto payload = CodePayload{};
         payload.ptr_GetProcessHeap = kernel32.ptr_GetProcessHeap;
         payload.ptr_HeapFree = kernel32.ptr_HeapFree;
         payload.ptr_CreateFileA = Ptr(ptr_payload->org_CreateFileA.data);
+      
+        if (kernel32.ptr_CreateFileA_iat.storage) [[likely]] {
+            payload.org_CreateFileA = ImportTrampoline::make_ind(kernel32.ptr_CreateFileA_iat);
+        } else {
+            payload.org_CreateFileA = ImportTrampoline::make(kernel32.ptr_CreateFileA.storage);
+        }
+      
         payload.ptr_CreateFileW = kernel32.ptr_CreateFileW;
         payload.org_CreateFileA = ImportTrampoline::make_ind(kernel32.ptr_CreateFileA_iat);
         std::copy_n(prefix.data(), prefix.size(), payload.prefix_open_data);
@@ -277,7 +309,14 @@ struct Context {
 
         // Write hooks
         process.Write(ptr_CRYPTO_free, Ptr(ptr_payload->hook_CRYPTO_free));
-        process.Write(kernel32.ptr_CreateFileA, ImportTrampoline::make(ptr_payload->hook_CreateFileA));
+      
+        if (kernel32.ptr_CreateFileA_iat.storage) [[likely]] {
+            process.Write(kernel32.ptr_CreateFileA, ImportTrampoline::make(ptr_payload->hook_CreateFileA));
+        } else {
+            auto ptr_CreateFileA = Ptr<Ptr<ImportTrampoline>>(process.Rebase(config.get<"ptr_CreateFileA">()));
+            auto ptr_code_CreateFileA = process.Read(ptr_CreateFileA);
+            process.Write(ptr_code_CreateFileA, ImportTrampoline::make(ptr_payload->hook_CreateFileA));
+        }
     }
 };
 
@@ -298,12 +337,20 @@ static auto skinhack_detected() -> char const* {
             return item;
         }
     }
-    for (auto item : forbiden_titles) {
-        if (FindWindowExA(nullptr, nullptr, nullptr, item)) {
-            return item;
-        }
-    }
+    //   turns out people are working-around this check by starting patcher before
+    //   remove the check for now as its just wasting CPU cycles
+    //    for (auto item : forbiden_titles) {
+    //        if (FindWindowExA(nullptr, nullptr, nullptr, item)) {
+    //            return item;
+    //        }
+    //    }
     return nullptr;
+}
+
+[[noreturn]] static void newpatch_detected() {
+    lol_trace_func("Skipping first game on a new patch for config...");
+    lol_trace_func("Patching should work normally next game!");
+    lol_throw_msg("NEW PATCH DETECTED, THIS IS NOT AN ERROR!\n");
 }
 
 auto patcher::run(std::function<void(Message, char const*)> update,
@@ -342,27 +389,35 @@ auto patcher::run(std::function<void(Message, char const*)> update,
             auto process = Process::Open(pid);
 
             // Wait until process is actually loaded and has its base and data mapped.
+            update(M_WAIT_INIT, "");
             run_until_or(
                 1min,
                 Intervals{1ms, 10ms, 100ms},
-                [&] {
-                    update(M_WAIT_INIT, "");
-                    return ctx.is_initialized(process);
-                },
+                [&] { return ctx.is_initialized(process); },
                 []() -> bool { throw PatcherTimeout(std::string("Timed out initiliazation")); });
 
             // Find necessary offsets and ensure game path.
             update(M_SCAN, "");
-            ctx.scan(process, game_path);
+            auto checksum = ctx.scan_file(process, game_path);
+
+            // fallback for config based patcher if it ever becomes necessary
+            ctx.kernel32.ptr_CreateFileA_iat = {};
+            if (!ctx.kernel32.ptr_CreateFileA_iat.storage) [[unlikely]] {
+                if (!ctx.config.check() || ctx.config.get<"checksum">() != checksum) {
+                    process.WaitInitialized((std::uint32_t)-1);
+                    ctx.scan_runtime(process, checksum);
+                    update(M_NEED_SAVE, ctx.config_str.c_str());
+                    ctx.save_config(config_path);
+                    newpatch_detected();
+                }
+            }
 
             // Wait until process is "patchable".
+            update(M_WAIT_PATCHABLE, "");
             run_until_or(
                 2min,
                 Intervals{1ms, 10ms, 100ms},
-                [&] {
-                    update(M_WAIT_PATCHABLE, "");
-                    return ctx.is_patchable(process);
-                },
+                [&] { return ctx.is_patchable(process); },
                 []() -> bool { throw PatcherTimeout(std::string("Timed out patchable")); });
 
             // Perform paching.
@@ -375,13 +430,11 @@ auto patcher::run(std::function<void(Message, char const*)> update,
         // First of it spuriously can "fail" which leaves us wondering what the fuck happend.
         // Second it can spuriously succeed which means the process is still somewhat partially alive but not really.
         // Thirdly it forces us to keep the handle alive for duration of process lifetime.
+        update(M_WAIT_EXIT, "");
         run_until_or(
             3h,
             Intervals{5s, 10s, 15s},
-            [&, pid] {
-                update(M_WAIT_EXIT, "");
-                return Process::FindPid("League of Legends.exe") != pid;
-            },
+            [&, pid] { return Process::FindPid("League of Legends.exe") != pid; },
             []() -> bool { throw PatcherTimeout(std::string("Timed out exit")); });
 
         // Signal done.

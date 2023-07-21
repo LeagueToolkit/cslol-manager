@@ -115,13 +115,11 @@ auto patcher::run(std::function<void(Message, char const*)> update,
         update(M_PATCH, "");
         ctx.patch(process);
 
+        update(M_WAIT_EXIT, "");
         run_until_or(
             3h,
             Intervals{5s, 10s, 15s},
-            [&] {
-                update(M_WAIT_EXIT, "");
-                return process.IsExited();
-            },
+            [&] { return process.IsExited(); },
             []() -> bool { throw PatcherTimeout(std::string("Timed out exit")); });
 
         update(M_DONE, "");

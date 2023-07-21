@@ -74,6 +74,8 @@ namespace lol::patcher {
 
         auto Dump() const -> std::vector<char>;
 
+        auto WaitInitialized(uint32_t timeout = 1) const noexcept -> bool;
+
         auto IsExited() const noexcept -> bool;
 
         auto TryReadMemory(void *address, void *dest, size_t size) const noexcept -> bool;

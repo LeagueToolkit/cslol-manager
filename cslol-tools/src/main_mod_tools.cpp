@@ -256,7 +256,7 @@ static auto mod_runoverlay(fs::path overlay, fs::path config_file, fs::path game
                     old_msg = msg;
                     fprintf(stdout, "Status: %s\n", patcher::STATUS_MSG[msg]);
                     fflush(stdout);
-                    if (msg == patcher::M_PATCH) {
+                    if (msg == patcher::M_PATCH || msg == patcher::M_NEED_SAVE) {
                         *lock = true;
                         if (arg && *arg) {
                             fprintf(stdout, "Config: %s\n", arg);
