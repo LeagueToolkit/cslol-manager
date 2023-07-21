@@ -4,7 +4,7 @@
 #    include <cstring>
 #    include <thread>
 
-#    include "utility/lineconfig.hpp"
+#    include "utility/delay.hpp"
 #    include "utility/macho.hpp"
 #    include "utility/process.hpp"
 
@@ -90,7 +90,7 @@ struct Context {
     }
 };
 
-auto patcher::run(std::function<bool(Message, char const*)> update,
+auto patcher::run(std::function<void(Message, char const*)> update,
                   fs::path const& profile_path,
                   fs::path const& config_path,
                   fs::path const& game_path) -> void {
@@ -99,29 +99,32 @@ auto patcher::run(std::function<bool(Message, char const*)> update,
     (void)config_path;
     (void)game_path;
     for (;;) {
-        auto process = Process::Find("/LeagueofLegends");
-        if (!process) {
-            if (!update(M_WAIT_START, "")) return;
-            std::this_thread::sleep_for(250ms);
+        auto pid = Process::FindPid("/LeagueofLegends");
+        if (!pid) {
+            update(M_WAIT_START, "");
+            sleep_ms(10);
             continue;
         }
 
-        if (!update(M_FOUND, "")) return;
+        update(M_FOUND, "");
+        auto process = Process::Open(pid);
 
-        if (!update(M_SCAN, "")) return;
-        ctx.scan(*process);
+        update(M_SCAN, "");
+        ctx.scan(process);
 
-        if (!update(M_PATCH, "")) return;
-        ctx.patch(*process);
+        update(M_PATCH, "");
+        ctx.patch(process);
 
-        for (std::uint32_t timeout = 3 * 60 * 60 * 1000; timeout; timeout -= 250) {
-            if (!update(M_WAIT_EXIT, "")) return;
-            if (process->WaitExit(0)) {
-                break;
-            }
-            std::this_thread::sleep_for(250ms);
-        }
-        if (!update(M_DONE, "")) return;
+        run_until_or(
+            3h,
+            Intervals{5s, 10s, 15s},
+            [&] {
+                update(M_WAIT_EXIT, "");
+                return process.IsExited();
+            },
+            []() -> bool { throw PatcherTimeout(std::string("Timed out exit")); });
+
+        update(M_DONE, "");
     }
 }
 

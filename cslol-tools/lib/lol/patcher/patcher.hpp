@@ -30,8 +30,16 @@ namespace lol::patcher {
         "League exited",
     };
 
-    extern auto run(std::function<bool(Message, char const*)> update,
+    extern auto run(std::function<void(Message, char const*)> update,
                     fs::path const& profile_path,
                     fs::path const& config_path,
                     fs::path const& game_path) -> void;
+
+    struct PatcherTimeout : std::runtime_error {
+        using std::runtime_error::runtime_error;
+    };
+
+    struct PatcherAborted : std::runtime_error {
+        PatcherAborted() : std::runtime_error("Aborted as expected") {}
+    };
 }

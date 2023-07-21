@@ -19,6 +19,7 @@ Dialog {
     }
 
     property bool isBussy: false
+    property alias detectGamePath: detectGamePathCheck.checked
     property alias blacklist: blacklistCheck.checked
     property alias ignorebad: ignorebadCheck.checked
     property alias enableUpdates: enableUpdatesCheck.checkState
@@ -88,6 +89,12 @@ Dialog {
                     text: qsTr("Change Game folder")
                     enabled: !isBussy
                     onClicked: cslolDialogSettings.changeGamePath()
+                    Layout.fillWidth: true
+                }
+                Switch {
+                    id: detectGamePathCheck
+                    text: qsTr("Automatically detect game path")
+                    checked: true
                     Layout.fillWidth: true
                 }
                 Switch {

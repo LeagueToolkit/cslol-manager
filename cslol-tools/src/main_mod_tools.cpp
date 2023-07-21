@@ -3,6 +3,7 @@
 #include <lol/fs.hpp>
 #include <lol/hash/dict.hpp>
 #include <lol/io/file.hpp>
+#include <lol/log.hpp>
 #include <lol/patcher/patcher.hpp>
 #include <lol/utility/cli.hpp>
 #include <lol/utility/zip.hpp>
@@ -248,28 +249,34 @@ static auto mod_runoverlay(fs::path overlay, fs::path config_file, fs::path game
 
     fmtlog::setLogFile(stdout, false);
     auto old_msg = patcher::M_DONE;
-    patcher::run(
-        [lock, &old_msg](auto msg, char const* arg) {
-            if (msg != old_msg) {
-                old_msg = msg;
-                fprintf(stdout, "Status: %s\n", patcher::STATUS_MSG[msg]);
-                fflush(stdout);
-                if (msg == patcher::M_PATCH) {
-                    *lock = true;
-                    if (arg && *arg) {
-                        fprintf(stdout, "Config: %s\n", arg);
-                        fflush(stdout);
+    try {
+        patcher::run(
+            [lock, &old_msg](auto msg, char const* arg) {
+                if (msg != old_msg) {
+                    old_msg = msg;
+                    fprintf(stdout, "Status: %s\n", patcher::STATUS_MSG[msg]);
+                    fflush(stdout);
+                    if (msg == patcher::M_PATCH) {
+                        *lock = true;
+                        if (arg && *arg) {
+                            fprintf(stdout, "Config: %s\n", arg);
+                            fflush(stdout);
+                        }
+                    } else if (*lock) {
+                        *lock = false;
                     }
                 }
-                if (msg == patcher::M_DONE) {
-                    *lock = false;
-                }
-            }
-            return true;
-        },
-        overlay,
-        config_file,
-        game);
+            },
+            overlay,
+            config_file,
+            game);
+    } catch (patcher::PatcherAborted const&) {
+        // nothing to see here, lol
+        lol::error::stack().clear();
+        return;
+    } catch (...) {
+        throw;
+    }
 }
 
 static auto help(fs::path cmd) -> void {
@@ -288,7 +295,7 @@ int main(int argc, char** argv) {
     utility::set_binary_io();
     fmtlog::setHeaderPattern("[{l}] ");
     fmtlog::setLogFile(stdout, false);
-    fmtlog::startPollingThread();
+    lol::init_logging_thread();
     try {
         fs::path exe, cmd, src, dst;
         auto flags = utility::argv_parse(utility::argv_fix(argc, argv), exe, cmd, src, dst);
