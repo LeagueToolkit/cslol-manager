@@ -129,6 +129,7 @@ ApplicationWindow {
         id: cslolTrayIcon
         visible: settings.enableSystray
         iconSource: "qrc:/icon.png"
+        tooltip: "cslol-manager"
         menu: Menu {
             MenuItem {
                 text: !window.visible ? qsTr("Show") : qsTr("Minimize")
