@@ -226,7 +226,7 @@ static auto mod_mkoverlay(fs::path src, fs::path dst, fs::path game, fs::names m
     overlay_index.cleanup_in_directory(dst);
 }
 
-static auto mod_runoverlay(fs::path overlay, fs::path config_file, fs::path game) -> void {
+static auto mod_runoverlay(fs::path overlay, fs::path config_file, fs::path game, fs::names opts) -> void {
     lol_trace_func(lol_trace_var("{}", overlay), lol_trace_var("{}", config_file), lol_trace_var("{}", game));
     lol_throw_if(overlay.empty());
     lol_throw_if(config_file.empty());
@@ -269,7 +269,8 @@ static auto mod_runoverlay(fs::path overlay, fs::path config_file, fs::path game
             },
             overlay,
             config_file,
-            game);
+            game,
+            opts);
     } catch (patcher::PatcherAborted const&) {
         // nothing to see here, lol
         lol::error::stack().clear();
@@ -286,7 +287,7 @@ static auto help(fs::path cmd) -> void {
         "export <src> <dst> --game:<path> --noTFT",
         "import <src> <dst> --game:<path> --noTFT",
         "mkoverlay <modsdir> <overlay> --game:<path> --mods:<name1>/<name2>/<name3>... --noTFT --ignoreConflict",
-        "runoverlay <overlay> <configfile> --game:<path>",
+        "runoverlay <overlay> <configfile> --game:<path> --opts:<none/configless>...",
         "help");
     lol_throw_msg("Bad command: {}", cmd);
 }
@@ -315,7 +316,7 @@ int main(int argc, char** argv) {
                           flags.contains("--noTFT"),
                           flags.contains("--ignoreConflict"));
         } else if (cmd == "runoverlay") {
-            mod_runoverlay(src, dst, flags["--game:"]);
+            mod_runoverlay(src, dst, flags["--game:"], flags["--opts"]);
         } else {
             help(cmd);
         }
