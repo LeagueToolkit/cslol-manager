@@ -12,10 +12,12 @@ using namespace std::chrono_literals;
 auto patcher::run(std::function<void(Message, char const*)> update,
                   fs::path const& profile_path,
                   fs::path const& config_path,
-                  fs::path const& game_path) -> void {
+                  fs::path const& game_path,
+                  fs::names const& opts) -> void {
     (void)profile_path;
     (void)config_path;
     (void)game_path;
+    (void)opts;
     for (;;) {
         update(M_WAIT_START, "");
         sleep_ms(250);

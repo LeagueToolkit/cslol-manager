@@ -33,7 +33,8 @@ namespace lol::patcher {
     extern auto run(std::function<void(Message, char const*)> update,
                     fs::path const& profile_path,
                     fs::path const& config_path,
-                    fs::path const& game_path) -> void;
+                    fs::path const& game_path,
+                    fs::names const& opts) -> void;
 
     struct PatcherTimeout : std::runtime_error {
         using std::runtime_error::runtime_error;

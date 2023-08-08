@@ -378,7 +378,15 @@ static auto skinhack_detected() -> char const* {
 auto patcher::run(std::function<void(Message, char const*)> update,
                   fs::path const& profile_path,
                   fs::path const& config_path,
-                  fs::path const& game_path) -> void {
+                  fs::path const& game_path,
+                  fs::names const& opts) -> void {
+    auto is_configless = false;
+    for (auto const& o: opts) {
+        if (o == "configless") {
+            is_configless = true;
+        }
+    }
+
     lol_throw_if(skinhack_detected());
     auto ctx = Context{};
     ctx.set_prefix(profile_path);
@@ -423,8 +431,11 @@ auto patcher::run(std::function<void(Message, char const*)> update,
             update(M_SCAN, "");
             auto checksum = ctx.scan_file(process, game_path);
 
-            // fallback for config based patcher if it ever becomes necessary
-            ctx.kernel32.ptr_CreateFileA_iat = {};
+            // fallback for config based patcher unless explicitly told
+            if (!is_configless) {
+                ctx.kernel32.ptr_CreateFileA_iat = {};
+            }
+
             if (!ctx.kernel32.ptr_CreateFileA_iat.storage) [[unlikely]] {
                 if (!ctx.config.check() || ctx.config.get<"checksum">() != checksum) {
                     process.WaitInitialized((std::uint32_t)-1);

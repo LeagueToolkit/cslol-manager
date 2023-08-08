@@ -510,7 +510,7 @@ void CSLOLToolsImpl::doUpdate(QString urls) {
     }
 }
 
-void CSLOLToolsImpl::saveProfile(QString name, QJsonObject mods, bool run, bool skipConflict) {
+void CSLOLToolsImpl::saveProfile(QString name, QJsonObject mods, bool run, bool skipConflict, bool experimentalConfigLess) {
     if (state_ == CSLOLState::StateIdle) {
         setState(CSLOLState::StateBusy);
 
@@ -541,6 +541,7 @@ void CSLOLToolsImpl::saveProfile(QString name, QJsonObject mods, bool run, bool 
                         prog_ + "/profiles/" + name,
                         prog_ + "/profiles/" + name + ".config",
                         "--game:" + game_,
+                        "--opts:" + QString(experimentalConfigLess ? "configless" : "none"),
                     });
                 } else {
                     setState(CSLOLState::StateIdle);
