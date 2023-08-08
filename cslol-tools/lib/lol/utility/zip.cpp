@@ -49,7 +49,7 @@ auto utility::unzip(fs::path const& src, fs::path const& dst) -> void {
         mz_zip_archive_file_stat stat = {};
         lol_throw_if_zip(mz_zip_reader_file_stat, zip.get(), index, &stat);
         if (stat.m_is_directory || !stat.m_is_supported) continue;
-        auto file_path = fs::path((char8_t const*)stat.m_filename).lexically_normal();
+        auto file_path = fs::path((char const*)stat.m_filename).lexically_normal();
         for (auto const& component : file_path) {
             lol_throw_if(component == "..");
         }

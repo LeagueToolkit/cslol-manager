@@ -281,10 +281,10 @@ void CSLOLToolsImpl::init() {
     if (state_ == CSLOLState::StateUnitialized) {
         setState(CSLOLState::StateBusy);
 
-        if (CSLOLUtils utils{}; utils.isUnnecessaryAdmin()) {
-            doReportError("Unnecessary admin",
-                          "Try running without admin at least once.\nIf this issue still persist import FIX-ADMIN.reg",
-                          "Running as admin is disabled by default");
+        if (QString error = CSLOLUtils::isPlatformUnsuported(); !error.isEmpty()) {
+            doReportError("Unsupported platform",
+                          error,
+                          "Application launched on unsupported machine or configuration.");
             setState(CSLOLState::StateCriticalError);
             return;
         }

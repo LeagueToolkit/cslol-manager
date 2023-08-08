@@ -53,9 +53,7 @@ elseif(APPLE)
         src/main.cpp
         src/res/icon.icns
         )
-    add_executable(cslol-manager-elevate
-        src/main_elevate.c
-        )
+    target_link_libraries(cslol-manager PRIVATE "-framework Security")
     set_target_properties(cslol-manager
         PROPERTIES
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/src/res/MacOSXBundleInfo.plist.in"
