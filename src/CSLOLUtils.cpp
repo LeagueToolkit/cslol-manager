@@ -102,26 +102,38 @@ QString CSLOLUtils::detectGamePath() {
     return "";
 }
 
-bool CSLOLUtils::isUnnecessaryAdmin() {
-    return false;
+QString CSLOLUtils::isPlatformUnsuported() {
     if (QFileInfo info(QCoreApplication::applicationDirPath() + "/admin_allowed.txt"); info.exists()) {
-        return false;
+        return "";
     }
-    bool result = 0;
+
+    QString result{""};
+    return result;
+
     HANDLE token = {};
     if (OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &token)) {
         TOKEN_ELEVATION elevation = {};
         DWORD size = sizeof(TOKEN_ELEVATION);
         if (GetTokenInformation(token, TokenElevation, &elevation, sizeof(elevation), &size)) {
-            result = elevation.TokenIsElevated;
+            if (elevation.TokenIsElevated) {
+                result = "Try running without admin at least once.\nIf this issue still persist import FIX-ADMIN.reg";
+            }
         }
         CloseHandle(token);
     }
     return result;
 }
+
+void CSLOLUtils::relaunchAdmin(int argc, char *argv[]) {}
 #elif defined(__APPLE__)
 #    include <libproc.h>
+#    include <stdlib.h>
 #    include <string.h>
+#    include <unistd.h>
+#    include <mach-o/dyld.h>
+#    include <Security/Authorization.h>
+#    include <Security/AuthorizationTags.h>
+#    include <sys/sysctl.h>
 
 QString CSLOLUtils::detectGamePath() {
     pid_t *pid_list;
@@ -200,11 +212,64 @@ QString CSLOLUtils::detectGamePath() {
     return "";
 }
 
-// TODO: macos implementation
-bool CSLOLUtils::isUnnecessaryAdmin() { return false; }
+QString CSLOLUtils::isPlatformUnsuported() {
+    int ret = 0;
+    size_t size = sizeof(ret);
+    if (sysctlbyname("sysctl.proc_translated", &ret, &size, NULL, 0) == 0 && ret == 1)  {
+        return QString{"Apple silicon (M1, M2...) macs are not supported.\nOnly intel based macs are supported."};
+    }
+    return QString{""};
+}
 
+void CSLOLUtils::relaunchAdmin(int argc, char *argv[]) {
+    QCoreApplication::setSetuidAllowed(true);
+
+    char path[PATH_MAX];
+    uint32_t path_max_size = PATH_MAX;
+    if (_NSGetExecutablePath(path, &path_max_size) != KERN_SUCCESS) {
+        return;
+    }
+
+    if (argc > 1 && strcmp(argv[1], "admin") == 0) {
+        puts("Authed!");
+        return;
+    }
+
+    AuthorizationRef authorizationRef;
+    OSStatus createStatus = AuthorizationCreate(NULL, kAuthorizationEmptyEnvironment, kAuthorizationFlagDefaults, &authorizationRef);
+    if (createStatus != errAuthorizationSuccess) {
+        fprintf(stderr, "Failed to create auth!\n");
+        return;
+    }
+
+    AuthorizationItem right = {kAuthorizationRightExecute, 0, NULL, 0};
+    AuthorizationRights rights = {1, &right};
+    AuthorizationFlags flags = kAuthorizationFlagDefaults
+                               | kAuthorizationFlagInteractionAllowed
+                               | kAuthorizationFlagExtendRights;
+    OSStatus copyStatus = AuthorizationCopyRights(authorizationRef, &rights, NULL, flags, NULL);
+    if (copyStatus != errAuthorizationSuccess) {
+        fprintf(stderr, "Failed to create copy!\n");
+        return;
+    }
+
+    char* args[] = { strdup("admin"), NULL };
+    FILE* pipe = NULL;
+
+    OSStatus execStatus = AuthorizationExecuteWithPrivileges(authorizationRef, path, kAuthorizationFlagDefaults, args, &pipe);
+    if (execStatus != errAuthorizationSuccess) {
+        fprintf(stderr, "Failed to exec auth: %x\n", execStatus);
+        return;
+    }
+
+    AuthorizationFree(authorizationRef, kAuthorizationFlagDestroyRights);
+
+    exit(0);
+}
 #else
 QString CSLOLUtils::detectGamePath() { return ""; }
 
-bool CSLOLUtils::isUnnecessaryAdmin() { return false; }
+QString CSLOLUtils::isPlatformUnsuported() { return QString{""}; }
+
+void CSLOLUtils::relaunchAdmin(int argc, char *argv[]) {}
 #endif

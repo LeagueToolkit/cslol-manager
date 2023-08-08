@@ -16,8 +16,12 @@ namespace lol::wad {
 
             inline bool is_wad() const noexcept { return magic == std::array{'R', 'W'}; }
 
-            constexpr bool operator==(Version const&) const noexcept = default;
-            constexpr auto operator<=>(Version const&) const noexcept = default;
+            bool operator==(Version const& other) const noexcept {
+                return magic == other.magic && major == other.major && minor == other.minor;
+            }
+            bool operator!=(Version const& other) const noexcept {
+                return !(*this == other);
+            }
         };
 
         using Signature = std::array<std::uint8_t, 16>;

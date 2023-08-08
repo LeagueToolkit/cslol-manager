@@ -15,7 +15,7 @@ static auto wad_extract(fs::path src, fs::path dst, fs::path hashdict) -> void {
     if (dst.empty()) {
         dst = src;
         if (dst.extension().empty()) {
-            dst.replace_extension(u8".wad");
+            dst.replace_extension(".wad");
         } else {
             dst.replace_extension();
         }

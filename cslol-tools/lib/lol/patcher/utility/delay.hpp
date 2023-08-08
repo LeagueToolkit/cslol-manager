@@ -24,8 +24,8 @@ namespace lol {
 
     Intervals() -> Intervals<1>;
 
-    template <std::size_t S>
-    inline auto run_until_or(auto deadline, Intervals<S> intervals, auto&& poll, auto&& fail) {
+    template <typename D, std::size_t S, typename P, typename F>
+    inline auto run_until_or(D deadline, Intervals<S> intervals, P&& poll, F&& fail) {
         auto total = static_cast<std::int64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(deadline).count());
         for (auto interval : intervals.intervals) {
             auto slice = total / S;

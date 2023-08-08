@@ -12,6 +12,8 @@
 #include "CSLOLVersion.h"
 
 int main(int argc, char *argv[]) {
+    CSLOLUtils::relaunchAdmin(argc, argv);
+
     qmlRegisterType<CSLOLTools>("customskinlol.tools", 1, 0, "CSLOLTools");
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)

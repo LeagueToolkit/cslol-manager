@@ -98,7 +98,7 @@ static struct ResourceLimit {
     public: ResourceLimit() {
         rlimit resourceLimit;
         getrlimit(RLIMIT_NOFILE, &resourceLimit);
-        resourceLimit.rlim_cur = resourceLimit.rlim_max;
+        resourceLimit.rlim_cur = resourceLimit.rlim_max == RLIM_INFINITY ? 65000 : resourceLimit.rlim_max - 1;
         setrlimit(RLIMIT_NOFILE, &resourceLimit);
     }
 } resourceLimit_ = {};
