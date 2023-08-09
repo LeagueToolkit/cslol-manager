@@ -20,16 +20,6 @@ using namespace std::chrono_literals;
 
 // clang-format off
 constexpr inline char PAT_REVISION[] = "patcher-win64-v6";
-constexpr auto const find_ptr_CreateFileA =
-    &ppp::any<
-        "C7 44 24 20 03 00 00 00 "
-        "45 8D 41 01 "
-        "FF 15 r[?? ?? ?? ??]"_pattern,
-        "44 8B C3 "
-        "41 8B D6 "
-        "89 7C 24 ?? "
-        "49 8B CC "
-        "FF 15 r[?? ?? ?? ??]"_pattern>;
 
 constexpr auto const find_ptr_CRYPTO_free =
     &ppp::any<
@@ -173,29 +163,10 @@ struct Kernel32 {
 };
 
 struct Context {
-    LineConfig<std::uint64_t, PAT_REVISION, "checksum", "ptr_CreateFileA", "ptr_CRYPTO_free"> config;
     Kernel32 kernel32;
     std::string config_str;
     std::u16string prefix;
-
-    auto load_config(fs::path const& path) -> void {
-        kernel32 = Kernel32::load();
-        if (std::ifstream file(path, std::ios::binary); file) {
-            if (auto str = std::string{}; std::getline(file, str)) {
-                config.from_string(str);
-            }
-        }
-        config_str = config.to_string();
-    }
-
-    auto save_config(fs::path const& path) -> void {
-        config_str = config.to_string();
-        auto ec = std::error_code{};
-        fs::create_directories(path.parent_path(), ec);
-        if (std::ofstream file(path, std::ios::binary); file) {
-            file.write(config_str.data(), config_str.size());
-        }
-    }
+    PtrStorage off_CRYPTO_free;
 
     auto set_prefix(fs::path const& profile_path) -> void {
         prefix = fs::absolute(profile_path.lexically_normal()).generic_u16string();
@@ -227,12 +198,14 @@ struct Context {
 
     auto scan_runtime(Process const& process, std::uint32_t expected_checksum) -> void {
         lol_trace_func();
-        auto const base = process.Base();
-        auto const data = process.Dump();
-        auto const data_span = std::span<char const>(data);
+        auto process_path = fs::absolute(process.Path().parent_path());
 
-        auto const match_ptr_CreateFileA = find_ptr_CreateFileA(data_span, base);
-        lol_throw_if_msg(!match_ptr_CreateFileA, "Failed to find ref to ptr to CreateFileA!");
+        // verify game path
+        if (!expected_game_path.empty()) {
+            lol_trace_func(lol_trace_var("{}", process_path), lol_trace_var("{}", expected_game_path));
+            expected_game_path = fs::absolute(expected_game_path);
+            lol_throw_if_msg(expected_game_path != process_path, "Wrong game directory!");
+        }
 
         config.get<"ptr_CreateFileA">() = process.Debase((PtrStorage)std::get<1>(*match_ptr_CreateFileA));
         config.get<"checksum">() = expected_checksum;
@@ -289,6 +262,7 @@ struct Context {
     auto is_patchable(Process const& process) const noexcept -> bool {
         auto const is_valid_ptr = [](PtrStorage ptr) { return ptr > 0x10000 && ptr < (1ull << 48); };
         auto const ptr_CRYPTO_free = process.Rebase<PtrStorage>(config.get<"ptr_CreateFileA">());
+
         if (auto result = process.TryRead(ptr_CRYPTO_free); !result || !is_valid_ptr(*result)) {
             return false;
         } else if (!process.TryRead(Ptr<PtrStorage>(*result))) {
@@ -318,12 +292,15 @@ struct Context {
         payload.ptr_GetProcessHeap = kernel32.ptr_GetProcessHeap;
         payload.ptr_HeapFree = kernel32.ptr_HeapFree;
         payload.ptr_CreateFileA = Ptr(ptr_payload->org_CreateFileA.data);
+      
         if (kernel32.ptr_CreateFileA_iat.storage) [[likely]] {
             payload.org_CreateFileA = ImportTrampoline::make_ind(kernel32.ptr_CreateFileA_iat);
         } else {
             payload.org_CreateFileA = ImportTrampoline::make(kernel32.ptr_CreateFileA.storage);
         }
+      
         payload.ptr_CreateFileW = kernel32.ptr_CreateFileW;
+        payload.org_CreateFileA = ImportTrampoline::make_ind(kernel32.ptr_CreateFileA_iat);
         std::copy_n(prefix.data(), prefix.size(), payload.prefix_open_data);
 
         // Write payload
@@ -332,6 +309,7 @@ struct Context {
 
         // Write hooks
         process.Write(ptr_CRYPTO_free, Ptr(ptr_payload->hook_CRYPTO_free));
+      
         if (kernel32.ptr_CreateFileA_iat.storage) [[likely]] {
             process.Write(kernel32.ptr_CreateFileA, ImportTrampoline::make(ptr_payload->hook_CreateFileA));
         } else {
@@ -390,8 +368,7 @@ auto patcher::run(std::function<void(Message, char const*)> update,
     lol_throw_if(skinhack_detected());
     auto ctx = Context{};
     ctx.set_prefix(profile_path);
-    ctx.load_config(config_path);
-    (void)game_path;
+    ctx.kernel32 = Kernel32::load();
     for (;;) {
         auto pid = run_until_or(
             30s,

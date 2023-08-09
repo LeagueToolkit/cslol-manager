@@ -141,10 +141,6 @@ auto Process::IsExited() const noexcept -> bool {
     }
 }
 
-auto Process::WaitInitialized(uint32_t timeout) const noexcept -> bool {
-    return WaitForInputIdle(handle_, timeout) == 0;
-}
-
 auto Process::TryReadMemory(void* address, void* dest, size_t size) const noexcept -> bool {
     if (!ReadProcessMemory(handle_, address, dest, size, nullptr)) return false;
     return true;
