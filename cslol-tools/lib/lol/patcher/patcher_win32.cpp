@@ -288,7 +288,7 @@ struct Context {
 
     auto is_patchable(Process const& process) const noexcept -> bool {
         auto const is_valid_ptr = [](PtrStorage ptr) { return ptr > 0x10000 && ptr < (1ull << 48); };
-        auto const ptr_CRYPTO_free = process.Rebase<PtrStorage>(config.get<"ptr_CreateFileA">());
+        auto const ptr_CRYPTO_free = process.Rebase<PtrStorage>(config.get<"ptr_CRYPTO_free">());
         if (auto result = process.TryRead(ptr_CRYPTO_free); !result || !is_valid_ptr(*result)) {
             return false;
         } else if (!process.TryRead(Ptr<PtrStorage>(*result))) {

@@ -316,7 +316,7 @@ int main(int argc, char** argv) {
                           flags.contains("--noTFT"),
                           flags.contains("--ignoreConflict"));
         } else if (cmd == "runoverlay") {
-            mod_runoverlay(src, dst, flags["--game:"], flags["--opts"]);
+            mod_runoverlay(src, dst, flags["--game:"], flags["--opts:"]);
         } else {
             help(cmd);
         }
