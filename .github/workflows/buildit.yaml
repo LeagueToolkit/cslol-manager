@@ -14,13 +14,12 @@ jobs:
     - name: "Download Qt5"
       shell: bash
       run: |
-        curl --output C:/qt5.7z -L "https://github.com/LoL-Fantome/lolcustomskin-tools/releases/download/release23/qt5.15.5-x86_64-msvc-static.7z"
-        7z x -oC:/ C:/qt5.7z
+        7z x -oC:/ "qt-5.15.0-static.zip.001"
     - name: "Build"
       run: |
         mkdir build
         cd build
-        cmake -G "NMake Makefiles" "-DCMAKE_PREFIX_PATH:PATH=C:/qt5.15.5-x86_64-msvc-static" "-DCMAKE_MSVC_RUNTIME_LIBRARY:STRING=MultiThreaded" "-DCMAKE_BUILD_TYPE:STRING=Release" ..
+        cmake -G "NMake Makefiles" "-DCMAKE_PREFIX_PATH:PATH=C:/qt-5.15.0-static" "-DCMAKE_MSVC_RUNTIME_LIBRARY:STRING=MultiThreaded" "-DCMAKE_BUILD_TYPE:STRING=Release" ..
         cmake --build .
     - name: "Package"
       shell: bash
