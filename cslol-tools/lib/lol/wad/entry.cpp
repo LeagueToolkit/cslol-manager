@@ -54,6 +54,22 @@ auto EntryData::from_zstd(io::Bytes bytes, std::size_t decompressed, std::uint64
     return result;
 }
 
+auto EntryData::from_zstd_multi(io::Bytes bytes,
+                                std::size_t decompressed,
+                                std::uint64_t checksum,
+                                std::uint8_t subchunk_count,
+                                std::uint16_t subchunk_index) -> EntryData {
+    auto result = EntryData(std::make_shared<Impl>());
+    result.impl_->type = EntryType::ZstdMulti;
+    result.impl_->subchunk_count = subchunk_count;
+    result.impl_->subchunk_index = subchunk_index;
+    result.impl_->size_decompressed = decompressed;
+    result.impl_->checksum = checksum;
+    result.impl_->bytes = std::move(bytes);
+    result.impl_->compressed = result.impl_;
+    return result;
+}
+
 auto EntryData::from_file(fs::path const& path) -> EntryData { return from_raw(io::Bytes::from_file(path), 0); }
 
 auto EntryData::from_loc(io::Bytes src, EntryLoc const& loc) -> EntryData {
@@ -67,8 +83,13 @@ auto EntryData::from_loc(io::Bytes src, EntryLoc const& loc) -> EntryData {
         case EntryType::Gzip:
             return EntryData::from_gzip(std::move(bytes), loc.size_decompressed, loc.checksum);
         case EntryType::Zstd:
-        case EntryType::ZstdMulti:
             return EntryData::from_zstd(std::move(bytes), loc.size_decompressed, loc.checksum);
+        case EntryType::ZstdMulti:
+            return EntryData::from_zstd_multi(std::move(bytes),
+                                              loc.size_decompressed,
+                                              loc.checksum,
+                                              loc.subchunk_count,
+                                              loc.subchunk_index);
         default:
             lol_throw_msg("Unknown EntryType: {:#x}", (unsigned)loc.type);
     }
@@ -98,7 +119,8 @@ auto EntryData::extension() const -> std::string_view {
             case EntryType::Gzip:
                 result = into_decompressed().extension();
                 break;
-            case EntryType::Zstd: {
+            case EntryType::Zstd:
+            case EntryType::ZstdMulti: {
                 char buffer[128];
                 auto buffer_cap = std::min(size_decompressed(), sizeof(buffer));
                 auto buffer_size = bytes().readsome_decompress_zstd(0, bytes_size(), buffer, buffer_cap);
@@ -134,6 +156,9 @@ auto EntryData::into_compressed() const -> EntryData {
             case EntryType::Zstd:
                 result = impl_;
                 break;
+            case EntryType::ZstdMulti:
+                result = into_decompressed().into_compressed().impl_;
+                break;
             default:
                 lol_throw_msg("Unreachable Type!");
         }
@@ -168,6 +193,13 @@ auto EntryData::into_decompressed() const -> EntryData {
                 result->compressed = impl_;
                 result->decompressed = result;
                 break;
+            case EntryType::ZstdMulti:
+                result = std::make_shared<Impl>();
+                result->type = EntryType::Raw;
+                result->size_decompressed = size_decompressed();
+                result->bytes = bytes().copy_decompress_zstd_hack(size_decompressed());
+                result->decompressed = result;
+                break;
             default:
                 lol_throw_msg("Unreachable Type!");
         }
@@ -196,6 +228,13 @@ auto EntryData::into_optimal() const -> EntryData {
         case EntryType::Zstd:
             if (auto ext = extension(); ext == ".bnk" || ext == ".wpk") {
                 result = into_decompressed();
+            }
+            break;
+        case EntryType::ZstdMulti:
+            if (auto ext = extension(); ext == ".bnk" || ext == ".wpk") {
+                result = into_decompressed();
+            } else {
+                result = into_compressed();
             }
             break;
         default:
