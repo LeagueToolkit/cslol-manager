@@ -8,6 +8,15 @@
 using namespace lol;
 using namespace lol::io;
 
+static std::size_t find_zstd_magic(std::span<char const> src) {
+    static constexpr char const zstd_magic[4] = {0x28, (char)0xB5, 0x2F, (char)0xFD};
+    auto magic = std::search(src.data(), src.data() + src.size(), zstd_magic, zstd_magic + sizeof(zstd_magic));
+    if (magic == src.data() + src.size()) {
+        return 0;
+    }
+    return (std::size_t)(magic - src.data());
+}
+
 Buffer::~Buffer() noexcept = default;
 
 auto Buffer::copy(std::size_t pos, std::size_t count) const -> Bytes {
@@ -24,6 +33,21 @@ auto Buffer::readsome_decompress_zstd(std::size_t pos,
                                       std::size_t count,
                                       void* dst,
                                       std::size_t dst_count) const noexcept -> std::size_t {
+    [[unlikely]] if (pos > size_ || size_ - pos < count) return 0;
+
+    auto frame_start = find_zstd_magic({data_ + pos, count});
+    if (frame_start >= dst_count) {
+        std::memcpy(dst, data_ + pos, dst_count);
+        return dst_count;
+    }
+    if (frame_start) {
+        std::memcpy(dst, data_ + pos, frame_start);
+        pos += frame_start;
+        count -= frame_start;
+        dst = (char*)dst + frame_start;
+        dst_count -= frame_start;
+    }
+
     thread_local auto ctx = std::shared_ptr<ZSTD_DStream>(ZSTD_createDStream(), ZSTD_freeDStream);
     [[unlikely]] if (!ctx.get()) return 0;
     [[unlikely]] if (ZSTD_isError(ZSTD_initDStream(ctx.get()))) return 0;
@@ -31,7 +55,7 @@ auto Buffer::readsome_decompress_zstd(std::size_t pos,
     auto input = ZSTD_inBuffer{data_ + pos, count, 0};
     auto output = ZSTD_outBuffer{dst, dst_count, 0};
     ZSTD_decompressStream(ctx.get(), &output, &input);
-    return output.pos;
+    return frame_start + output.pos;
 }
 
 auto Buffer::readsome(std::size_t pos, void* dst, std::size_t count) const noexcept -> std::size_t {
@@ -148,7 +172,6 @@ auto Buffer::write_decompress_zstd(std::size_t pos, std::size_t count, void cons
                    lol_trace_var("{:#x}", count),
                    lol_trace_var("{:p}", src),
                    lol_trace_var("{:#x}", src_count));
-    auto ctx = std::shared_ptr<libdeflate_decompressor>(libdeflate_alloc_decompressor(), libdeflate_free_decompressor);
     auto const maxendpos = pos + count;
     lol_throw_if(maxendpos < pos);
     lol_throw_if(impl_reserve(maxendpos));
@@ -156,6 +179,29 @@ auto Buffer::write_decompress_zstd(std::size_t pos, std::size_t count, void cons
     lol_throw_if_msg(ZSTD_isError(result), "{}", ZSTD_getErrorName(result));
     lol_throw_if(result != count);
     size_ = std::max(size_, pos + result);
+}
+
+auto Buffer::write_decompress_zstd_hack(std::size_t pos, std::size_t count, void const* src, std::size_t src_count)
+    -> void {
+    lol_trace_func(lol_trace_var("{:#x}", size_),
+                   lol_trace_var("{:#x}", pos),
+                   lol_trace_var("{:#x}", count),
+                   lol_trace_var("{:p}", src),
+                   lol_trace_var("{:#x}", src_count));
+    auto const maxendpos = pos + count;
+    lol_throw_if(maxendpos < pos);
+    lol_throw_if(impl_reserve(maxendpos));
+    auto frame_start = find_zstd_magic({(char const*)src, src_count});
+    if (frame_start) {
+        lol_throw_if(frame_start > count);
+        this->write(pos, src, frame_start);
+        pos += frame_start;
+        count -= frame_start;
+        src = (char const*)src + frame_start;
+        src_count -= frame_start;
+    }
+    if (count == 0 && src_count == 0) return;
+    write_decompress_zstd(pos, count, src, src_count);
 }
 
 auto Buffer::write_compress_defl(std::size_t pos, void const* src, std::size_t src_count, int level) -> std::size_t {

@@ -128,6 +128,8 @@ auto Archive::write_to_file(fs::path const& path) const -> void {
             } else {
                 loc = {
                     .type = data.type(),
+                    .subchunk_count = data.subchunk_count(),
+                    .subchunk_index = data.subchunk_index(),
                     .offset = data_cur,
                     .size = data.bytes_size(),
                     .size_decompressed = data.size_decompressed(),
@@ -146,9 +148,9 @@ auto Archive::write_to_file(fs::path const& path) const -> void {
                 .size = (std::uint32_t)loc.size,
                 .size_decompressed = (std::uint32_t)loc.size_decompressed,
                 .type = loc.type,
-                .subchunk_count = 0,
+                .subchunk_count = loc.subchunk_count,
                 .is_duplicate = 0,
-                .subchunk_index = 0,
+                .subchunk_index = loc.subchunk_index,
                 .checksum = loc.checksum,
             });
         };

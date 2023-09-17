@@ -42,6 +42,9 @@ namespace lol::io {
 
         auto write_decompress_zstd(std::size_t pos, std::size_t count, void const* src, std::size_t src_count) -> void;
 
+        auto write_decompress_zstd_hack(std::size_t pos, std::size_t count, void const* src, std::size_t src_count)
+            -> void;
+
         auto write_compress_defl(std::size_t pos, void const* src, std::size_t src_count, int level = 6) -> std::size_t;
 
         auto write_compress_zlib(std::size_t pos, void const* src, std::size_t src_count, int level = 6) -> std::size_t;

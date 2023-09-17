@@ -10,6 +10,7 @@
 #include <lol/wad/archive.hpp>
 #include <lol/wad/index.hpp>
 #include <thread>
+#include <unordered_set>
 
 using namespace lol;
 
@@ -192,11 +193,19 @@ static auto mod_mkoverlay(fs::path src, fs::path dst, fs::path game, fs::names m
     lol_throw_if_msg(game_index.mounts.empty(), "Not a valid Game folder");
     game_index.remove_filter(noTFT ? FILTER_TFT : FILTER_NONE);
 
+    auto blocked = std::unordered_set<hash::Xxh64>{};
+    for (auto const& [_, mounted] : game_index.mounts) {
+        auto subchunk_name = fs::path(mounted.relpath).replace_extension(".SubChunkTOC").generic_string();
+        blocked.insert(hash::Xxh64(subchunk_name));
+    }
     auto mod_queue = std::vector<wad::Index>{};
 
     logi("Reading mods");
     for (auto const& mod_name : mods) {
         auto mod_index = wad::Index::from_mod_folder(src / mod_name);
+        for (auto& [path_, mounted] : mod_index.mounts) {
+            std::erase_if(mounted.archive.entries, [&](auto const& kvp) { return blocked.contains(kvp.first); });
+        }
         if (mod_index.mounts.empty()) {
             logw("Empty mod: {}", mod_index.name);
             continue;

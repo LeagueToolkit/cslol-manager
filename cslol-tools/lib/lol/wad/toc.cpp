@@ -42,6 +42,8 @@ auto TOC::read(io::Bytes src) noexcept -> char const* {
                 .loc =
                     {
                         .type = entry_raw.type,
+                        .subchunk_count = entry_raw.subchunk_count,
+                        .subchunk_index = entry_raw.subchunk_index,
                         .offset = entry_raw.offset,
                         .size = entry_raw.size,
                         .size_decompressed = entry_raw.size_decompressed,

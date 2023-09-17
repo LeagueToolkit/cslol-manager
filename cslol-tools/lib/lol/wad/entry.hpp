@@ -17,6 +17,8 @@ namespace lol::wad {
 
     struct EntryLoc {
         EntryType type;
+        std::uint8_t subchunk_count = {};
+        std::uint16_t subchunk_index = {};
         std::uint64_t offset;
         std::uint64_t size;
         std::uint64_t size_decompressed;
@@ -43,6 +45,12 @@ namespace lol::wad {
 
         static auto from_zstd(io::Bytes data, std::size_t decompressed, std::uint64_t checksum) -> EntryData;
 
+        static auto from_zstd_multi(io::Bytes data,
+                                    std::size_t decompressed,
+                                    std::uint64_t checksum,
+                                    std::uint8_t subchunk_count,
+                                    std::uint16_t subchunk_index) -> EntryData;
+
         static auto from_file(fs::path const& path) -> EntryData;
 
         static auto from_loc(io::Bytes src, EntryLoc const& loc) -> EntryData;
@@ -58,6 +66,10 @@ namespace lol::wad {
         auto extension() const -> std::string_view;
 
         auto type() const noexcept -> EntryType { return impl_->type; }
+
+        auto subchunk_count() const noexcept -> std::uint8_t { return impl_->subchunk_count; }
+
+        auto subchunk_index() const noexcept -> std::uint16_t { return impl_->subchunk_index; }
 
         auto bytes() const noexcept -> io::Bytes { return impl_->bytes; }
 
@@ -81,6 +93,8 @@ namespace lol::wad {
         struct Impl {
             EntryType type = EntryType::Raw;
             bool is_optimal = false;
+            std::uint8_t subchunk_count = {};
+            std::uint16_t subchunk_index = {};
             std::optional<std::string_view> extension = {};
             io::Bytes bytes = {};
             std::size_t size_decompressed = 0;

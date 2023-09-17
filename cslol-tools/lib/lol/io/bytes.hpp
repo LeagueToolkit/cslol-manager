@@ -72,6 +72,12 @@ namespace lol::io {
             return result;
         }
 
+        auto copy_decompress_zstd_hack(std::size_t size_decompressed) const -> Bytes {
+            auto result = Bytes();
+            result.write_decompress_zstd_hack(0, size_decompressed, data_, size_);
+            return result;
+        }
+
         auto copy_compress_defl(int level = 6) const -> Bytes {
             auto result = Bytes();
             result.write_compress_defl(0, data_, size_, level);
