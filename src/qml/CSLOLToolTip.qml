@@ -3,5 +3,5 @@ import QtQuick.Controls 2.15
 
 ToolTip {
     visible: parent.hovered
-    delay: 2000
+    delay: 400
 }
