@@ -131,9 +131,55 @@ void CSLOLUtils::relaunchAdmin(int argc, char *argv[]) {}
 #    include <string.h>
 #    include <unistd.h>
 #    include <mach-o/dyld.h>
+#    include <CoreFoundation/CoreFoundation.h>
 #    include <Security/Authorization.h>
 #    include <Security/AuthorizationTags.h>
 #    include <sys/sysctl.h>
+#    include <sys/xattr.h>
+#    include <dlfcn.h>
+
+using t_SecTranslocateIsTranslocatedURL = Boolean (*)(CFURLRef path, bool *isTranslocated, CFErrorRef* __nullable error);
+using t_SecTranslocateCreateOriginalPathForURL = CFURLRef __nullable (*)(CFURLRef translocatedPath, CFErrorRef * __nullable error);
+
+static void fix_translocate() {
+    void* SecurityLibHandle = dlopen("/System/Library/Frameworks/Security.framework/Security", RTLD_LAZY);
+    if (!SecurityLibHandle) {
+        fprintf(stderr, "Failed to dlopen security lib.\n");
+        return;
+    }
+
+    CFBundleRef mainBundle = CFBundleGetMainBundle();
+    if (!mainBundle) { // should not happen I believe?
+        dlclose(SecurityLibHandle);
+        return;
+    }
+    CFURLRef bundleUrl = CFBundleCopyBundleURL(mainBundle);
+
+    bool isTranslocated;
+    t_SecTranslocateIsTranslocatedURL SecTranslocateIsTranslocatedURL = (t_SecTranslocateIsTranslocatedURL) dlsym(SecurityLibHandle, "SecTranslocateIsTranslocatedURL");
+    bool success = SecTranslocateIsTranslocatedURL(bundleUrl, &isTranslocated, NULL);
+    if (success && isTranslocated) {
+        t_SecTranslocateCreateOriginalPathForURL SecTranslocateCreateOriginalPathForURL = (t_SecTranslocateCreateOriginalPathForURL) dlsym(SecurityLibHandle, "SecTranslocateCreateOriginalPathForURL");
+        CFURLRef originalPathUrl = SecTranslocateCreateOriginalPathForURL(bundleUrl, NULL);
+        if (originalPathUrl) {
+            CFStringRef originalPathString = CFURLCopyPath(originalPathUrl);
+
+            char originalPath[PATH_MAX];
+            bool success = CFStringGetCString(originalPathString, originalPath, PATH_MAX, kCFStringEncodingUTF8);
+            if (success)
+                removexattr(originalPath, "com.apple.quarantine", 0);
+
+            CFRelease(originalPathUrl);
+            CFRelease(originalPathString);
+        } else {
+            fprintf(stderr, "Failed to get original non-translocated path.");
+        }
+    }
+
+    CFRelease(bundleUrl);
+
+    dlclose(SecurityLibHandle);
+}
 
 QString CSLOLUtils::detectGamePath() {
     pid_t *pid_list;
@@ -224,14 +270,16 @@ QString CSLOLUtils::isPlatformUnsuported() {
 void CSLOLUtils::relaunchAdmin(int argc, char *argv[]) {
     QCoreApplication::setSetuidAllowed(true);
 
-    char path[PATH_MAX];
-    uint32_t path_max_size = PATH_MAX;
-    if (_NSGetExecutablePath(path, &path_max_size) != KERN_SUCCESS) {
+    if (argc > 1 && strcmp(argv[1], "admin") == 0) {
+        puts("Authed!");
         return;
     }
 
-    if (argc > 1 && strcmp(argv[1], "admin") == 0) {
-        puts("Authed!");
+    fix_translocate();
+
+    char path[PATH_MAX];
+    uint32_t path_max_size = PATH_MAX;
+    if (_NSGetExecutablePath(path, &path_max_size) != KERN_SUCCESS) {
         return;
     }
 
