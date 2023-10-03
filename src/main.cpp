@@ -1,3 +1,4 @@
+#include <QDir>
 #include <QFile>
 #include <QFileInfo>
 #include <QFontDatabase>
@@ -27,6 +28,7 @@ int main(int argc, char *argv[]) {
     app.setOrganizationName("moonshadow565");
     app.setOrganizationDomain("cslol");
     app.setApplicationName("customskinlol-manager");
+    QDir::setCurrent(QCoreApplication::applicationDirPath());
     QSettings::setPath(QSettings::Format::IniFormat,
                        QSettings::Scope::SystemScope,
                        QCoreApplication::applicationDirPath());
