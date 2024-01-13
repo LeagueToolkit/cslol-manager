@@ -38,14 +38,11 @@ add_library(cslol-lib STATIC
     lib/lol/patcher/patcher.hpp
     lib/lol/patcher/patcher_dummy.cpp
     lib/lol/patcher/patcher_macos.cpp
-    lib/lol/patcher/patcher_win32.cpp
+    lib/lol/patcher/patcher_new_win32.cpp
     lib/lol/patcher/utility/delay.hpp
     lib/lol/patcher/utility/macho.hpp
-    lib/lol/patcher/utility/peex.hpp
-    lib/lol/patcher/utility/ppp.hpp
     lib/lol/patcher/utility/process.hpp
     lib/lol/patcher/utility/process_macos.cpp
-    lib/lol/patcher/utility/process_win32.cpp
 
     lib/lol/utility/cli.hpp
     lib/lol/utility/cli.cpp
@@ -70,6 +67,21 @@ if (WIN32)
         res/longpath.manifest
         res/utf8.manifest
     )
+endif()
+
+if (WIN32)
+    add_library(cslol-dll SHARED
+        dll/main.c
+    )
+    if (MSVC)
+        # Disable stack cookies so we can mess with return address.
+        target_compile_options(cslol-dll PRIVATE "-GS-")
+        target_link_options(cslol-dll PRIVATE "-SECTION:.shared,RWS")
+    else()
+        error("FIXME")
+    endif()
+    set_property(TARGET cslol-dll PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
+    target_link_libraries(cslol-dll PRIVATE kernel32 user32)
 endif()
 
 if (CSLOL_TRASH_PC_SUPPORT)
