@@ -10,6 +10,7 @@ copy2folder() {
     cp "./LICENSE" "$2"
 
     cp "$1/cslol-tools/"*.exe "$2/cslol-tools"
+    cp "$1/cslol-tools/"*.dll "$2/cslol-tools"
     cp "$1/cslol-manager.exe" "$2"
     echo "windeployqt is only necessary for non-static builds"
     windeployqt --qmldir "src/qml" "$2/cslol-manager.exe"
