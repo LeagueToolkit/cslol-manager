@@ -30,6 +30,7 @@ Dialog {
     property alias enableSystray: enableSystrayCheck.checked
     property alias enableAutoRun: enableAutoRunCheck.checked
     property alias updateUrls: updateUrlsTextArea.text
+     property alias experimentalDll: experimentalDllCheck.checked
 
     property var colors_LIST: [
         "Red",
@@ -112,6 +113,12 @@ Dialog {
                 Switch {
                     id: ignorebadCheck
                     text: qsTr("Ignore faulty .wad's")
+                    checked: false
+                    Layout.fillWidth: true
+                }
+                Switch {
+                    id: experimentalDllCheck
+                    text: qsTr("Experimental dll patcher(might result in bans)")
                     checked: false
                     Layout.fillWidth: true
                 }

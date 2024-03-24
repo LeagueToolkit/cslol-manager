@@ -95,3 +95,20 @@ add_executable(wad-make
     src/main_wad_make.cpp
 )
 target_link_libraries(wad-make PRIVATE cslol-lib)
+
+if (WIN32)
+    if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/cslol-patcher")
+        add_library(cslol-patcher SHARED IMPORTED)
+        set_target_properties(cslol-patcher PROPERTIES
+            IMPORTED_IMPLIB ${CMAKE_CURRENT_LIST_DIR}/cslol-patcher/cslol-dll.lib
+            IMPORTED_LOCATION ${CMAKE_CURRENT_LIST_DIR}/cslol-patcher/cslol-dll.dll
+            INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_LIST_DIR}/cslol-patcher/
+        )
+        target_link_libraries(cslol-lib PUBLIC cslol-patcher)
+        add_custom_command(TARGET mod-tools POST_BUILD
+          COMMAND ${CMAKE_COMMAND} -E copy -t $<TARGET_FILE_DIR:mod-tools> $<TARGET_RUNTIME_DLLS:mod-tools>
+          COMMAND_EXPAND_LISTS
+        )
+    endif()
+endif()
+
