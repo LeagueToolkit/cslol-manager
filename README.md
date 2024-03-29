@@ -1,11 +1,11 @@
 # Download???
- https://github.com/LoL-Fantome/cslol-manager/releases
+ https://github.com/LeagueToolkit/cslol-manager/releases
 
 # Windows 10+ only
  Please update to windows 10 or 11!
 
 # About CustomSkin for LoL manager
- Mod manager for League of legends using [Fantome mod format](https://github.com/LoL-Fantome/Fantome/wiki/Mod-File-Format).
+ Mod manager for League of legends using [Fantome mod format](https://github.com/LeagueToolkit/Fantome/wiki/Mod-File-Format).
  ![Main window](docs/manager-0.png)
  ![Editing info](docs/manager-1.png)
  ![Editing files](docs/manager-2.png)
