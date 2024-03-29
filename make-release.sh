@@ -14,7 +14,7 @@ copy2folder() {
     cp "$1/cslol-manager.exe" "$2"
     echo "windeployqt is only necessary for non-static builds"
     windeployqt --qmldir "src/qml" "$2/cslol-manager.exe"
-    curl -N -R -L -o "$2/cslol-tools/hashes.game.txt" "https://raw.githubusercontent.com/CommunityDragon/CDTB/master/cdragontoolbox/hashes.game.txt"
+    curl -N -R -L -o "$2/cslol-tools/hashes.game.txt" "https://raw.communitydragon.org/data/hashes/lol/hashes.game.txt"
 }
 
 VERSION=$(git log --date=short --format="%ad-%h" -1)
