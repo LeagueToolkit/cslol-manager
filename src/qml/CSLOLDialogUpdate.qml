@@ -16,7 +16,7 @@ Dialog {
     }
     onOpened: window.show()
 
-    property string update_url: "https://github.com/LoL-Fantome/cslol-manager/releases/latest"
+    property string update_url: "https://github.com/LeagueToolkit/cslol-manager/releases/latest"
     property int lastUpdateUTCMinutes: 0
 
     onAccepted: Qt.openUrlExternally(update_url)
@@ -49,7 +49,7 @@ Dialog {
             return
         }
         lastUpdateUTCMinutes = cur_time
-        let url = "https://api.github.com/repos/LoL-Fantome/cslol-manager";
+        let url = "https://api.github.com/repos/LeagueToolkit/cslol-manager";
         makeRequest(url + "/releases", function(releases) {
             for (let index in releases) {
                 let release = releases[index]
