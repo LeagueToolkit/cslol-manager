@@ -30,7 +30,7 @@ Dialog {
     property alias enableSystray: enableSystrayCheck.checked
     property alias enableAutoRun: enableAutoRunCheck.checked
     property alias updateUrls: updateUrlsTextArea.text
-     property alias experimentalDll: experimentalDllCheck.checked
+    property alias oldPatcher: oldPatcherCheck.checked
 
     property var colors_LIST: [
         "Red",
@@ -117,8 +117,8 @@ Dialog {
                     Layout.fillWidth: true
                 }
                 Switch {
-                    id: experimentalDllCheck
-                    text: qsTr("Experimental dll patcher(might result in bans)")
+                    id: oldPatcherCheck
+                    text: qsTr("Old patcher(does NOT work with Vanguard)")
                     checked: false
                     Layout.fillWidth: true
                 }
