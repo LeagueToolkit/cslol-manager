@@ -324,11 +324,8 @@ auto patcher::run(std::function<void(Message, char const*)> update,
                   fs::path const& game_path,
                   fs::names const& opts) -> void {
     lol_throw_if(skinhack_detected());
-    for (auto const& o : opts) {
-        if (o == "dllpatcher") {
-            if (new_patcher(std::move(update), profile_path, config_path, game_path, opts)) return;
-        }
-    }
+    if (new_patcher(std::move(update), profile_path, config_path, game_path, opts)) return;
+
     auto ctx = Context{};
     ctx.set_prefix(profile_path);
     ctx.kernel32 = Kernel32::load();
@@ -417,6 +414,12 @@ static auto new_patcher(std::function<void(Message, char const*)> update,
                         fs::path const& config_path,
                         fs::path const& game_path,
                         fs::names const& opts) -> bool {
+    for (auto const& o : opts) {
+        if (o == "oldpatcher") {
+            return false;
+        }
+    }
+
     // Initialize first proces.
     lol_throw_if(cslol_init());
     lol_throw_if(cslol_set_flags(CSLOL_HOOK_DISALBE_NONE));

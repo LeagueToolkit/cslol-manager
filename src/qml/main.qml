@@ -31,7 +31,7 @@ ApplicationWindow {
         property alias themeDarkMode: cslolDialogSettings.themeDarkMode
         property alias themePrimaryColor: cslolDialogSettings.themePrimaryColor
         property alias themeAccentColor: cslolDialogSettings.themeAccentColor
-        property alias experimentalDll: cslolDialogSettings.experimentalDll
+        property alias oldPatcher: cslolDialogSettings.oldPatcher
 
         property alias removeUnknownNames: cslolDialogEditMod.removeUnknownNames
         property alias lastZipDirectory: cslolDialogOpenZipFantome.folder
@@ -98,7 +98,7 @@ ApplicationWindow {
             let name = cslolToolBar.profilesCurrentName
             let mods = cslolModsView.saveProfile()
             if (checkGamePath()) {
-                cslolTools.saveProfile(name, mods, run, settings.suppressInstallConflicts, settings.experimentalDll)
+                cslolTools.saveProfile(name, mods, run, settings.suppressInstallConflicts, settings.oldPatcher)
             }
         }
 

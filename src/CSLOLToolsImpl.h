@@ -60,7 +60,7 @@ public slots:
     void deleteMod(QString name);
     void exportMod(QString name, QString dest);
     void installFantomeZip(QString path);
-    void saveProfile(QString name, QJsonObject mods, bool run, bool skipConflict, bool experimentalDll);
+    void saveProfile(QString name, QJsonObject mods, bool run, bool skipConflict, bool oldPatcher);
     void loadProfile(QString name);
     void deleteProfile(QString name);
     void stopProfile();
