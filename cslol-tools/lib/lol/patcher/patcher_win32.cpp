@@ -442,8 +442,8 @@ static auto new_patcher(std::function<void(Message, char const*)> update,
         // Signal that process has been found.
         update(M_FOUND, "");
 
-        // Hook in 30 seconds or error.
-        lol_throw_if(cslol_hook(tid, 30000, 100));
+        // Hook in 5 seconds or error.
+        lol_throw_if(cslol_hook(tid, 300000, 100));
 
         // Wait for exit.
         update(M_WAIT_EXIT, "");
