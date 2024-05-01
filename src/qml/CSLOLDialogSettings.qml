@@ -30,7 +30,7 @@ Dialog {
     property alias enableSystray: enableSystrayCheck.checked
     property alias enableAutoRun: enableAutoRunCheck.checked
     property alias updateUrls: updateUrlsTextArea.text
-    property alias oldPatcher: oldPatcherCheck.checked
+    property bool oldPatcher: false
 
     property var colors_LIST: [
         "Red",
@@ -113,12 +113,6 @@ Dialog {
                 Switch {
                     id: ignorebadCheck
                     text: qsTr("Ignore faulty .wad's")
-                    checked: false
-                    Layout.fillWidth: true
-                }
-                Switch {
-                    id: oldPatcherCheck
-                    text: qsTr("Old patcher(does NOT work with Vanguard)")
                     checked: false
                     Layout.fillWidth: true
                 }
