@@ -22,10 +22,17 @@ auto patcher::run(std::function<void(Message, char const*)> update,
                   fs::path const& config_path,
                   fs::path const& game_path,
                   fs::names const& opts) -> void {
+    bool debugpatcher = 0;
+    for (auto const& o : opts) {
+        if (o == "debugpatcher") {
+            debugpatcher = true;
+        }
+    }
+
     // Initialize first proces.
     lol_throw_if(cslol_init());
     lol_throw_if(cslol_set_flags(CSLOL_HOOK_DISALBE_NONE));
-    lol_throw_if(cslol_set_log_level(CSLOL_LOG_INFO));
+    lol_throw_if(cslol_set_log_level(debugpatcher ? CSLOL_LOG_DEBUG : CSLOL_LOG_INFO));
     lol_throw_if(cslol_set_config(profile_path.generic_u16string().c_str()));
 
     for (;;) {
