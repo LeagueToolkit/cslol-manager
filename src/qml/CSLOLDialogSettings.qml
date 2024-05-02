@@ -30,7 +30,7 @@ Dialog {
     property alias enableSystray: enableSystrayCheck.checked
     property alias enableAutoRun: enableAutoRunCheck.checked
     property alias updateUrls: updateUrlsTextArea.text
-    property bool oldPatcher: false
+    property alias debugPatcher: debugPatcherCheck.checked
 
     property var colors_LIST: [
         "Red",
@@ -160,6 +160,12 @@ Dialog {
                 Switch {
                     id: enableAutoRunCheck
                     text: qsTr("Auto Run on program start")
+                    checked: false
+                    Layout.fillWidth: true
+                }
+                Switch {
+                    id: debugPatcherCheck
+                    text: qsTr("Debug patcher")
                     checked: false
                     Layout.fillWidth: true
                 }
