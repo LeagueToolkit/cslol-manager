@@ -197,11 +197,6 @@ static auto mod_mkoverlay(fs::path src, fs::path dst, fs::path game, fs::names m
     for (auto const& [_, mounted] : game_index.mounts) {
         auto subchunk_name = fs::path(mounted.relpath).replace_extension(".SubChunkTOC").generic_string();
         blocked.insert(hash::Xxh64(subchunk_name));
-        if (mounted.name() == "bootstrap") {
-            for (auto const& [name, _] : mounted.archive.entries) {
-                blocked.insert(name);
-            }
-        }
     }
     auto mod_queue = std::vector<wad::Index>{};
 
