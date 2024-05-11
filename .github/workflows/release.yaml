@@ -4,11 +4,11 @@ on:
     tags:
       - "*-*-*-*"
 jobs:
-  build:
+  build_win:
     runs-on: windows-2022
     steps:
     - name: "Clone source"
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
         submodules: 'true'
     - name: "Setup msvc"
@@ -16,7 +16,8 @@ jobs:
     - name: "Download Qt5"
       shell: bash
       run: |
-        curl --output C:/qt5.7z -L "https://github.com/LoL-Fantome/lolcustomskin-tools/releases/download/release23/qt5.15.5-x86_64-msvc-static.7z"
+        curl --output C:/qt5.7z -L "https://github.com/LoL-Fantome/lolcustomskin-tools/releases/download/release23/qt5.15.13-x86_64-msvc-static.7z"
+        sha256sum C:/qt5.7z
         7z x -oC:/ C:/qt5.7z
     - name: "Download patcher"
       shell: bash
@@ -27,16 +28,58 @@ jobs:
       run: |
         mkdir build
         cd build
-        cmake -G "NMake Makefiles" "-DCMAKE_PREFIX_PATH:PATH=C:/qt5.15.5-x86_64-msvc-static" "-DCMAKE_MSVC_RUNTIME_LIBRARY:STRING=MultiThreaded" "-DCMAKE_BUILD_TYPE:STRING=Release" ..
+        cmake -G "NMake Makefiles" "-DCMAKE_PREFIX_PATH:PATH=C:/qt5.15.13-x86_64-msvc-static" "-DCMAKE_MSVC_RUNTIME_LIBRARY:STRING=MultiThreaded" "-DCMAKE_BUILD_TYPE:STRING=Release" ..
         cmake --build .
     - name: "Package"
       shell: bash
       run: |
         ./make-release.sh build
         7z a cslol-manager-windows.exe -sfx7z.sfx cslol-manager/
+    - name: 'Upload Artifact'
+      uses: actions/upload-artifact@v4
+      with:
+        name: cslol-manager-windows
+        path: cslol-manager-windows.exe
+        retention-days: 15
+  build_mac:
+    runs-on: macos-11
+    steps:
+    - name: "Clone source"
+      uses: actions/checkout@v4
+      with:
+        submodules: 'true'
+    - name: "Download Qt5"
+      run: |
+        curl --output qt5.tar.xz -L "https://github.com/LeagueToolkit/cslol-manager/releases/download/release23/qt5.15.13-x86_64-macos-static.tar.xz"
+        shasum -a 256 qt5.tar.xz
+        tar xf qt5.tar.xz --strip-components 2 -C $HOME
+    - name: "Build"
+      run: |
+        cmake -DCMAKE_PREFIX_PATH=$HOME/qt5.15.13-x86_64-macos-static -DCMAKE_BUILD_TYPE=Release -B build -S .
+        cmake --build build
+    - name: "Package"
+      shell: bash
+      run: |
+        ./make-release-mac.sh "build" "cslol-manager-macos"
+        tar caf cslol-manager-macos.tar.xz cslol-manager-macos/
+    - name: 'Upload Artifact'
+      uses: actions/upload-artifact@v4
+      with:
+        name: cslol-manager-macos
+        path: cslol-manager-macos.tar.xz
+        retention-days: 15
+  release:
+    needs: [build_win, build_mac]
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+        merge-multiple: true
     - name: Build Changelog
       id: github_release
-      uses: mikepenz/release-changelog-builder-action@v3
+      uses: mikepenz/release-changelog-builder-action@v4
       with:
         failOnError: 'true'
         commitMode: 'true'
@@ -57,8 +100,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - name: "Release"
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
-        files: cslol-manager-windows.exe
+        files: artifacts/*
         prerelease: ${{ endsWith(github.ref_name, '-prerelease') || endsWith(github.ref_name, '-test') }}
         body: ${{ steps.github_release.outputs.changelog }}
