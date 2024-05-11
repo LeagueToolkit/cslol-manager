@@ -17,11 +17,6 @@ jobs:
         curl --output C:/qt5.7z -L "https://github.com/LoL-Fantome/lolcustomskin-tools/releases/download/release23/qt5.15.13-x86_64-msvc-static.7z"
         sha256sum C:/qt5.7z
         7z x -oC:/ C:/qt5.7z
-    - name: "Download patcher"
-      shell: bash
-      run: |
-        curl --output cslol-patcher.zip -L "https://github.com/LeagueToolkit/cslol-patcher/releases/latest/download/cslol-patcher.zip"
-        7z x -o./cslol-tools/ cslol-patcher.zip
     - name: "Build"
       run: |
         mkdir build

@@ -5,8 +5,6 @@ project(cslol-tools LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-option(CSLOL_TRASH_PC_SUPPORT "Support trash PCs running windows 7" OFF)
-
 add_subdirectory(dep)
 
 add_library(cslol-lib STATIC
@@ -41,11 +39,8 @@ add_library(cslol-lib STATIC
     lib/lol/patcher/patcher_win32.cpp
     lib/lol/patcher/utility/delay.hpp
     lib/lol/patcher/utility/macho.hpp
-    lib/lol/patcher/utility/peex.hpp
-    lib/lol/patcher/utility/ppp.hpp
     lib/lol/patcher/utility/process.hpp
     lib/lol/patcher/utility/process_macos.cpp
-    lib/lol/patcher/utility/process_win32.cpp
 
     lib/lol/utility/cli.hpp
     lib/lol/utility/cli.cpp
@@ -72,10 +67,6 @@ if (WIN32)
     )
 endif()
 
-if (CSLOL_TRASH_PC_SUPPORT)
-    target_compile_definitions(cslol-lib PRIVATE -DCSLOL_TRASH_PC_SUPPORT)
-endif()
-
 target_compile_definitions(cslol-lib PUBLIC -D_CRT_SECURE_NO_WARNINGS) # lmao, fuck off
 target_link_libraries(cslol-lib PUBLIC fmt fmtlog)
 target_link_libraries(cslol-lib PRIVATE libdeflate zstd xxhash miniz)
@@ -97,18 +88,29 @@ add_executable(wad-make
 target_link_libraries(wad-make PRIVATE cslol-lib)
 
 if (WIN32)
-    if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/cslol-patcher")
+    FetchContent_Declare(
+        cslol-patcher
+        URL      https://github.com/LeagueToolkit/cslol-patcher/releases/download/2/cslol-patcher.zip
+        URL_HASH SHA256=3807e3e7ebce0dacbde71e22be2b086bcfdc93f34a3eb0aeb806ed979150782e
+        CONFIGURE_COMMAND ""
+        BUILD_COMMAND ""
+        DOWNLOAD_EXTRACT_TIMESTAMP True
+    )
+    FetchContent_GetProperties(cslol-patcher)
+    if(NOT cslol-patcher_POPULATED)
+        FetchContent_Populate(cslol-patcher)
+
         add_library(cslol-patcher SHARED IMPORTED)
         set_target_properties(cslol-patcher PROPERTIES
-            IMPORTED_IMPLIB ${CMAKE_CURRENT_LIST_DIR}/cslol-patcher/cslol-dll.lib
-            IMPORTED_LOCATION ${CMAKE_CURRENT_LIST_DIR}/cslol-patcher/cslol-dll.dll
-            INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_LIST_DIR}/cslol-patcher/
-        )
-        target_link_libraries(cslol-lib PUBLIC cslol-patcher)
-        add_custom_command(TARGET mod-tools POST_BUILD
-          COMMAND ${CMAKE_COMMAND} -E copy -t $<TARGET_FILE_DIR:mod-tools> $<TARGET_RUNTIME_DLLS:mod-tools>
-          COMMAND_EXPAND_LISTS
+            IMPORTED_IMPLIB "${cslol-patcher_SOURCE_DIR}/cslol-dll.lib"
+            IMPORTED_LOCATION "${cslol-patcher_SOURCE_DIR}/cslol-dll.dll"
+            INTERFACE_INCLUDE_DIRECTORIES "${cslol-patcher_SOURCE_DIR}"
         )
     endif()
-endif()
 
+    target_link_libraries(cslol-lib PUBLIC cslol-patcher)
+    add_custom_command(TARGET mod-tools POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy -t $<TARGET_FILE_DIR:mod-tools> $<TARGET_RUNTIME_DLLS:mod-tools>
+      COMMAND_EXPAND_LISTS
+    )
+endif()

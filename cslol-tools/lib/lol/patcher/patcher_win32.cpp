@@ -1,7 +1,6 @@
 #ifdef _WIN32
 #    include <lol/error.hpp>
 #    include <lol/patcher/patcher.hpp>
-#    include <lol/patcher/utility/peex.hpp>
 
 // do not reorder
 #    include "cslol-api.h"
@@ -10,12 +9,6 @@
 using namespace lol;
 using namespace lol::patcher;
 using namespace std::chrono_literals;
-
-[[noreturn]] static void newpatch_detected() {
-    lol_trace_func("Skipping first game on a new patch for config...");
-    lol_trace_func("Patching should work normally next game!");
-    lol_throw_msg("NEW PATCH DETECTED, THIS IS NOT AN ERROR!\n");
-}
 
 auto patcher::run(std::function<void(Message, char const*)> update,
                   fs::path const& profile_path,
