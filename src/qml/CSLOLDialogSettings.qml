@@ -165,9 +165,13 @@ Dialog {
                 }
                 Switch {
                     id: debugPatcherCheck
-                    text: qsTr("Debug patcher")
+                    text: qsTr("Verbose logging")
                     checked: false
                     Layout.fillWidth: true
+                    CSLOLToolTip {
+                        text: qsTr("Helps diagnose issues comming from patcher.")
+                        visible: parent.hovered
+                    }
                 }
             }
             ColumnLayout {
