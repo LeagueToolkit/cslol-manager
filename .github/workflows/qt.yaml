@@ -1,0 +1,35 @@
+name: Qt
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+    - name: "Setup msvc"
+      uses: ilammy/msvc-dev-cmd@v1
+    - name: "Clone Qt"
+      shell: bash
+      run: |
+        git clone https://github.com/qt/qt5
+        pushd qt5
+        git checkout v5.15.13-lts-lgpl
+        git submodule update --init {qtbase,qtsvg,qtdeclarative,qtgraphicaleffects,qtimageformats,qtquickcontrols2,qtwinextras}
+        popd
+    - name: "Build"
+      run: |
+        mkdir qt5-build
+        cd qt5-build
+        ..\qt5\configure.bat -platform win32-msvc2019 -release -mp -static -static-runtime -opensource -confirm-license -opengl desktop -no-angle -no-pch -no-iconv -no-dbus -no-icu -no-fontconfig -no-freetype -no-openssl -schannel -qt-harfbuzz -qt-doubleconversion -qt-zlib -qt-libpng -qt-libjpeg -qt-pcre -nomake tools -nomake examples -nomake tests -feature-d3d12 -no-feature-pdf -no-feature-sql -no-feature-sqlmodel -no-feature-testlib -no-feature-testlib_selfcover -no-feature-qml-profiler -no-feature-qml-preview -prefix C:/qt5.15.13-x86_64-msvc-static
+        nmake
+        nmake install
+    - name: "Package"
+      shell: bash
+      run: |
+        7z a qt5.15.13-x86_64-msvc-static.7z C:/qt5.15.13-x86_64-msvc-static
+        sha256sum qt5.15.13-x86_64-msvc-static.7z
+    - name: 'Upload Artifact'
+      uses: actions/upload-artifact@v4
+      with:
+        name: qt5.15.13-x86_64-msvc-static
+        path: qt5.15.13-x86_64-msvc-static.7z
+        retention-days: 15
