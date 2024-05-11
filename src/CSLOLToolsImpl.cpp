@@ -47,7 +47,7 @@ void CSLOLToolsImpl::setState(CSLOLState value) {
 void CSLOLToolsImpl::setStatus(QString status) {
     if (status_ != status) {
         logFile_->write((status.toUtf8() + "\n"));
-        if (!status.startsWith("[WRN] ")) {
+        if (!status.startsWith("[WRN] ") && !status.startsWith("[DLL] ")) {
             status_ = status;
             emit statusChanged(status);
         }

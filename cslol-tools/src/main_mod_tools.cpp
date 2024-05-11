@@ -277,9 +277,8 @@ static auto mod_runoverlay(fs::path overlay, fs::path config_file, fs::path game
                 }
                 if (msg == patcher::M_WAIT_EXIT) {
                     if (arg && *arg) {
-                        fprintf(stdout, "patcher: %s\n", arg);
+                        fprintf(stdout, "[DLL] %s\n", arg);
                         fflush(stdout);
-                        old_msg = patcher::M_COUNT_OF;
                     }
                 }
             },

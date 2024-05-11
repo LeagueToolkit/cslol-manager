@@ -58,7 +58,6 @@ auto patcher::run(std::function<void(Message, char const*)> update,
                     // post log message
                     update(M_WAIT_EXIT, msg);
                 }
-                if (!msg) update(M_WAIT_EXIT, "");
                 return tid != cslol_find();
             },
             []() -> bool { throw PatcherTimeout(std::string("Timed out exit")); });
