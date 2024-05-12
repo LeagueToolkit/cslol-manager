@@ -90,8 +90,8 @@ target_link_libraries(wad-make PRIVATE cslol-lib)
 if (WIN32)
     FetchContent_Declare(
         cslol-patcher
-        URL      https://github.com/LeagueToolkit/cslol-patcher/releases/download/2/cslol-patcher.zip
-        URL_HASH SHA256=3807e3e7ebce0dacbde71e22be2b086bcfdc93f34a3eb0aeb806ed979150782e
+        URL      https://github.com/LeagueToolkit/cslol-patcher/releases/download/3/cslol-patcher.zip
+        URL_HASH SHA256=af49b486406fdad789d8992b18674e8bc1164a3c29d99fce92af373f9ff07b7e
         CONFIGURE_COMMAND ""
         BUILD_COMMAND ""
         DOWNLOAD_EXTRACT_TIMESTAMP True
