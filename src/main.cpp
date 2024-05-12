@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
     engine.rootContext()->setContextProperty("CSLOL_COMMIT", CSLOL::COMMIT);
     engine.rootContext()->setContextProperty("CSLOL_DATE", CSLOL::DATE);
     const QUrl url(QStringLiteral("qrc:/main.qml"));
-    QFile fontfile(":/fontawesome-webfont.ttf");
+    QFile fontfile(":/fontawesome-solid.otf");
     fontfile.open(QFile::OpenModeFlag::ReadOnly);
     QFontDatabase::addApplicationFontFromData(fontfile.readAll());
     QObject::connect(
