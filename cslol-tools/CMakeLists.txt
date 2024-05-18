@@ -88,6 +88,15 @@ add_executable(wad-make
 target_link_libraries(wad-make PRIVATE cslol-lib)
 
 if (WIN32)
+    add_executable(cslol-diag src/main_diag.cpp)
+    target_sources(cslol-diag PUBLIC
+        res/longpath.manifest
+        res/utf8.manifest
+    )
+    target_link_libraries(cslol-diag PRIVATE wintrust)
+endif()
+
+if (WIN32)
     FetchContent_Declare(
         cslol-patcher
         URL      https://github.com/LeagueToolkit/cslol-patcher/releases/download/3/cslol-patcher.zip

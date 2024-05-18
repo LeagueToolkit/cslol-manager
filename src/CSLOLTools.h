@@ -65,6 +65,7 @@ signals:
     void removeModWads(QString modFileName, QJsonArray wads);
     void refreshMods();
     void doUpdate(QString urls);
+    void runDiag();
 
 public slots:
     CSLOLToolsImpl::CSLOLState getState();

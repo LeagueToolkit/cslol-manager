@@ -17,6 +17,7 @@ ToolBar {
     signal loadProfile()
     signal newProfile()
     signal removeProfile()
+    signal runDiag()
 
     RowLayout {
         id: toolbarRow
@@ -49,6 +50,16 @@ ToolBar {
             font.family: "FontAwesome"
             onClicked: {
                 Qt.openUrlExternally("https://github.com/LeagueToolkit/cslol-manager/graphs/contributors")
+            }
+        }
+        ToolButton {
+            id: diagButton
+            text: "\uF193"
+            font.family: "FontAwesome"
+            onClicked: cslolToolBar.runDiag()
+            CSLOLToolTip {
+                text: qsTr("Start troubleshoot tool")
+                visible: parent.hovered
             }
         }
         ToolButton {
