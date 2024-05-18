@@ -117,6 +117,8 @@ ApplicationWindow {
         onRemoveProfile: function() {
             cslolTools.deleteProfile(cslolToolBar.profilesCurrentName)
         }
+
+        onRunDiag: cslolTools.runDiag()
     }
 
     onClosing: {

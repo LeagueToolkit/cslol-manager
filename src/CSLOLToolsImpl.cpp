@@ -18,9 +18,11 @@
 #include "CSLOLUtils.h"
 #include "CSLOLVersion.h"
 #ifdef _WIN32
-#define MOD_TOOLS_EXE "/cslol-tools/mod-tools.exe"
+#    define DIAG_TOOL_EXE "/cslol-tools/cslol-diag.exe"
+#    define MOD_TOOLS_EXE "/cslol-tools/mod-tools.exe"
 #else
-#define MOD_TOOLS_EXE "/cslol-tools/mod-tools"
+#    define DIAG_TOOL_EXE ""
+#    define MOD_TOOLS_EXE "/cslol-tools/mod-tools"
 #endif
 
 CSLOLToolsImpl::CSLOLToolsImpl(QObject* parent) : QObject(parent), prog_(QCoreApplication::applicationDirPath()) {
@@ -326,6 +328,9 @@ void CSLOLToolsImpl::init() {
         setStatus("Read profile");
         auto profileMods = readProfile(profileName);
 
+        setStatus("Run diag");
+        this->runDiagInternal(true);
+
         emit initialized(mods, QJsonArray::fromStringList(profiles), profileName, profileMods);
 
         setState(CSLOLState::StateIdle);
@@ -507,6 +512,14 @@ void CSLOLToolsImpl::doUpdate(QString urls) {
         for (auto& req : this->networkRequests_) {
             this->networkManager_->get(req);
         }
+    }
+}
+
+void CSLOLToolsImpl::runDiag() {
+    if (state_ == CSLOLState::StateIdle) {
+        setState(CSLOLState::StateBusy);
+        runDiagInternal(false);
+        setState(CSLOLState::StateIdle);
     }
 }
 
@@ -736,4 +749,37 @@ void CSLOLToolsImpl::runPatcher(QStringList args) {
         });
     }
     patcherProcess_->start(prog_ + MOD_TOOLS_EXE, args);
+}
+
+void CSLOLToolsImpl::runDiagInternal(bool internal_once) {
+#ifndef _WIN32
+    return;
+#endif
+    if (!internal_once) {
+        QProcess process;
+        process.startDetached(prog_ + DIAG_TOOL_EXE, QStringList{"e"});
+        return;
+    }
+    if (QFileInfo info("skip-diag.txt"); info.exists()) {
+        return;
+    }
+
+    auto process = new QProcess(this);
+
+    connect(process, &QProcess::started, this, [this] {});
+    connect(process, &QProcess::readyReadStandardOutput, this, [=, this]() {
+        process->setReadChannel(QProcess::ProcessChannel::StandardOutput);
+        while (process->canReadLine()) {
+            auto line = process->readLine().trimmed();
+            logFile_->write(line + "\n");
+        }
+    });
+    connect(process,
+            static_cast<void (QProcess::*)(int exitCode, QProcess::ExitStatus exitStatus)>(&QProcess::finished),
+            this,
+            [=, this](int, QProcess::ExitStatus) { process->deleteLater(); });
+    connect(process, &QProcess::errorOccurred, this, [=, this](QProcess::ProcessError error) {
+        process->deleteLater();
+    });
+    process->start(prog_ + DIAG_TOOL_EXE, QStringList{"d"});
 }

@@ -67,6 +67,7 @@ public slots:
     void makeMod(QString fileName, QJsonObject infoData, QString image);
     void refreshMods();
     void doUpdate(QString urls);
+    void runDiag();
 
     void startEditMod(QString fileName);
     void changeModInfo(QString fileName, QJsonObject infoData, QString image);
@@ -107,6 +108,7 @@ private:
 
     void runPatcher(QStringList args);
     void runTool(QStringList args, std::function<void(int code, QProcess*)> handle);
+    void runDiagInternal(bool internal_once);
 };
 
 #endif  // QMODMANAGERWORKER_H
