@@ -24,7 +24,7 @@ ToolBar {
         anchors.verticalCenter: parent.verticalCenter
         ToolButton {
             id: mainMenuButton
-            text: "\uf0c9"
+            text: "\uf013"
             font.family: "FontAwesome"
             onClicked: cslolToolBar.openSideMenu()
             CSLOLToolTip {
