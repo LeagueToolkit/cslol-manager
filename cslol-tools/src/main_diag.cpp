@@ -120,7 +120,7 @@ static void check_basic_info() {
 static void check_patcher_signature(bool interactive) {
     auto const dll = basedir(exe_path()) + L"//cslol-dll.dll";
     if (GetFileAttributesW(dll.c_str()) == INVALID_FILE_ATTRIBUTES) {
-        wprintf(L"Patcher dll: missing [%hs]", dll.c_str(), REP_SUS);
+        wprintf(L"Patcher dll: missing [%hs]\n", REP_SUS);
         return;
     }
     auto file = WINTRUST_FILE_INFO{

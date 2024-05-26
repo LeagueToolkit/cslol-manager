@@ -66,7 +66,6 @@ public slots:
     void stopProfile();
     void makeMod(QString fileName, QJsonObject infoData, QString image);
     void refreshMods();
-    void doUpdate(QString urls);
     void runDiag();
 
     void startEditMod(QString fileName);
