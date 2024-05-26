@@ -18,6 +18,7 @@ ToolBar {
     signal newProfile()
     signal removeProfile()
     signal runDiag()
+    signal openLogs()
 
     RowLayout {
         id: toolbarRow
@@ -59,6 +60,16 @@ ToolBar {
             onClicked: cslolToolBar.runDiag()
             CSLOLToolTip {
                 text: qsTr("Start troubleshoot tool")
+                visible: parent.hovered
+            }
+        }
+        ToolButton {
+            id: logButton
+            text: "\uf188"
+            font.family: "FontAwesome"
+            onClicked: cslolToolBar.openLogs()
+            CSLOLToolTip {
+                text: qsTr("Open log file")
                 visible: parent.hovered
             }
         }

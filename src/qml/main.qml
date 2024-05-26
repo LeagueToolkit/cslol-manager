@@ -118,6 +118,8 @@ ApplicationWindow {
         }
 
         onRunDiag: cslolTools.runDiag()
+
+        onOpenLogs: Qt.openUrlExternally(CSLOLUtils.toFile("./log.txt"))
     }
 
     onClosing: {
