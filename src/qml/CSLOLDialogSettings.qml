@@ -29,7 +29,6 @@ Dialog {
     property alias suppressInstallConflicts: suppressInstallConflictsCheck.checked
     property alias enableSystray: enableSystrayCheck.checked
     property alias enableAutoRun: enableAutoRunCheck.checked
-    property alias updateUrls: updateUrlsTextArea.text
     property alias debugPatcher: debugPatcherCheck.checked
 
     property var colors_LIST: [
@@ -125,24 +124,6 @@ Dialog {
                     text: qsTr("Logs")
                     onClicked: Qt.openUrlExternally(CSLOLUtils.toFile("./log.txt"))
                     Layout.fillWidth: true
-                }
-                Button {
-                    text: qsTr("Updates")
-                    onClicked: Qt.openUrlExternally(cslolDialogUpdate.update_url)
-                    Layout.fillWidth: true
-                }
-                ScrollView {
-                    Layout.fillHeight: true
-                    Layout.fillWidth: true
-                    ScrollBar.horizontal.policy: ScrollBar.AsNeeded
-                    ScrollBar.vertical.policy: ScrollBar.AlwaysOn
-                    padding: ScrollBar.vertical.width
-                    clip: true
-                    TextArea {
-                        id: updateUrlsTextArea
-                        placeholderText: qsTr("Update urls")
-                        textFormat: TextEdit.PlainText
-                    }
                 }
                 CheckBox {
                     id: enableUpdatesCheck

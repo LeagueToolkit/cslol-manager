@@ -47,7 +47,6 @@ CSLOLTools::CSLOLTools(QObject *parent) : QObject(parent) {
     connect(this, &CSLOLTools::addModWad, worker_, &CSLOLToolsImpl::addModWad);
     connect(this, &CSLOLTools::removeModWads, worker_, &CSLOLToolsImpl::removeModWads);
     connect(this, &CSLOLTools::refreshMods, worker_, &CSLOLToolsImpl::refreshMods);
-    connect(this, &CSLOLTools::doUpdate, worker_, &CSLOLToolsImpl::doUpdate);
     connect(this, &CSLOLTools::runDiag, worker_, &CSLOLToolsImpl::runDiag);
 
     connect(this, &CSLOLTools::destroyed, worker_, &CSLOLToolsImpl::deleteLater);

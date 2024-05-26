@@ -24,7 +24,6 @@ ApplicationWindow {
         property alias blacklist: cslolDialogSettings.blacklist
         property alias ignorebad: cslolDialogSettings.ignorebad
         property alias suppressInstallConflicts: cslolDialogSettings.suppressInstallConflicts
-        property alias updateUrls: cslolDialogSettings.updateUrls
         property alias enableUpdates: cslolDialogSettings.enableUpdates
         property alias enableAutoRun: cslolDialogSettings.enableAutoRun
         property alias enableSystray: cslolDialogSettings.enableSystray
@@ -223,7 +222,6 @@ ApplicationWindow {
             }
         }
         onTryRefresh: cslolTools.refreshMods()
-        onGetUpdates: cslolTools.doUpdate(settings.updateUrls)
     }
 
     footer: CSLOLStatusBar {
@@ -313,12 +311,6 @@ ApplicationWindow {
     CSLOLDialogUpdate {
         id: cslolDialogUpdate
         enableUpdates: settings.enableUpdates
-    }
-
-    CSLOLDialogUpdateMods {
-        id: cslolDialogUpdateMods
-        rowHeight: cslolToolBar.height
-        columnCount: Math.max(1, Math.floor(window.width / window.minimumWidth))
     }
 
     CSLOLTools {

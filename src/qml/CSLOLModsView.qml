@@ -33,8 +33,6 @@ ColumnLayout {
 
     signal tryRefresh()
 
-    signal getUpdates()
-
     function addMod(fileName, info, enabled) {
         let infoData = {
             "FileName": fileName,
@@ -464,17 +462,6 @@ ColumnLayout {
             Material.background: Material.primaryColor
             CSLOLToolTip {
                 text: qsTr("Refresh")
-                visible: parent.hovered
-            }
-        }
-        RoundButton {
-            enabled: !isBussy
-            text: "\uf0ad"
-            font.family: "FontAwesome"
-            onClicked: cslolModsView.getUpdates()
-            Material.background: Material.primaryColor
-            CSLOLToolTip {
-                text: qsTr("Mod updates and fixes")
                 visible: parent.hovered
             }
         }
