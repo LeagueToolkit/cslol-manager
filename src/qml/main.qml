@@ -45,7 +45,7 @@ ApplicationWindow {
 
     property bool patcherRunning: cslolTools.state === CSLOLTools.StateRunning
     property bool isBussy: cslolTools.state !== CSLOLTools.StateIdle
-    property var validName: new RegExp(/[\p{L}\p{M}\p{Z}\p{N}\w]{3,50}/u)
+    property var validName: new RegExp(/[\p{L}\p{M}\p{Pd}\p{Z}\p{N}\w]{3,50}/u)
     property var validVersion: new RegExp(/([0-9]{1,3})(\.[0-9]{1,3}){0,3}/)
     property var validUrl: new RegExp(/^(http(s)?:\/\/).+$/u)
     property bool firstTick: false
