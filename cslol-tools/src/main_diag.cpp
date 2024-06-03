@@ -93,8 +93,6 @@ static void check_basic_info() {
     auto const ver_build = *(uint32_t const*)(0x7ffe0000 + 0x260);
     auto const flags = *(uint32_t const*)(0x7ffe0000 + 0x2f0);  // SharedDataFlags
     auto const cpu = reg_read_str(HKLM, L"HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0", L"ProcessorNameString");
-    auto const uac =
-        reg_read_num(HKLM, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System", L"EnableLUA");
     auto const long_path = reg_read_num(HKLM, L"SYSTEM\\CurrentControlSet\\Control\\FileSystem", L"LongPathsEnabled");
     auto const directory = basedir(exe_path());
     auto const free_bytes = free_space(L"");
@@ -110,9 +108,8 @@ static void check_basic_info() {
     wprintf(L"Windows flags: 0x%08x\n", flags);
     wprintf(L"Windows lang: 0x%x 0x%x\n", GetUserDefaultLangID(), GetUserDefaultUILanguage());
     wprintf(L"CPU: %s\n", cpu.c_str());
-    wprintf(L"UAC: %d [%hs]\n", (int)!!uac, !uac ? REP_BAD : REP_OK);
-    wprintf(L"DirectX feature level min(0x%x) max(0x%x) [%hs]\n", dx_min, dx_max, dx_max < 0xC000 ? REP_SUS : REP_OK);
-    wprintf(L"Long Path: %d [%hs]\n", long_path, !long_path ? REP_SUS : REP_OK);
+    wprintf(L"DirectX feature level min(0x%x) max(0x%x)\n", dx_min, dx_max);
+    wprintf(L"Long Path: %d\n", long_path);
     wprintf(L"Directory: %s: [%hs]\n", directory.c_str(), directory.size() > 128 ? REP_BAD : REP_OK);
     wprintf(L"Free space: %s: [%hs]\n", bytes_to_str(free_bytes).c_str(), free_bytes < GB ? REP_SUS : REP_OK);
 }
@@ -142,6 +139,11 @@ static void check_patcher_signature(bool interactive) {
 
 static void check_compat_mode(bool fix) {
     constexpr auto REG_COMPAT = L"Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers";
+    constexpr auto REG_LUA = L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System";
+
+    auto const uac = reg_read_num(HKLM, REG_LUA, L"EnableLUA");
+    wprintf(L"UAC: %d [%hs]\n", (int)!!uac, !uac ? REP_BAD : REP_OK);
+
     for (auto const key : {HKCU, HKLM}) {
         for (auto const& path : reg_list(key, REG_COMPAT)) {
             if (auto const i = path.find_last_of(L"\\/"); i != std::wstring_view::npos) {
