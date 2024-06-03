@@ -74,7 +74,7 @@ ToolBar {
             }
         }
         ToolButton {
-            text: qsTr("Save")
+            text: "\uf0c7"
             onClicked: cslolToolBar.saveProfileAndRun(false)
             enabled: !isBussy
             CSLOLToolTip {
@@ -83,7 +83,7 @@ ToolBar {
             }
         }
         ToolButton {
-            text: qsTr("Load")
+            text: "\uf07c"
             onClicked: cslolToolBar.loadProfile()
             enabled: !isBussy
             CSLOLToolTip {
@@ -92,7 +92,7 @@ ToolBar {
             }
         }
         ToolButton {
-            text: qsTr("Delete")
+            text: "\uf1f8"
             onClicked: cslolToolBar.removeProfile()
             enabled: !isBussy
             CSLOLToolTip {
@@ -101,7 +101,7 @@ ToolBar {
             }
         }
         ToolButton {
-            text: qsTr("New")
+            text: "\uf067"
             onClicked: cslolToolBar.newProfile()
             enabled: !isBussy
             CSLOLToolTip {
@@ -110,7 +110,7 @@ ToolBar {
             }
         }
         ToolButton {
-            text: window.patcherRunning ? qsTr("Stop") : qsTr("Run")
+            text: window.patcherRunning ? "\uf04d" : "\uf04b"
             onClicked: {
                 if (window.patcherRunning) {
                     cslolToolBar.stopProfile()
