@@ -9,7 +9,6 @@ import QtQuick.Controls.Material 2.15
 
 ApplicationWindow {
     id: window
-    visible: true
     width: 640
     height: 640
     minimumHeight: 640
@@ -27,6 +26,7 @@ ApplicationWindow {
         property alias enableUpdates: cslolDialogSettings.enableUpdates
         property alias enableAutoRun: cslolDialogSettings.enableAutoRun
         property alias enableSystray: cslolDialogSettings.enableSystray
+        property alias startMinimized: cslolDialogSettings.startMinimized
         property alias themeDarkMode: cslolDialogSettings.themeDarkMode
         property alias themePrimaryColor: cslolDialogSettings.themePrimaryColor
         property alias themeAccentColor: cslolDialogSettings.themeAccentColor
@@ -398,6 +398,7 @@ ApplicationWindow {
     }
 
     Component.onCompleted: {
+        visible = !settings.startMinimized; // Set visibility based on settings only on startup
         if (settings.windowMaximised) {
             if (window.visibility !== ApplicationWindow.Maximized) {
                 window.visibility = ApplicationWindow.Maximized;

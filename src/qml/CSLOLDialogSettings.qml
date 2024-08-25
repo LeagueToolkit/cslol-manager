@@ -28,6 +28,7 @@ Dialog {
     property alias themeAccentColor: themeAccentColorBox.currentIndex
     property alias suppressInstallConflicts: suppressInstallConflictsCheck.checked
     property alias enableSystray: enableSystrayCheck.checked
+    property alias startMinimized: startMinimizedCheck.checked
     property alias enableAutoRun: enableAutoRunCheck.checked
     property alias debugPatcher: debugPatcherCheck.checked
 
@@ -137,6 +138,26 @@ Dialog {
                     text: qsTr("Enable systray icon")
                     checked: false
                     Layout.fillWidth: true
+
+                    onCheckedChanged: {
+                        if (checked) {
+                            startMinimizedCheck.visible = true;
+                            startMinimizedCheck.enabled = true;
+                        } else {
+                            startMinimizedCheck.visible = false;
+                            startMinimizedCheck.enabled = false;
+                            startMinimizedCheck.checked = false; // Uncheck if previously checked
+                        }
+                    }
+                }
+
+                Switch {
+                    id: startMinimizedCheck
+                    text: qsTr("Start program with window hidden")
+                    checked: false
+                    Layout.fillWidth: true
+                    visible: false // Initially hidden
+                    enabled: false // Initially disabled
                 }
                 Switch {
                     id: enableAutoRunCheck
