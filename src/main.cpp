@@ -11,6 +11,7 @@
 #include "CSLOLTools.h"
 #include "CSLOLUtils.h"
 #include "CSLOLVersion.h"
+#include "SystemTrayManager.h"
 
 int main(int argc, char *argv[]) {
     CSLOLUtils::relaunchAdmin(argc, argv);
@@ -39,6 +40,8 @@ int main(int argc, char *argv[]) {
     engine.rootContext()->setContextProperty("CSLOL_VERSION", CSLOL::VERSION);
     engine.rootContext()->setContextProperty("CSLOL_COMMIT", CSLOL::COMMIT);
     engine.rootContext()->setContextProperty("CSLOL_DATE", CSLOL::DATE);
+    SystemTrayManager systemTrayManager;
+    systemTrayManager.initialize(&engine);
     const QUrl url(QStringLiteral("qrc:/main.qml"));
     QFile fontfile(":/fontawesome-webfont.ttf");
     fontfile.open(QFile::OpenModeFlag::ReadOnly);
