@@ -81,6 +81,9 @@ ApplicationWindow {
                 }
             }
         }
+        if (systemTrayIcon.available) {
+            systemTrayIcon.updateWindowVisibility(window.visibility !== Window.Hidden)
+        }
     }
     Material.theme: cslolDialogSettings.themeDarkMode ? Material.Dark : Material.Light
     Material.primary: cslolDialogSettings.colors_LIST[cslolDialogSettings.themePrimaryColor]
@@ -127,6 +130,7 @@ ApplicationWindow {
         if (systemTrayIcon.available && settings.enableSystray) {
             close.accepted = false
             window.hide()
+            systemTrayIcon.updateWindowVisibility(false)
         }
     }
 
@@ -144,6 +148,7 @@ ApplicationWindow {
             } else {
                 window.hide()
             }
+            systemTrayIcon.updateWindowVisibility(visible)
         }
         function onProfileStateChanged(running) {
             if (running) {
@@ -381,14 +386,19 @@ ApplicationWindow {
     }
 
     Component.onCompleted: {
-        visible = !settings.startMinimized; // Set visibility based on settings only on startup
+        visible = !settings.startMinimized
         if (settings.windowMaximised) {
-            if (window.visibility !== ApplicationWindow.Maximized) {
-                window.visibility = ApplicationWindow.Maximized;
+            if (window.visibility !== Window.Maximized) {
+                window.visibility = Window.Maximized
             }
         }
-        firstTick = true;
+        firstTick = true
         cslolTools.init()
         cslolDialogUpdate.checkForUpdates()
+        
+        // Set initial state for system tray icon
+        if (systemTrayIcon.available) {
+            systemTrayIcon.updateWindowVisibility(visible)
+        }
     }
 }

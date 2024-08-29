@@ -2,21 +2,27 @@ import QtQuick 2.15
 import Qt.labs.platform 1.0
 
 SystemTrayIcon {
+    id: root
     visible: systemTrayManager.available
     iconSource: "qrc:/icon.png"
     tooltip: "cslol-manager"
 
+    property bool windowVisible: true
+
+    function updateWindowVisibility(isVisible) {
+        windowVisible = isVisible
+        showHideMenuItem.text = windowVisible ? qsTr("Hide") : qsTr("Show")
+    }
+
     menu: Menu {
         MenuItem {
             id: showHideMenuItem
-            text: qsTr("Show")
+            text: root.windowVisible ? qsTr("Hide") : qsTr("Show")
             onTriggered: {
-                if (text === qsTr("Show")) {
-                    systemTrayManager.showWindow()
-                    text = qsTr("Hide")
-                } else {
+                if (root.windowVisible) {
                     systemTrayManager.hideWindow()
-                    text = qsTr("Show")
+                } else {
+                    systemTrayManager.showWindow()
                 }
             }
         }
@@ -45,8 +51,11 @@ SystemTrayIcon {
 
     onActivated: {
         if (reason === SystemTrayIcon.Trigger) {
-            systemTrayManager.showWindow()
-            showHideMenuItem.text = qsTr("Hide")
+            if (root.windowVisible) {
+                systemTrayManager.hideWindow()
+            } else {
+                systemTrayManager.showWindow()
+            }
         }
     }
 }
