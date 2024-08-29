@@ -415,5 +415,7 @@ ApplicationWindow {
         if (systemTrayIcon.available) {
             systemTrayIcon.updateWindowVisibility(visible);
         }
+
+        systemTrayManager.updateUrl = cslolDialogUpdate.update_url
     }
 }

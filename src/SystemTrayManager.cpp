@@ -50,6 +50,21 @@ void SystemTrayManager::openLogs()
     QDesktopServices::openUrl(QUrl::fromLocalFile(logPath));
 }
 
+void SystemTrayManager::setUpdateUrl(const QString &url)
+{
+    if (m_updateUrl != url) {
+        m_updateUrl = url;
+        emit updateUrlChanged();
+    }
+}
+
+void SystemTrayManager::openUpdateUrl()
+{
+    if (!m_updateUrl.isEmpty()) {
+        QDesktopServices::openUrl(QUrl(m_updateUrl));
+    }
+}
+
 void SystemTrayManager::quit()
 {
     QCoreApplication::quit();

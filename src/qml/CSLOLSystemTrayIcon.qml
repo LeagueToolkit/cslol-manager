@@ -44,6 +44,10 @@ SystemTrayIcon {
             onTriggered: systemTrayManager.openLogs()
         }
         MenuItem {
+            text: qsTr("Updates")
+            onTriggered: systemTrayManager.openUpdateUrl()
+        }
+        MenuItem {
             text: qsTr("Exit")
             onTriggered: systemTrayManager.quit()
         }
