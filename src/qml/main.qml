@@ -38,7 +38,7 @@ ApplicationWindow {
 
         property alias windowHeight: window.height
         property alias windowWidth: window.width
-        property bool windowMaximised
+        property bool windowMaximized
         property alias lastUpdateUTCMinutes: cslolDialogUpdate.lastUpdateUTCMinutes
 
         fileName: "config.ini"
@@ -71,13 +71,13 @@ ApplicationWindow {
     onVisibilityChanged: {
         if (firstTick) {
             if (window.visibility === ApplicationWindow.Maximized) {
-                if (settings.windowMaximised !== true) {
-                    settings.windowMaximised = true;
+                if (settings.windowMaximized !== true) {
+                    settings.windowMaximized = true;
                 }
             }
             if (window.visibility === ApplicationWindow.Windowed) {
-                if (settings.windowMaximised !== false) {
-                    settings.windowMaximised = false;
+                if (settings.windowMaximized !== false) {
+                    settings.windowMaximized = false;
                 }
             }
         }
@@ -138,17 +138,25 @@ ApplicationWindow {
         id: systemTrayIcon
     }
 
+    function restoreWindow() {
+        if (settings.windowMaximized) {
+            window.showMaximized();
+        } else {
+            window.show();
+        }
+        window.raise();
+        window.requestActivate();
+    }
+
     Connections {
         target: systemTrayManager
         function onWindowVisibilityChanged(visible) {
             if (visible) {
-                window.show()
-                window.raise()
-                window.requestActivate()
+                restoreWindow();
             } else {
-                window.hide()
+                window.hide();
             }
-            systemTrayIcon.updateWindowVisibility(visible)
+            systemTrayIcon.updateWindowVisibility(visible);
         }
         function onProfileStateChanged(running) {
             if (running) {
@@ -386,19 +394,26 @@ ApplicationWindow {
     }
 
     Component.onCompleted: {
-        visible = !settings.startMinimized
-        if (settings.windowMaximised) {
-            if (window.visibility !== Window.Maximized) {
-                window.visibility = Window.Maximized
+        if (settings.startMinimized) {
+            visible = false;
+            if (systemTrayIcon.available) {
+                systemTrayIcon.updateWindowVisibility(false);
+            }
+        } else {
+            visible = true;
+            if (settings.windowMaximized) {
+                window.showMaximized();
+            } else {
+                window.show();
             }
         }
-        firstTick = true
-        cslolTools.init()
-        cslolDialogUpdate.checkForUpdates()
+        firstTick = true;
+        cslolTools.init();
+        cslolDialogUpdate.checkForUpdates();
         
         // Set initial state for system tray icon
         if (systemTrayIcon.available) {
-            systemTrayIcon.updateWindowVisibility(visible)
+            systemTrayIcon.updateWindowVisibility(visible);
         }
     }
 }
