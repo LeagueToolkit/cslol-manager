@@ -4,9 +4,10 @@
 #include <QUrl>
 #include <QCoreApplication>
 #include <QSystemTrayIcon>
+#include "CSLOLUtils.h"
 
 SystemTrayManager::SystemTrayManager(QObject *parent)
-    : QObject(parent), m_engine(nullptr), m_available(false)
+    : QObject(parent), m_engine(nullptr), m_available(false), m_utils(new CSLOLUtils(this))
 {
 }
 
@@ -45,7 +46,8 @@ void SystemTrayManager::stopProfile()
 
 void SystemTrayManager::openLogs()
 {
-    // Implement log opening logic here
+    QString logPath = m_utils->getLogFilePath();
+    QDesktopServices::openUrl(QUrl::fromLocalFile(logPath));
 }
 
 void SystemTrayManager::quit()

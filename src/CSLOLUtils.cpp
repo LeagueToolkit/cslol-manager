@@ -27,6 +27,10 @@ QString CSLOLUtils::toFile(QString file) {
     return url.toString();
 }
 
+QString CSLOLUtils::getLogFilePath() const {
+    return QCoreApplication::applicationDirPath() + "/log.txt";
+}
+
 static QString try_game_path(QString path) {
     if (auto info = QFileInfo(path + "/League of Legends.exe"); info.exists()) {
         return info.canonicalPath();

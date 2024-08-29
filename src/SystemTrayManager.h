@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QQmlApplicationEngine>
+#include "CSLOLUtils.h"
 
 class SystemTrayManager : public QObject
 {
@@ -30,6 +31,7 @@ signals:
 private:
     QQmlApplicationEngine *m_engine;
     bool m_available;
+    CSLOLUtils *m_utils;
 };
 
 #endif // SYSTEMTRAYMANAGER_H
