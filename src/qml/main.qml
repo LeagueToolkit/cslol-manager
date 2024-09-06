@@ -136,6 +136,7 @@ ApplicationWindow {
 
     CSLOLSystemTrayIcon {
         id: systemTrayIcon
+        visible: settings.enableSystray && systemTrayManager.available
     }
 
     function restoreWindow() {
@@ -403,7 +404,7 @@ ApplicationWindow {
     }
 
     Component.onCompleted: {
-        if (settings.startMinimized) {
+        if (settings.startMinimized && settings.enableSystray) {
             visible = false;
             if (systemTrayIcon.available) {
                 systemTrayIcon.updateWindowVisibility(false);

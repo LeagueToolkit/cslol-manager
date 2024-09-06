@@ -10,6 +10,7 @@ class SystemTrayManager : public QObject {
     Q_PROPERTY(QString updateUrl READ updateUrl WRITE setUpdateUrl NOTIFY updateUrlChanged)
     Q_PROPERTY(bool available READ isAvailable NOTIFY availableChanged)
     Q_PROPERTY(bool patcherRunning READ isPatcherRunning NOTIFY patcherRunningChanged)
+    Q_PROPERTY(bool systemTrayIconVisible READ isSystemTrayIconVisible NOTIFY systemTrayIconVisibleChanged)
 
 public:
     explicit SystemTrayManager(QObject *parent = nullptr);
@@ -18,6 +19,7 @@ public:
     QString updateUrl() const { return m_updateUrl; }
     void setUpdateUrl(const QString &url);
     bool isPatcherRunning() const { return m_patcherRunning; }
+    bool isSystemTrayIconVisible() const { return m_systemTrayIconVisible; }
 
 public slots:
     void showWindow();
@@ -28,6 +30,7 @@ public slots:
     void openUpdateUrl();
     void quit();
     void setPatcherRunning(bool running);
+    void setSystemTrayIconVisible(bool visible);
 
 signals:
     void windowVisibilityChanged(bool visible);
@@ -35,6 +38,7 @@ signals:
     void availableChanged();
     void updateUrlChanged();
     void patcherRunningChanged(bool running);
+    void systemTrayIconVisibleChanged(bool visible);
 
 private:
     QQmlApplicationEngine *m_engine;
@@ -42,6 +46,7 @@ private:
     bool m_available;
     CSLOLUtils *m_utils;
     bool m_patcherRunning = false;
+    bool m_systemTrayIconVisible = false;
 };
 
 #endif // SYSTEMTRAYMANAGER_H

@@ -76,3 +76,11 @@ void SystemTrayManager::setPatcherRunning(bool running) {
         emit patcherRunningChanged(running);
     }
 }
+
+void SystemTrayManager::setSystemTrayIconVisible(bool visible)
+{
+    if (m_systemTrayIconVisible != visible) {
+        m_systemTrayIconVisible = visible;
+        emit systemTrayIconVisibleChanged(visible);
+    }
+}

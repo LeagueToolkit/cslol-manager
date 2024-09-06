@@ -143,10 +143,12 @@ Dialog {
                         if (checked) {
                             startMinimizedCheck.visible = true;
                             startMinimizedCheck.enabled = true;
+                            systemTrayIcon.visible = true;
                         } else {
                             startMinimizedCheck.visible = false;
                             startMinimizedCheck.enabled = false;
-                            startMinimizedCheck.checked = false; // Uncheck if previously checked
+                            startMinimizedCheck.checked = false;
+                            systemTrayIcon.visible = false;
                         }
                     }
                 }
