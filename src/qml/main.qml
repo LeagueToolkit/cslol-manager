@@ -149,6 +149,15 @@ ApplicationWindow {
     }
 
     Connections {
+        target: cslolTools
+        function onStateChanged(state) {
+            if (systemTrayIcon.available) {
+                systemTrayIcon.updatePatcherRunning(state === CSLOLTools.StateRunning)
+            }
+        }
+    }
+
+    Connections {
         target: systemTrayManager
         function onWindowVisibilityChanged(visible) {
             if (visible) {

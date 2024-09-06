@@ -69,3 +69,10 @@ void SystemTrayManager::quit()
 {
     QCoreApplication::quit();
 }
+
+void SystemTrayManager::setPatcherRunning(bool running) {
+    if (m_patcherRunning != running) {
+        m_patcherRunning = running;
+        emit patcherRunningChanged(running);
+    }
+}
