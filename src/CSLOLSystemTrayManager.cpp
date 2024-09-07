@@ -1,4 +1,4 @@
-#include "SystemTrayManager.h"
+#include "CSLOLSystemTrayManager.h"
 #include <QQmlContext>
 #include <QDesktopServices>
 #include <QUrl>
@@ -6,12 +6,12 @@
 #include <QSystemTrayIcon>
 #include "CSLOLUtils.h"
 
-SystemTrayManager::SystemTrayManager(QObject *parent)
+CSLOLSystemTrayManager::CSLOLSystemTrayManager(QObject *parent)
     : QObject(parent), m_engine(nullptr), m_available(false), m_utils(new CSLOLUtils(this))
 {
 }
 
-void SystemTrayManager::initialize(QQmlApplicationEngine *engine)
+void CSLOLSystemTrayManager::initialize(QQmlApplicationEngine *engine)
 {
     m_engine = engine;
     m_available = QSystemTrayIcon::isSystemTrayAvailable();
@@ -19,38 +19,38 @@ void SystemTrayManager::initialize(QQmlApplicationEngine *engine)
     emit availableChanged();
 }
 
-bool SystemTrayManager::isAvailable() const
+bool CSLOLSystemTrayManager::isAvailable() const
 {
     return m_available;
 }
 
-void SystemTrayManager::showWindow()
+void CSLOLSystemTrayManager::showWindow()
 {
     emit windowVisibilityChanged(true);
 }
 
-void SystemTrayManager::hideWindow()
+void CSLOLSystemTrayManager::hideWindow()
 {
     emit windowVisibilityChanged(false);
 }
 
-void SystemTrayManager::runProfile()
+void CSLOLSystemTrayManager::runProfile()
 {
     emit profileStateChanged(true);
 }
 
-void SystemTrayManager::stopProfile()
+void CSLOLSystemTrayManager::stopProfile()
 {
     emit profileStateChanged(false);
 }
 
-void SystemTrayManager::openLogs()
+void CSLOLSystemTrayManager::openLogs()
 {
     QString logPath = m_utils->getLogFilePath();
     QDesktopServices::openUrl(QUrl::fromLocalFile(logPath));
 }
 
-void SystemTrayManager::setUpdateUrl(const QString &url)
+void CSLOLSystemTrayManager::setUpdateUrl(const QString &url)
 {
     if (m_updateUrl != url) {
         m_updateUrl = url;
@@ -58,26 +58,26 @@ void SystemTrayManager::setUpdateUrl(const QString &url)
     }
 }
 
-void SystemTrayManager::openUpdateUrl()
+void CSLOLSystemTrayManager::openUpdateUrl()
 {
     if (!m_updateUrl.isEmpty()) {
         QDesktopServices::openUrl(QUrl(m_updateUrl));
     }
 }
 
-void SystemTrayManager::quit()
+void CSLOLSystemTrayManager::quit()
 {
     QCoreApplication::quit();
 }
 
-void SystemTrayManager::setPatcherRunning(bool running) {
+void CSLOLSystemTrayManager::setPatcherRunning(bool running) {
     if (m_patcherRunning != running) {
         m_patcherRunning = running;
         emit patcherRunningChanged(running);
     }
 }
 
-void SystemTrayManager::setSystemTrayIconVisible(bool visible)
+void CSLOLSystemTrayManager::setSystemTrayIconVisible(bool visible)
 {
     if (m_systemTrayIconVisible != visible) {
         m_systemTrayIconVisible = visible;

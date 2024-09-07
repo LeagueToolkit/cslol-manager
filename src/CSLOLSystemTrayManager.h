@@ -1,11 +1,11 @@
-#ifndef SYSTEMTRAYMANAGER_H
-#define SYSTEMTRAYMANAGER_H
+#ifndef CSLOLSYSTEMTRAYMANAGER_H
+#define CSLOLSYSTEMTRAYMANAGER_H
 
 #include <QObject>
 #include <QQmlApplicationEngine>
 #include "CSLOLUtils.h"
 
-class SystemTrayManager : public QObject {
+class CSLOLSystemTrayManager : public QObject {
     Q_OBJECT
     Q_PROPERTY(QString updateUrl READ updateUrl WRITE setUpdateUrl NOTIFY updateUrlChanged)
     Q_PROPERTY(bool available READ isAvailable NOTIFY availableChanged)
@@ -13,7 +13,7 @@ class SystemTrayManager : public QObject {
     Q_PROPERTY(bool systemTrayIconVisible READ isSystemTrayIconVisible NOTIFY systemTrayIconVisibleChanged)
 
 public:
-    explicit SystemTrayManager(QObject *parent = nullptr);
+    explicit CSLOLSystemTrayManager(QObject *parent = nullptr);
     void initialize(QQmlApplicationEngine *engine);
     bool isAvailable() const;
     QString updateUrl() const { return m_updateUrl; }
@@ -49,4 +49,4 @@ private:
     bool m_systemTrayIconVisible = false;
 };
 
-#endif // SYSTEMTRAYMANAGER_H
+#endif // CSLOLSYSTEMTRAYMANAGER_H

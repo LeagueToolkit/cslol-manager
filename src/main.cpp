@@ -12,7 +12,7 @@
 #include "CSLOLToolsImpl.h"
 #include "CSLOLUtils.h"
 #include "CSLOLVersion.h"
-#include "SystemTrayManager.h"
+#include "CSLOLSystemTrayManager.h"
 
 int main(int argc, char *argv[]) {
     CSLOLUtils::relaunchAdmin(argc, argv);
@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
     engine.rootContext()->setContextProperty("CSLOL_COMMIT", CSLOL::COMMIT);
     engine.rootContext()->setContextProperty("CSLOL_DATE", CSLOL::DATE);
     
-    SystemTrayManager systemTrayManager;
+    CSLOLSystemTrayManager systemTrayManager;
     systemTrayManager.initialize(&engine);
 
     // Create an instance of CSLOLTools
