@@ -140,10 +140,14 @@ ApplicationWindow {
             var component = Qt.createComponent("CSLOLSystemTrayIcon.qml");
             if (component.status === Component.Ready) {
                 systemTrayIcon = component.createObject(window, {
-                    "visible": true
+                    "visible": true,
+                    "patcherRunning": cslolTools.state === CSLOLTools.StateRunning
                 });
                 if (systemTrayIcon === null) {
                     console.log("Error creating system tray icon");
+                } else {
+                    // Update the patcher state immediately after creation
+                    systemTrayIcon.updatePatcherRunning(cslolTools.state === CSLOLTools.StateRunning);
                 }
             } else if (component.status === Component.Error) {
                 console.log("Error loading component:", component.errorString());
@@ -173,7 +177,7 @@ ApplicationWindow {
         target: cslolTools
         function onStateChanged(state) {
             if (systemTrayIcon) {
-                systemTrayIcon.updatePatcherRunning(state === CSLOLTools.StateRunning)
+                systemTrayIcon.updatePatcherRunning(state === CSLOLTools.StateRunning);
             }
         }
     }
