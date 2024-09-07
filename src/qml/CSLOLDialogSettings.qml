@@ -56,6 +56,8 @@ Dialog {
 
 
     signal changeGamePath()
+    signal createSystemTrayIcon()
+    signal destroySystemTrayIcon()
 
     Column {
         id: settingsLayout
@@ -143,16 +145,15 @@ Dialog {
                         if (checked) {
                             startMinimizedCheck.visible = true;
                             startMinimizedCheck.enabled = true;
-                            systemTrayIcon.visible = true;
+                            createSystemTrayIcon();
                         } else {
                             startMinimizedCheck.visible = false;
                             startMinimizedCheck.enabled = false;
                             startMinimizedCheck.checked = false;
-                            systemTrayIcon.visible = false;
+                            destroySystemTrayIcon();
                         }
                     }
                 }
-
                 Switch {
                     id: startMinimizedCheck
                     text: qsTr("Start program with window hidden")

@@ -49,6 +49,7 @@ ApplicationWindow {
     property var validName: new RegExp(/[\p{L}\p{M}\p{Pd}\p{Z}\p{N}\w]{3,50}/u)
     property var validVersion: new RegExp(/([0-9]{1,3})(\.[0-9]{1,3}){0,3}/)
     property var validUrl: new RegExp(/^(http(s)?:\/\/).+$/u)
+    property var systemTrayIcon: null
     property bool firstTick: false
 
     function showUserError(name, message) {
@@ -81,7 +82,7 @@ ApplicationWindow {
                 }
             }
         }
-        if (systemTrayIcon.available) {
+        if (systemTrayIcon) {
             systemTrayIcon.updateWindowVisibility(window.visibility !== Window.Hidden)
         }
     }
@@ -127,16 +128,35 @@ ApplicationWindow {
     }
 
     onClosing: function(close) {
-        if (systemTrayIcon.available && settings.enableSystray) {
+        if (systemTrayIcon && settings.enableSystray) {
             close.accepted = false
             window.hide()
             systemTrayIcon.updateWindowVisibility(false)
         }
     }
 
-    CSLOLSystemTrayIcon {
-        id: systemTrayIcon
-        visible: settings.enableSystray && systemTrayManager.available
+    function createSystemTrayIcon() {
+        if (!systemTrayIcon) {
+            var component = Qt.createComponent("CSLOLSystemTrayIcon.qml");
+            if (component.status === Component.Ready) {
+                systemTrayIcon = component.createObject(window, {
+                    "visible": true
+                });
+                if (systemTrayIcon === null) {
+                    console.log("Error creating system tray icon");
+                }
+            } else if (component.status === Component.Error) {
+                console.log("Error loading component:", component.errorString());
+            }
+        }
+    }
+
+    function destroySystemTrayIcon() {
+        if (systemTrayIcon) {
+            systemTrayIcon.visible = false;
+            systemTrayIcon.destroy();
+            systemTrayIcon = null;
+        }
     }
 
     function restoreWindow() {
@@ -152,7 +172,7 @@ ApplicationWindow {
     Connections {
         target: cslolTools
         function onStateChanged(state) {
-            if (systemTrayIcon.available) {
+            if (systemTrayIcon) {
                 systemTrayIcon.updatePatcherRunning(state === CSLOLTools.StateRunning)
             }
         }
@@ -166,7 +186,9 @@ ApplicationWindow {
             } else {
                 window.hide();
             }
-            systemTrayIcon.updateWindowVisibility(visible);
+            if (systemTrayIcon) {
+                systemTrayIcon.updateWindowVisibility(visible);
+            }
         }
         function onProfileStateChanged(running) {
             if (running) {
@@ -179,6 +201,10 @@ ApplicationWindow {
 
     CSLOLDialogSettings {
         id: cslolDialogSettings
+
+        onCreateSystemTrayIcon: window.createSystemTrayIcon()
+
+        onDestroySystemTrayIcon: window.destroySystemTrayIcon()
 
         onChangeGamePath: function() {
             cslolDialogGame.open()
@@ -406,9 +432,7 @@ ApplicationWindow {
     Component.onCompleted: {
         if (settings.startMinimized && settings.enableSystray) {
             visible = false;
-            if (systemTrayIcon.available) {
-                systemTrayIcon.updateWindowVisibility(false);
-            }
+            createSystemTrayIcon();
         } else {
             visible = true;
             if (settings.windowMaximized) {
@@ -422,7 +446,7 @@ ApplicationWindow {
         cslolDialogUpdate.checkForUpdates();
         
         // Set initial state for system tray icon
-        if (systemTrayIcon.available) {
+        if (systemTrayIcon) {
             systemTrayIcon.updateWindowVisibility(visible);
         }
 
