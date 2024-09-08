@@ -265,10 +265,22 @@ auto EntryData::write_to_dir(hash::Xxh64 name, fs::path const& dir, hash::Dict c
             }
         }
     }
+
+    io::File file;
+    if (!rel_path.empty()) {
+        try {
+            file = io::File::create(dir / rel_path);
+        } catch (std::exception const& e) {
+            error::stack_trace().clear();
+            rel_path.clear();
+        }
+    }
+
     if (rel_path.empty()) {
         rel_path = fmt::format("{:016x}{}", (std::uint64_t)name, decompressed.extension());
+        file = io::File::create(dir / rel_path);
     }
-    auto file = io::File::create(dir / rel_path);
+
     file.write(0, bytes.data(), bytes.size());
     file.resize(bytes.size());
 }
