@@ -1,7 +1,9 @@
 #ifdef __APPLE__
+#    include <algorithm>
 #    include <chrono>
 #    include <cstdio>
 #    include <cstring>
+#    include <functional>
 #    include <thread>
 
 #    include "utility/delay.hpp"
@@ -33,6 +35,11 @@ struct Payload {
     char prefix[0x200] = {};
 };
 
+static uint8_t const PAT_INT_RSA_VERIFY[] = {
+    0x55, 0x48, 0x89, 0xE5, 0x41, 0x57, 0x41, 0x56, 0x41, 0x55, 0x41, 0x54, 0x53,
+    0x48, 0x83, 0xEC, 0x38, 0x4D, 0x89, 0xCD, 0x4D, 0x89, 0xC4, 0x48, 0x89, 0xCB,
+};
+
 struct Context {
     std::uint64_t off_rsa_verify = {};
     std::uint64_t off_fopen_org = {};
@@ -53,9 +60,16 @@ struct Context {
         auto data = process.Dump();
         auto macho = MachO{};
         macho.parse_data((MachO::data_t)data.data(), data.size());
-        if (!(off_rsa_verify = macho.find_export("_int_rsa_verify"))) {
+
+        const auto i_rsa_verify =
+            std::search((uint8_t const*)data.data(),
+                        (uint8_t const*)data.data() + data.size(),
+                        std::boyer_moore_searcher(std::begin(PAT_INT_RSA_VERIFY), std::end(PAT_INT_RSA_VERIFY)));
+        if (i_rsa_verify == (uint8_t const*)data.data() + data.size()) {
             throw std::runtime_error("Failed to find int_rsa_verify");
         }
+        off_rsa_verify = (std::uint64_t)(i_rsa_verify - (uint8_t const*)data.data()) + 0x100000000ull;
+
         if (!(off_fopen_org = macho.find_import_ptr("_fopen"))) {
             throw std::runtime_error("Failed to find fopen org");
         }
