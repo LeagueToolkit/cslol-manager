@@ -75,6 +75,7 @@ ToolBar {
         }
         ToolButton {
             text: "\uf0c7"
+            font.family: "FontAwesome"
             onClicked: cslolToolBar.saveProfileAndRun(false)
             enabled: !isBussy
             CSLOLToolTip {
@@ -84,6 +85,7 @@ ToolBar {
         }
         ToolButton {
             text: "\uf07c"
+            font.family: "FontAwesome"
             onClicked: cslolToolBar.loadProfile()
             enabled: !isBussy
             CSLOLToolTip {
@@ -93,6 +95,7 @@ ToolBar {
         }
         ToolButton {
             text: "\uf1f8"
+            font.family: "FontAwesome"
             onClicked: cslolToolBar.removeProfile()
             enabled: !isBussy
             CSLOLToolTip {
@@ -102,6 +105,7 @@ ToolBar {
         }
         ToolButton {
             text: "\uf067"
+            font.family: "FontAwesome"
             onClicked: cslolToolBar.newProfile()
             enabled: !isBussy
             CSLOLToolTip {
@@ -111,6 +115,7 @@ ToolBar {
         }
         ToolButton {
             text: window.patcherRunning ? "\uf04d" : "\uf04b"
+            font.family: "FontAwesome"
             onClicked: {
                 if (window.patcherRunning) {
                     cslolToolBar.stopProfile()
