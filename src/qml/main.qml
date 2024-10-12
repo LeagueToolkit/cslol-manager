@@ -1,4 +1,5 @@
 import QtQuick 2.15
+import QtQuick.Window 2.15
 import QtQuick.Layouts 1.12
 import QtQuick.Controls 2.15
 import Qt.labs.settings 1.0
@@ -9,7 +10,6 @@ import QtQuick.Controls.Material 2.15
 
 ApplicationWindow {
     id: window
-    visible: true
     width: 640
     height: 640
     minimumHeight: 640
@@ -27,6 +27,7 @@ ApplicationWindow {
         property alias enableUpdates: cslolDialogSettings.enableUpdates
         property alias enableAutoRun: cslolDialogSettings.enableAutoRun
         property alias enableSystray: cslolDialogSettings.enableSystray
+        property alias startMinimized: cslolDialogSettings.startMinimized
         property alias themeDarkMode: cslolDialogSettings.themeDarkMode
         property alias themePrimaryColor: cslolDialogSettings.themePrimaryColor
         property alias themeAccentColor: cslolDialogSettings.themeAccentColor
@@ -37,7 +38,7 @@ ApplicationWindow {
 
         property alias windowHeight: window.height
         property alias windowWidth: window.width
-        property bool windowMaximised
+        property bool windowMaximized
         property alias lastUpdateUTCMinutes: cslolDialogUpdate.lastUpdateUTCMinutes
 
         fileName: "config.ini"
@@ -48,6 +49,7 @@ ApplicationWindow {
     property var validName: new RegExp(/[\p{L}\p{M}\p{Pd}\p{Z}\p{N}\w]{3,50}/u)
     property var validVersion: new RegExp(/([0-9]{1,3})(\.[0-9]{1,3}){0,3}/)
     property var validUrl: new RegExp(/^(http(s)?:\/\/).+$/u)
+    property var systemTrayIcon: null
     property bool firstTick: false
 
     function showUserError(name, message) {
@@ -70,15 +72,18 @@ ApplicationWindow {
     onVisibilityChanged: {
         if (firstTick) {
             if (window.visibility === ApplicationWindow.Maximized) {
-                if (settings.windowMaximised !== true) {
-                    settings.windowMaximised = true;
+                if (settings.windowMaximized !== true) {
+                    settings.windowMaximized = true;
                 }
             }
             if (window.visibility === ApplicationWindow.Windowed) {
-                if (settings.windowMaximised !== false) {
-                    settings.windowMaximised = false;
+                if (settings.windowMaximized !== false) {
+                    settings.windowMaximized = false;
                 }
             }
+        }
+        if (systemTrayIcon) {
+            systemTrayIcon.updateWindowVisibility(window.visibility !== Window.Hidden)
         }
     }
     Material.theme: cslolDialogSettings.themeDarkMode ? Material.Dark : Material.Light
@@ -122,57 +127,88 @@ ApplicationWindow {
         onOpenLogs: Qt.openUrlExternally(CSLOLUtils.toFile("./log.txt"))
     }
 
-    onClosing: {
-        if (cslolTrayIcon.available && settings.enableSystray) {
+    onClosing: function(close) {
+        if (systemTrayIcon && settings.enableSystray) {
             close.accepted = false
             window.hide()
+            systemTrayIcon.updateWindowVisibility(false)
         }
     }
 
-    SystemTrayIcon {
-        id: cslolTrayIcon
-        visible: settings.enableSystray
-        iconSource: "qrc:/icon.png"
-        tooltip: "cslol-manager"
-        menu: Menu {
-            MenuItem {
-                text: !window.visible ? qsTr("Show") : qsTr("Minimize")
-                onTriggered: window.visible ? window.hide() : window.show()
-            }
-            MenuItem {
-                text: window.patcherRunning ? qsTr("Stop") : qsTr("Run")
-                onTriggered: {
-                    if (window.patcherRunning) {
-                        cslolToolBar.stopProfile()
-                    } else if (!window.isBussy) {
-                        cslolToolBar.saveProfileAndRun(true)
-                    }
+    function createSystemTrayIcon() {
+        if (!systemTrayIcon) {
+            var component = Qt.createComponent("CSLOLSystemTrayIcon.qml");
+            if (component.status === Component.Ready) {
+                systemTrayIcon = component.createObject(window, {
+                    "visible": true,
+                    "patcherRunning": cslolTools.state === CSLOLTools.StateRunning
+                });
+                if (systemTrayIcon === null) {
+                    console.log("Error creating system tray icon");
+                } else {
+                    // Update the patcher state immediately after creation
+                    systemTrayIcon.updatePatcherRunning(cslolTools.state === CSLOLTools.StateRunning);
                 }
-            }
-            MenuItem {
-                text: qsTr("Logs")
-                onTriggered: Qt.openUrlExternally(CSLOLUtils.toFile("./log.txt"))
-            }
-            MenuItem {
-                text: qsTr("Updates")
-                onTriggered: Qt.openUrlExternally(cslolDialogUpdate.update_url)
-            }
-            MenuItem {
-                text: qsTr("Exit")
-                onTriggered: Qt.quit()
+            } else if (component.status === Component.Error) {
+                console.log("Error loading component:", component.errorString());
             }
         }
-        onActivated: {
-            if (reason === SystemTrayIcon.Context) {
-                menu.open()
-            } else if(reason === SystemTrayIcon.DoubleClick) {
-                window.show()
+    }
+
+    function destroySystemTrayIcon() {
+        if (systemTrayIcon) {
+            systemTrayIcon.visible = false;
+            systemTrayIcon.destroy();
+            systemTrayIcon = null;
+        }
+    }
+
+    function restoreWindow() {
+        if (settings.windowMaximized) {
+            window.showMaximized();
+        } else {
+            window.show();
+        }
+        window.raise();
+        window.requestActivate();
+    }
+
+    Connections {
+        target: cslolTools
+        function onStateChanged(state) {
+            if (systemTrayIcon) {
+                systemTrayIcon.updatePatcherRunning(state === CSLOLTools.StateRunning);
+            }
+        }
+    }
+
+    Connections {
+        target: systemTrayManager
+        function onWindowVisibilityChanged(visible) {
+            if (visible) {
+                restoreWindow();
+            } else {
+                window.hide();
+            }
+            if (systemTrayIcon) {
+                systemTrayIcon.updateWindowVisibility(visible);
+            }
+        }
+        function onProfileStateChanged(running) {
+            if (running) {
+                cslolToolBar.saveProfileAndRun(true)
+            } else {
+                cslolToolBar.stopProfile()
             }
         }
     }
 
     CSLOLDialogSettings {
         id: cslolDialogSettings
+
+        onCreateSystemTrayIcon: window.createSystemTrayIcon()
+
+        onDestroySystemTrayIcon: window.destroySystemTrayIcon()
 
         onChangeGamePath: function() {
             cslolDialogGame.open()
@@ -398,13 +434,26 @@ ApplicationWindow {
     }
 
     Component.onCompleted: {
-        if (settings.windowMaximised) {
-            if (window.visibility !== ApplicationWindow.Maximized) {
-                window.visibility = ApplicationWindow.Maximized;
+        if (settings.startMinimized && settings.enableSystray) {
+            visible = false;
+            createSystemTrayIcon();
+        } else {
+            visible = true;
+            if (settings.windowMaximized) {
+                window.showMaximized();
+            } else {
+                window.show();
             }
         }
         firstTick = true;
-        cslolTools.init()
-        cslolDialogUpdate.checkForUpdates()
+        cslolTools.init();
+        cslolDialogUpdate.checkForUpdates();
+        
+        // Set initial state for system tray icon
+        if (systemTrayIcon) {
+            systemTrayIcon.updateWindowVisibility(visible);
+        }
+
+        systemTrayManager.updateUrl = cslolDialogUpdate.update_url
     }
 }
