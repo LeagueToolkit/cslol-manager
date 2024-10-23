@@ -149,7 +149,6 @@ auto Archive::write_to_file(fs::path const& path) const -> void {
                 .size_decompressed = (std::uint32_t)loc.size_decompressed,
                 .type = loc.type,
                 .subchunk_count = loc.subchunk_count,
-                .is_duplicate = 0,
                 .subchunk_index = loc.subchunk_index,
                 .checksum = loc.checksum,
             });
@@ -161,15 +160,6 @@ auto Archive::write_to_file(fs::path const& path) const -> void {
         std::sort(toc_entries.begin(), toc_entries.end(), [](auto const& l, auto const& r) -> bool {
             return l.name < r.name;
         });
-
-        // Mark duplicated offsets AFTER they have been sorted by name hash
-        auto is_duplicate_by_offset = std::unordered_map<std::uint32_t, bool>();
-        is_duplicate_by_offset.reserve(toc_entries.size());
-        for (auto& entry : toc_entries) {
-            auto& is_duplicate = is_duplicate_by_offset[entry.offset];
-            entry.is_duplicate = is_duplicate;
-            is_duplicate = true;
-        }
     }
 
     // Write TOC after header

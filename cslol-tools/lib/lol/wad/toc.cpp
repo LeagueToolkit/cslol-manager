@@ -67,8 +67,10 @@ auto TOC::read(io::Bytes src) noexcept -> char const* {
                 case 1:
                 case 2:
                 case 3:
-                default:
                     return read_raw(src, HeaderV3{}, EntryV3_1{});
+                case 4:
+                default:
+                    return read_raw(src, HeaderV3{}, EntryV3_4{});
             }
         default:
             return "Bad Wad::Version::major.";
