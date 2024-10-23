@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.20)
 
 include(FetchContent)
 
+cmake_policy(SET CMP0169 OLD)
+
 FetchContent_Declare(
     xxhash
     GIT_REPOSITORY https://github.com/Cyan4973/xxHash.git
