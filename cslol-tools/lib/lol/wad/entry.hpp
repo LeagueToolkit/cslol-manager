@@ -18,7 +18,7 @@ namespace lol::wad {
     struct EntryLoc {
         EntryType type;
         std::uint8_t subchunk_count = {};
-        std::uint16_t subchunk_index = {};
+        std::uint32_t subchunk_index = {};
         std::uint64_t offset;
         std::uint64_t size;
         std::uint64_t size_decompressed;
@@ -49,7 +49,7 @@ namespace lol::wad {
                                     std::size_t decompressed,
                                     std::uint64_t checksum,
                                     std::uint8_t subchunk_count,
-                                    std::uint16_t subchunk_index) -> EntryData;
+                                    std::uint32_t subchunk_index) -> EntryData;
 
         static auto from_file(fs::path const& path) -> EntryData;
 
@@ -69,7 +69,7 @@ namespace lol::wad {
 
         auto subchunk_count() const noexcept -> std::uint8_t { return impl_->subchunk_count; }
 
-        auto subchunk_index() const noexcept -> std::uint16_t { return impl_->subchunk_index; }
+        auto subchunk_index() const noexcept -> std::uint32_t { return impl_->subchunk_index; }
 
         auto bytes() const noexcept -> io::Bytes { return impl_->bytes; }
 

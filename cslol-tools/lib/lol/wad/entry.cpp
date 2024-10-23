@@ -58,7 +58,7 @@ auto EntryData::from_zstd_multi(io::Bytes bytes,
                                 std::size_t decompressed,
                                 std::uint64_t checksum,
                                 std::uint8_t subchunk_count,
-                                std::uint16_t subchunk_index) -> EntryData {
+                                std::uint32_t subchunk_index) -> EntryData {
     auto result = EntryData(std::make_shared<Impl>());
     result.impl_->type = EntryType::ZstdMulti;
     result.impl_->subchunk_count = subchunk_count;

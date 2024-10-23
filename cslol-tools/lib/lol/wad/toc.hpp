@@ -6,6 +6,18 @@
 #include <lol/wad/entry.hpp>
 
 namespace lol::wad {
+    // mixed-endian uint24_t with no alignment requirements
+    struct UInt24ME {
+        constexpr UInt24ME() = default;
+        constexpr UInt24ME(uint32_t x) : hi_((uint8_t)(x >> 16)), lo_((uint8_t)x), mi_((uint8_t)(x >> 8)) {}
+        constexpr operator uint32_t() const { return ((uint32_t)hi_ << 16) | ((uint32_t)mi_ << 8) | (uint32_t)lo_; }
+
+    private:
+        uint8_t hi_{};
+        uint8_t lo_{};
+        uint8_t mi_{};
+    };
+
     struct TOC {
         struct Version {
             std::array<char, 2> magic;
@@ -105,13 +117,25 @@ namespace lol::wad {
             std::uint64_t checksum;
         };
 
+        struct EntryV3_4 {
+            std::uint64_t name;
+            std::uint32_t offset;
+            std::uint32_t size;
+            std::uint32_t size_decompressed;
+            EntryType type : 4;
+            std::uint8_t subchunk_count : 4;
+            UInt24ME subchunk_index;
+            std::uint64_t checksum;
+            static constexpr bool is_duplicate = {};
+        };
+
         struct Entry {
             hash::Xxh64 name;
             EntryLoc loc;
         };
 
         using latest_header_t = HeaderV3;
-        using latest_entry_t = EntryV3_1;
+        using latest_entry_t = EntryV3_4;
 
         Version version;
         Signature signature;
