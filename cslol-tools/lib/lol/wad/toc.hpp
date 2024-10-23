@@ -12,7 +12,7 @@ namespace lol::wad {
             std::uint8_t major;
             std::uint8_t minor;
 
-            static constexpr auto latest() noexcept -> Version { return {'R', 'W', 3, 3}; }
+            static constexpr auto latest() noexcept -> Version { return {'R', 'W', 3, 4}; }
 
             inline bool is_wad() const noexcept { return magic == std::array{'R', 'W'}; }
 
