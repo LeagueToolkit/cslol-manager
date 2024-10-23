@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.20)
 
 project(cslol-tools LANGUAGES C CXX)
 
+cmake_policy(SET CMP0169 OLD)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 

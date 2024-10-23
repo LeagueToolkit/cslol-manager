@@ -6,9 +6,9 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC OFF)
+set(CMAKE_AUTOMOC OFF)
+set(CMAKE_AUTORCC OFF)
 
 add_subdirectory(cslol-tools)
 
@@ -84,6 +84,10 @@ target_sources(cslol-manager PRIVATE
     src/CSLOLVersion.h
     src/qml/qml.qrc
 )
+
+set_target_properties(cslol-manager PROPERTIES AUTOUIC ON)
+set_target_properties(cslol-manager PROPERTIES AUTOMOC ON)
+set_target_properties(cslol-manager PROPERTIES AUTORCC ON)
 
 target_compile_definitions(cslol-manager PRIVATE $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>)
 target_link_libraries(cslol-manager PRIVATE Qt::Core Qt::Gui Qt::Quick Qt::Network Threads::Threads)
