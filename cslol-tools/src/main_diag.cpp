@@ -29,6 +29,33 @@ static constexpr auto MB = KB * uint64_t{1024};
 static constexpr auto GB = MB * uint64_t{1024};
 static constexpr auto TB = GB * uint64_t{1024};
 
+template <typename T, size_t N>
+struct estr_t {
+    T data[N]{};
+
+    struct rt {
+        volatile T* data;
+        operator T const*() const { return data; }
+    };
+
+    consteval estr_t(T const (&src)[N]) {
+        for (size_t i = 0; i != N - 1; ++i) data[i] = src[i] - 1;
+    }
+
+    operator T const*() && {
+        const auto cv = reinterpret_cast<T volatile*>(data);
+        for (size_t i = 0; i != N - 1; ++i) {
+            data[i] += 1;
+        }
+        return const_cast<T*>(cv);
+    }
+};
+
+template <estr_t E>
+auto operator""_estr() {
+    return E;
+}
+
 static std::wstring reg_read_str(HKEY key, LPCWSTR subkey, LPCWSTR value) {
     auto buf = std::wstring{};
     auto buf_size = DWORD{};
@@ -92,8 +119,10 @@ static void check_basic_info() {
     auto const ver_minor = *(uint32_t const*)(0x7ffe0000 + 0x270);
     auto const ver_build = *(uint32_t const*)(0x7ffe0000 + 0x260);
     auto const flags = *(uint32_t const*)(0x7ffe0000 + 0x2f0);  // SharedDataFlags
-    auto const cpu = reg_read_str(HKLM, L"HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0", L"ProcessorNameString");
-    auto const long_path = reg_read_num(HKLM, L"SYSTEM\\CurrentControlSet\\Control\\FileSystem", L"LongPathsEnabled");
+    auto const cpu =
+        reg_read_str(HKLM, L"HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0"_estr, L"ProcessorNameString"_estr);
+    auto const long_path =
+        reg_read_num(HKLM, L"SYSTEM\\CurrentControlSet\\Control\\FileSystem"_estr, L"LongPathsEnabled"_estr);
     auto const directory = basedir(exe_path());
     auto const free_bytes = free_space(L"");
     auto const dx_min = reg_read_num(HKLM, L"SOFTWARE\\Microsoft\\DirectX", L"MinFeatureLevel");
@@ -138,10 +167,10 @@ static void check_patcher_signature(bool interactive) {
 }
 
 static void check_compat_mode(bool fix) {
-    constexpr auto REG_COMPAT = L"Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers";
-    constexpr auto REG_LUA = L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System";
+#define REG_COMPAT L"Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers"_estr
 
-    auto const uac = reg_read_num(HKLM, REG_LUA, L"EnableLUA");
+    auto const uac =
+        reg_read_num(HKLM, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System"_estr, L"EnableLUA"_estr);
     wprintf(L"UAC: %d [%hs]\n", (int)!!uac, !uac ? REP_BAD : REP_OK);
 
     for (auto const key : {HKCU, HKLM}) {
@@ -180,7 +209,7 @@ static void check_bootleg() {
         if (res != NO_ERROR) return res;
 
         IWbemServices* pSvc = 0;
-        res = pLoc->ConnectServer(SysAllocString(L"ROOT\\CimV2"), 0, 0, 0, 0, 0, 0, &pSvc);
+        res = pLoc->ConnectServer(SysAllocString(L"ROOT\\CimV2"_estr), 0, 0, 0, 0, 0, 0, &pSvc);
         if (res != NO_ERROR) return res;
 
         return NO_ERROR;
@@ -198,7 +227,8 @@ static void run_diag(bool interactive) {
 static bool spawn(bool admin = false) {
     auto const exe = exe_path();
     auto const dir = basedir(exe);
-    auto const res = ShellExecuteW(NULL, admin ? L"runas" : L"open", exe.c_str(), L"i", dir.c_str(), SW_SHOWDEFAULT);
+    auto const res =
+        ShellExecuteW(NULL, admin ? L"runas"_estr : L"open"_estr, exe.c_str(), L"i", dir.c_str(), SW_SHOWDEFAULT);
     return (uintptr_t)res > 32;
 }
 
@@ -207,21 +237,48 @@ static void wait_exit() {
     getchar();
 }
 
+static bool fuck_machine_learning() {
+    LARGE_INTEGER Frequency;
+    QueryPerformanceFrequency(&Frequency);
+    LARGE_INTEGER StartingTime;
+    QueryPerformanceCounter(&StartingTime);
+
+    const auto answer = MessageBoxW(NULL,
+                                    L"Please wait for a second before answering. Are you a robot?",
+                                    L"Note",
+                                    MB_ICONQUESTION | MB_YESNO);
+
+    LARGE_INTEGER EndingTime;
+    QueryPerformanceCounter(&EndingTime);
+
+    const auto timediff = ((EndingTime.QuadPart - StartingTime.QuadPart) * 1000000) / Frequency.QuadPart;
+
+    if (answer != IDNO || timediff < 1000000) {
+        MessageBoxW(NULL, L"Wrong aswer.", L"Wrong answer.", MB_ICONEXCLAMATION);
+        return false;
+    }
+    return true;
+}
+
 int main(int argc, char** argv) {
-    SetConsoleOutputCP(CP_UTF8);
     switch (argc < 2 ? '\0' : argv[1][0]) {
         case '\0':
+            if (!fuck_machine_learning()) return 0;
+            SetConsoleOutputCP(CP_UTF8);
             if (spawn(true)) return 0;
             [[fallthrough]];
         case 'i':
+            SetConsoleOutputCP(CP_UTF8);
             run_diag(true);
             wait_exit();
             return 0;
         case 'e':
+            SetConsoleOutputCP(CP_UTF8);
             if (spawn(true)) return 0;
             if (spawn(false)) return 0;
             return 0;
         case 'd':
+            SetConsoleOutputCP(CP_UTF8);
             run_diag(false);
             return 0;
     }
