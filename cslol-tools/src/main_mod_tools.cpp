@@ -233,6 +233,9 @@ static auto mod_mkoverlay(fs::path src, fs::path dst, fs::path game, fs::names m
 
     logi("Cleaning up stray wads");
     overlay_index.cleanup_in_directory(dst);
+
+    logi("Writing databse");
+    overlay_index.write_db(dst / "wad.csloldb");
 }
 
 static auto mod_runoverlay(fs::path overlay, fs::path config_file, fs::path game, fs::names opts) -> void {

@@ -44,6 +44,8 @@ add_library(cslol-lib STATIC
     lib/lol/patcher/utility/process.hpp
     lib/lol/patcher/utility/process_macos.cpp
 
+    lib/lol/utility/sha256.cpp
+    lib/lol/utility/sha256.hpp
     lib/lol/utility/cli.hpp
     lib/lol/utility/cli.cpp
     lib/lol/utility/magic.cpp

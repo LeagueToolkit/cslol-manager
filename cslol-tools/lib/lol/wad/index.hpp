@@ -45,6 +45,8 @@ namespace lol::wad {
             }
         }
 
+        auto write_db(fs::path const& path) const -> void;
+
         std::string name;
         Map mounts = {};
 

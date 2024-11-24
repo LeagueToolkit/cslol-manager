@@ -4,6 +4,7 @@
 #include <cstring>
 #include <lol/error.hpp>
 #include <lol/io/file.hpp>
+#include <lol/utility/sha256.hpp>
 #include <lol/wad/archive.hpp>
 #include <numeric>
 #include <unordered_map>
@@ -29,6 +30,8 @@ auto Archive::read_from_toc(io::Bytes src, TOC const& toc) -> Archive {
             descriptors_by_checksum[entry.loc.checksum] = data;
         }
     }
+    archive.signature = toc.signature;
+    archive.checksum_org = toc.checksum;
     return archive;
 }
 
@@ -75,7 +78,7 @@ auto Archive::write_to_file(fs::path const& path) const -> void {
 
     auto new_header = HeaderT{
         .version = TOC::Version::latest(),
-        .signature = {},
+        .signature = this->signature,
         .checksum = {},
         .desc_count = (std::uint32_t)entries.size(),
     };
@@ -83,27 +86,36 @@ auto Archive::write_to_file(fs::path const& path) const -> void {
     {
         auto version = TOC::Version::latest();
         XXH3_state_s hashstate = {};
-        XXH3_128bits_reset(&hashstate);
-        XXH3_128bits_update(&hashstate, &version, sizeof(version));
+        XXH3_64bits_reset(&hashstate);
+        XXH3_64bits_update(&hashstate, &version, sizeof(version));
+        XXH3_64bits_update(&hashstate, &checksum_org, sizeof(checksum_org));
         for (auto const& [name, data] : entries) {
             auto const checksum = data.checksum();
-            XXH3_128bits_update(&hashstate, &name, sizeof(name));
-            XXH3_128bits_update(&hashstate, &checksum, sizeof(checksum));
+            XXH3_64bits_update(&hashstate, &name, sizeof(name));
+            XXH3_64bits_update(&hashstate, &checksum, sizeof(checksum));
         }
-        auto const hashdigest = XXH3_128bits_digest(&hashstate);
-        std::memcpy((char*)&new_header.signature, (char const*)&hashdigest, sizeof(TOC::Signature));
-    }
-
-    if (auto old_header = HeaderT{}; file.readsome(0, &old_header, sizeof(HeaderT)) == sizeof(HeaderT)) {
-        if (std::memcmp(&old_header, &new_header, sizeof(HeaderT)) == 0) {
-            return;
-        }
+        auto const hashdigest = XXH3_64bits_digest(&hashstate);
+        static_assert(sizeof(hashdigest) == sizeof(new_header.checksum));
+        std::memcpy(new_header.checksum.data(), (char const*)&hashdigest, sizeof(new_header.checksum));
     }
 
     auto toc_entries = std::vector<EntryT>{};
-    toc_entries.reserve(entries.size());
+    const auto toc_entires_size = sizeof(EntryT) * entries.size();
+    toc_entries.resize(entries.size());
 
-    std::size_t data_cur = sizeof(HeaderT) + sizeof(EntryT) * entries.size();
+    if (auto old_header = HeaderT{}; file.readsome(0, &old_header, sizeof(HeaderT)) == sizeof(HeaderT)) {
+        if (std::memcmp(&old_header, &new_header, sizeof(HeaderT)) == 0) {
+            if (file.readsome(sizeof(HeaderT), toc_entries.data(), toc_entires_size) == toc_entires_size) {
+                // New sha256 checksum should be same as old one.
+                lol::utility::sha256(toc_entries.data(), toc_entires_size, checksum_new.data());
+                return;
+            }
+        }
+    }
+
+    toc_entries.clear();
+
+    std::size_t data_cur = sizeof(HeaderT) + toc_entires_size;
     {
         // Order any potential reads by address, this guarantees sequential reads on any memory mapped files.
         auto entries_data = std::vector<std::pair<hash::Xxh64, EntryData>>();
@@ -170,6 +182,9 @@ auto Archive::write_to_file(fs::path const& path) const -> void {
 
     // Trunc data
     file.resize(data_cur);
+
+    // Compute new checksum
+    lol::utility::sha256(toc_entries.data(), toc_entires_size, checksum_new.data());
 }
 
 auto Archive::touch() -> void {

@@ -184,3 +184,57 @@ auto Index::resolve_conflicts(Index const& other, bool ignore) -> void {
         }
     }
 }
+
+auto Index::write_db(fs::path const& path) const -> void {
+    enum : uint32_t {
+        CSLSIG_MAGIC_HEADER = 0x4341bf7c,
+        CSLSIG_MAGIC_WAD_V3 = 0xda91f42bu,
+        CSLSIG_MAGIC_MOD_V0 = 0x8e48ed86u,
+    };
+
+    typedef struct cslol_db_header {
+        uint32_t magic;
+        uint32_t toc_mods_count;
+        uint32_t toc_wads_count;
+        uint32_t certs;
+    } cslol_db_header;
+
+    typedef struct cslol_toc_wad_header {
+        uint32_t magic;
+        uint32_t reserved;
+        std::array<uint8_t, 32> checksum_org;
+        std::array<uint8_t, 32> checksum_new;
+        wad::TOC::Signature sig_org;
+        uint32_t entries_org_count;
+        uint32_t entries_new_count;
+        uint32_t provenance;
+    } cslol_toc_wad_header;
+
+    cslol_db_header header = {
+        .magic = CSLSIG_MAGIC_HEADER,
+        .toc_mods_count = 0,
+        .toc_wads_count = (uint32_t)mounts.size(),
+        .certs = 0,
+    };
+
+    std::vector<cslol_toc_wad_header> wads;
+    wads.reserve(mounts.size());
+
+    for (auto const& [mount_name, mounted] : mounts) {
+        wads.push_back(cslol_toc_wad_header{
+            .magic = CSLSIG_MAGIC_WAD_V3,
+            .reserved = 0,
+            .checksum_org = mounted.archive.checksum_org,
+            .checksum_new = mounted.archive.checksum_new,
+            .sig_org = mounted.archive.signature,
+            .entries_org_count = 0,
+            .entries_new_count = 0,
+            .provenance = 0,
+        });
+    }
+
+    auto file = io::File::create(path);
+    file.resize(sizeof(header) + wads.size() * sizeof(cslol_toc_wad_header));
+    file.write(0, &header, sizeof(header));
+    file.write(sizeof(header), wads.data(), wads.size() * sizeof(cslol_toc_wad_header));
+}

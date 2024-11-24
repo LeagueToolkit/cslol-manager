@@ -36,7 +36,7 @@ namespace lol::wad {
             }
         };
 
-        using Signature = std::array<std::uint8_t, 16>;
+        using Signature = std::array<std::uint8_t, 256>;
 
         struct HeaderV1 {
             Version version;
@@ -60,7 +60,6 @@ namespace lol::wad {
         struct HeaderV3 {
             Version version;
             Signature signature = {};
-            std::array<std::uint8_t, 240> signature_unused;
             std::array<std::uint8_t, 8> checksum;
             static constexpr std::uint16_t desc_offset = 272;
             static constexpr std::uint16_t desc_size = 32;
@@ -139,6 +138,7 @@ namespace lol::wad {
 
         Version version;
         Signature signature;
+        std::array<uint8_t, 32> checksum;
         std::vector<Entry> entries;
 
         auto read(io::Bytes src) noexcept -> char const*;

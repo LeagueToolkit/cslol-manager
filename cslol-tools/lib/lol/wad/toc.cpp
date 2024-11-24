@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <lol/error.hpp>
+#include <lol/utility/sha256.hpp>
 #include <lol/wad/toc.hpp>
 
 using namespace lol;
@@ -52,6 +53,9 @@ auto TOC::read(io::Bytes src) noexcept -> char const* {
             });
         }
         signature = header_raw.signature;
+        lol::utility::sha256(src.data() + header_raw.desc_offset,
+                             sizeof(entry_raw) * header_raw.desc_count,
+                             checksum.data());
         return nullptr;
     };
     switch (version.major) {

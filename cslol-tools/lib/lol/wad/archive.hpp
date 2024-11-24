@@ -115,5 +115,8 @@ namespace lol::wad {
         }
 
         Map entries;
+        wad::TOC::Signature signature = {};
+        std::array<uint8_t, 32> checksum_org = {};
+        mutable std::array<uint8_t, 32> checksum_new = {};
     };
 }
