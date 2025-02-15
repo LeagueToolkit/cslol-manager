@@ -18,6 +18,7 @@ CSLOLTools::CSLOLTools(QObject *parent) : QObject(parent) {
     connect(worker_, &CSLOLToolsImpl::blacklistChanged, this, &CSLOLTools::blacklistChanged);
     connect(worker_, &CSLOLToolsImpl::ignorebadChanged, this, &CSLOLTools::ignorebadChanged);
     connect(worker_, &CSLOLToolsImpl::initialized, this, &CSLOLTools::initialized);
+    connect(worker_, &CSLOLToolsImpl::refreshed, this, &CSLOLTools::refreshed);
     connect(worker_, &CSLOLToolsImpl::modDeleted, this, &CSLOLTools::modDeleted);
     connect(worker_, &CSLOLToolsImpl::installedMod, this, &CSLOLTools::installedMod);
     connect(worker_, &CSLOLToolsImpl::profileSaved, this, &CSLOLTools::profileSaved);
