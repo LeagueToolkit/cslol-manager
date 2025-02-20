@@ -375,7 +375,7 @@ ApplicationWindow {
             cslolDialogEditMod.wadsRemoved(wads)
         }
         onRefreshed: function(mods) {
-            cslolModsView.refereshedMods(mods)
+            cslolModsView.refreshedMods(mods)
         }
         onUpdatedMods: function(mods) {
             cslolDialogUpdateMods.updatedMods = mods
