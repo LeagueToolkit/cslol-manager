@@ -97,6 +97,10 @@ ApplicationWindow {
             let name = cslolToolBar.profilesCurrentName
             let mods = cslolModsView.saveProfile()
             if (checkGamePath()) {
+                if (CSLOLUtils.checkGamePathAsia(cslolTools.leaguePath)) {
+                    window.showUserError("Asian servers not supported", "因封禁，亚洲服不支持!")
+                    return;
+                }
                 cslolTools.saveProfile(name, mods, run, settings.suppressInstallConflicts, settings.verbosePatcher)
             }
         }

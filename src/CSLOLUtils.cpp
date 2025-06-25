@@ -59,6 +59,19 @@ QString CSLOLUtils::checkGamePath(QString pathRaw) {
     return "";
 }
 
+bool CSLOLUtils::checkGamePathAsia(QString path) {
+    if (path.isEmpty()) {
+        return false;
+    }
+    if (auto info = QFileInfo(path + "/TerSafe.dll"); info.exists()) {
+        return true;
+    }
+    if (auto info = QFileInfo(path + "/GbSpy.dll"); info.exists()) {
+        return true;
+    }
+    return false;
+}
+
 #ifdef _WIN32
 // do not reorder
 #    define WIN32_LEAN_AND_MEAN
@@ -90,8 +103,10 @@ QString CSLOLUtils::detectGamePath() {
         DWORD size = 32767;
         if (QueryFullProcessImageNameW(handle, 0, buffer, &size) != 0) {
             if (auto result = checkGamePath(QString::fromWCharArray(buffer, size)); !result.isEmpty()) {
-                CloseHandle(handle);
-                return result;
+                if (!checkGamePathAsia(result)) {
+                    CloseHandle(handle);
+                    return result;
+                }
             }
         }
 
