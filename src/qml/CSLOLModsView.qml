@@ -225,7 +225,7 @@ ColumnLayout {
         }
     }
 
-    function refereshedMods(mods) {
+    function refreshedMods(mods) {
         for (let fileName in mods) {
             if (updateModInfo_model(fileName, mods[fileName], cslolModsViewModel) === -1) {
                 if (updateModInfo_model(fileName, mods[fileName], cslolModsViewModel2) === -1) {
