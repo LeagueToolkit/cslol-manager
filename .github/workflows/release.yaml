@@ -64,7 +64,7 @@ jobs:
         path: cslol-manager-macos.tar.xz
         retention-days: 15
   release:
-    needs: [build_win, build_mac]
+    needs: [build_win]
     runs-on: ubuntu-22.04
     steps:
     - name: Download artifacts
