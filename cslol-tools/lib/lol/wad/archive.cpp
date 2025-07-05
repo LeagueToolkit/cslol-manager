@@ -29,6 +29,7 @@ auto Archive::read_from_toc(io::Bytes src, TOC const& toc) -> Archive {
             descriptors_by_checksum[entry.loc.checksum] = data;
         }
     }
+    archive.signature = toc.signature;
     return archive;
 }
 
@@ -75,7 +76,7 @@ auto Archive::write_to_file(fs::path const& path) const -> void {
 
     auto new_header = HeaderT{
         .version = TOC::Version::latest(),
-        .signature = {},
+        .signature = this->signature,
         .checksum = {},
         .desc_count = (std::uint32_t)entries.size(),
     };
@@ -83,15 +84,16 @@ auto Archive::write_to_file(fs::path const& path) const -> void {
     {
         auto version = TOC::Version::latest();
         XXH3_state_s hashstate = {};
-        XXH3_128bits_reset(&hashstate);
-        XXH3_128bits_update(&hashstate, &version, sizeof(version));
+        XXH3_64bits_reset(&hashstate);
+        XXH3_64bits_update(&hashstate, &version, sizeof(version));
         for (auto const& [name, data] : entries) {
             auto const checksum = data.checksum();
-            XXH3_128bits_update(&hashstate, &name, sizeof(name));
-            XXH3_128bits_update(&hashstate, &checksum, sizeof(checksum));
+            XXH3_64bits_update(&hashstate, &name, sizeof(name));
+            XXH3_64bits_update(&hashstate, &checksum, sizeof(checksum));
         }
-        auto const hashdigest = XXH3_128bits_digest(&hashstate);
-        std::memcpy((char*)&new_header.signature, (char const*)&hashdigest, sizeof(TOC::Signature));
+        auto const hashdigest = XXH3_64bits_digest(&hashstate);
+        static_assert(sizeof(new_header.checksum) == sizeof(hashdigest));
+        std::memcpy((char*)&new_header.checksum, (char const*)&hashdigest, sizeof(new_header.checksum));
     }
 
     if (auto old_header = HeaderT{}; file.readsome(0, &old_header, sizeof(HeaderT)) == sizeof(HeaderT)) {

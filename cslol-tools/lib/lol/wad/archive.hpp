@@ -115,5 +115,6 @@ namespace lol::wad {
         }
 
         Map entries;
+        TOC::Signature signature{};
     };
 }
