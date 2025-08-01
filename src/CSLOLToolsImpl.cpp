@@ -369,38 +369,7 @@ void CSLOLToolsImpl::exportMod(QString name, QString dest) {
 
 void CSLOLToolsImpl::installFantomeZip(QString path) {
     if (state_ == CSLOLState::StateIdle && !path.isEmpty()) {
-        setState(CSLOLState::StateBusy);
-
-        setStatus("Installing Mod");
-        auto name = QFileInfo(path)
-                        .fileName()
-                        .replace(".zip", "")
-                        .replace(".fantome", "")
-                        .replace(".wad", "")
-                        .replace(".client", "");
-        auto dst = prog_ + "/installed/" + name;
-        if (QDir old(dst); old.exists()) {
-            auto info = modInfoRead(name);
-            doReportError("Install mod", "Already exists", "");
-            setState(CSLOLState::StateIdle);
-            return;
-        }
-
-        runTool(
-            {
-                "import",
-                path,
-                dst,
-                "--game:" + game_,
-                blacklist_ ? "--noTFT" : "",
-            },
-            [=, this](int code, QProcess* process) {
-                if (code == 0) {
-                    auto info = modInfoRead(name);
-                    emit installedMod(name, info);
-                }
-                setState(CSLOLState::StateIdle);
-            });
+        installFantomeZips({path});
     }
 }
 
@@ -703,4 +672,152 @@ void CSLOLToolsImpl::runDiagInternal(bool internal_once) {
         process->deleteLater();
     });
     process->start(prog_ + DIAG_TOOL_EXE, QStringList{"d"});
+}
+
+void CSLOLToolsImpl::installFantomeZips(QStringList paths) {
+    if (state_ == CSLOLState::StateIdle && !paths.isEmpty()) {
+        setState(CSLOLState::StateBusy);
+        fantomeInstallQueue_ = paths;
+        fantomeInstallConflictName_ = "";
+        fantomeInstallConflictPath_ = "";
+        processFantomeInstallQueue();
+    }
+}
+
+void CSLOLToolsImpl::handleDroppedUrls(QStringList urls) {
+    if (state_ != CSLOLState::StateIdle || urls.isEmpty()) {
+        return;
+    }
+
+    setStatus("Processing dropped items...");
+
+    QStringList filesToInstall;
+    const QStringList nameFilters = {"*.zip", "*.fantome", "*.wad", "*.wad.client"};
+
+    for (const QString& urlString : urls) {
+        const QUrl url(urlString);
+        if (!url.isLocalFile()) {
+            continue;
+        }
+
+        const QString path = url.toLocalFile();
+        QFileInfo fileInfo(path);
+
+        if (fileInfo.isDir()) {
+            // If the dropped folder itself is named "chromas", skip it entirely.
+            if (fileInfo.fileName().compare("chromas", Qt::CaseInsensitive) == 0) {
+                continue;
+            }
+
+            QDirIterator it(path, nameFilters, QDir::Files, QDirIterator::Subdirectories);
+            while (it.hasNext()) {
+                const QString filePath = it.next();
+                // If the file is inside a directory named "chromas", skip it.
+                // QDirIterator always uses '/', so we only need to check for that separator.
+                if (filePath.contains("/chromas/", Qt::CaseInsensitive)) {
+                    continue;
+                }
+                filesToInstall.append(filePath);
+            }
+        } else if (fileInfo.isFile()) {
+            // This logic remains the same for individual files.
+            if (nameFilters.contains("*." + fileInfo.completeSuffix())) {
+                filesToInstall.append(path);
+            }
+        }
+    }
+
+    if (!filesToInstall.isEmpty()) {
+        installFantomeZips(filesToInstall);
+    } else {
+        setStatus("No valid mod files found in dropped items.");
+    }
+}
+
+void CSLOLToolsImpl::processFantomeInstallQueue() {
+    if (fantomeInstallQueue_.isEmpty()) {
+        setStatus("Finished installing mods.");
+        setState(CSLOLState::StateIdle);
+        return;
+    }
+
+    auto path = fantomeInstallQueue_.takeFirst();
+    setStatus("Installing: " + path);
+
+    auto name = QFileInfo(path)
+                    .fileName()
+                    .replace(".zip", "")
+                    .replace(".fantome", "")
+                    .replace(".wad", "")
+                    .replace(".client", "");
+    auto dst = prog_ + "/installed/" + name;
+
+    if (QDir(dst).exists()) {
+        fantomeInstallConflictName_ = name;
+        fantomeInstallConflictPath_ = path;
+        emit conflictDetected(name, path);
+        // We stop here and wait for resolveConflict to be called
+        return;
+    }
+
+    runTool(
+        {
+            "import",
+            path,
+            dst,
+            "--game:" + game_,
+            blacklist_ ? "--noTFT" : "",
+        },
+        [=, this](int code, QProcess* process) {
+            if (code == 0) {
+                auto info = modInfoRead(name);
+                emit installedMod(name, info);
+            }
+            // Process the next file in the queue
+            processFantomeInstallQueue();
+        });
+}
+
+void CSLOLToolsImpl::resolveConflict(bool overwrite) {
+    if (fantomeInstallConflictName_.isEmpty()) {
+        // Should not happen, but as a safeguard
+        processFantomeInstallQueue();
+        return;
+    }
+
+    auto name = fantomeInstallConflictName_;
+    auto path = fantomeInstallConflictPath_;
+    auto dst = prog_ + "/installed/" + name;
+
+    // Clear conflict state
+    fantomeInstallConflictName_ = "";
+    fantomeInstallConflictPath_ = "";
+
+    if (!overwrite) {
+        setStatus("Skipping: " + name);
+        processFantomeInstallQueue(); // Skip to the next file
+        return;
+    }
+
+    setStatus("Overwriting: " + name);
+    runTool(
+        {
+            "import",
+            path,
+            dst,
+            "--game:" + game_,
+            blacklist_ ? "--noTFT" : "",
+        },
+        [=, this](int code, QProcess* process) {
+            if (code == 0) {
+                // The mod was overwritten, so we need to tell the UI to refresh.
+                QJsonObject mods;
+                for (auto const& modName : modList()) {
+                     mods.insert(modName, modInfoRead(modName));
+                }
+                emit refreshed(mods);
+            }
+            // Process the next file in the queue
+            processFantomeInstallQueue();
+        });
 }

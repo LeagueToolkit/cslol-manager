@@ -76,6 +76,10 @@ FetchContent_Declare(
 FetchContent_GetProperties(miniz)
 if(NOT miniz_POPULATED)
     FetchContent_Populate(miniz)
+    # Patch the CMakeLists.txt to use a newer minimum version
+    file(READ ${miniz_SOURCE_DIR}/CMakeLists.txt MINIZ_CMAKE)
+    string(REPLACE "cmake_minimum_required(VERSION 3.0)" "cmake_minimum_required(VERSION 3.20)" MINIZ_CMAKE ${MINIZ_CMAKE})
+    file(WRITE ${miniz_SOURCE_DIR}/CMakeLists.txt ${MINIZ_CMAKE})
     add_subdirectory(${miniz_SOURCE_DIR} ${miniz_BINARY_DIR})
     target_compile_definitions(miniz PRIVATE -DMINIZ_DISABLE_ZIP_READER_CRC32_CHECKS=1)
 endif()
