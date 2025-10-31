@@ -118,6 +118,14 @@ QString CSLOLUtils::detectGamePath() {
 }
 
 QString CSLOLUtils::isPlatformUnsuported() {
+    QString path = QCoreApplication::applicationDirPath();
+    DWORD const attrs = GetFileAttributesW((PCWSTR)path.utf16());
+    if (attrs != INVALID_FILE_ATTRIBUTES) {
+        if (attrs & (FILE_ATTRIBUTE_OFFLINE | FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS)) {
+            return "OneDrive detected!";
+        }
+    }
+
     if (QFileInfo info(QCoreApplication::applicationDirPath() + "/admin_allowed.txt"); info.exists()) {
         return "";
     }
