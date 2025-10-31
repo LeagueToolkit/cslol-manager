@@ -217,11 +217,23 @@ static void check_bootleg() {
     wprintf(L"WMI: 0x%x [%hs]\n", has_wmi, has_wmi == NO_ERROR ? REP_OK : REP_SUS);
 }
 
+static void check_one_drive() {
+    auto const exe = exe_path();
+    auto const dir = basedir(exe);
+    auto const attrs = GetFileAttributesW(dir.c_str());
+    bool found = false;
+    if (attrs != INVALID_FILE_ATTRIBUTES) {
+        found = attrs & (FILE_ATTRIBUTE_OFFLINE | FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS);
+    }
+    wprintf(L"One Drive: ", found ? REP_BAD : REP_OK);
+}
+
 static void run_diag(bool interactive) {
     check_basic_info();
     check_patcher_signature(interactive);
     check_bootleg();
     check_compat_mode(interactive);
+    check_one_drive();
 }
 
 static bool spawn(bool admin = false) {
