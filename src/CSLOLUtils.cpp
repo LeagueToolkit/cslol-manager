@@ -131,7 +131,6 @@ QString CSLOLUtils::isPlatformUnsuported() {
     }
 
     QString result{""};
-    return result;
 
     HANDLE token = {};
     if (OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &token)) {
@@ -139,7 +138,7 @@ QString CSLOLUtils::isPlatformUnsuported() {
         DWORD size = sizeof(TOKEN_ELEVATION);
         if (GetTokenInformation(token, TokenElevation, &elevation, sizeof(elevation), &size)) {
             if (elevation.TokenIsElevated) {
-                result = "Try running without admin at least once.\nIf this issue still persist import FIX-ADMIN.reg";
+                result = "Try running without admin at least once.\nIf this issue still persist run cslol-diag.exe!\n";
             }
         }
         CloseHandle(token);
