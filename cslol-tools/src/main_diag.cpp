@@ -233,7 +233,7 @@ static void run_diag(bool interactive) {
     check_patcher_signature(interactive);
     check_bootleg();
     check_compat_mode(interactive);
-    check_one_drive();
+    // FIXME: check_one_drive();
 }
 
 static bool spawn(bool admin = false) {
