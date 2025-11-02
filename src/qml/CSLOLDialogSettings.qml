@@ -28,6 +28,7 @@ Dialog {
     property alias themeAccentColor: themeAccentColorBox.currentIndex
     property alias suppressInstallConflicts: suppressInstallConflictsCheck.checked
     property alias enableSystray: enableSystrayCheck.checked
+    property alias startMinimized: startMinimizedCheck.checked
     property alias enableAutoRun: enableAutoRunCheck.checked
     property alias debugPatcher: debugPatcherCheck.checked
 
@@ -55,6 +56,8 @@ Dialog {
 
 
     signal changeGamePath()
+    signal createSystemTrayIcon()
+    signal destroySystemTrayIcon()
 
     Column {
         id: settingsLayout
@@ -137,6 +140,31 @@ Dialog {
                     text: qsTr("Enable systray icon")
                     checked: false
                     Layout.fillWidth: true
+
+                    onCheckedChanged: {
+                        if (checked) {
+                            startMinimizedCheck.visible = true;
+                            startMinimizedCheck.enabled = true;
+                            createSystemTrayIcon();
+                            // Update the patcher state immediately after creation
+                            if (systemTrayIcon) {
+                                systemTrayIcon.updatePatcherRunning(cslolTools.state === CSLOLTools.StateRunning);
+                            }
+                        } else {
+                            startMinimizedCheck.visible = false;
+                            startMinimizedCheck.enabled = false;
+                            startMinimizedCheck.checked = false;
+                            destroySystemTrayIcon();
+                        }
+                    }
+                }
+                Switch {
+                    id: startMinimizedCheck
+                    text: qsTr("Start program with window hidden")
+                    checked: false
+                    Layout.fillWidth: true
+                    visible: false // Initially hidden
+                    enabled: false // Initially disabled
                 }
                 Switch {
                     id: enableAutoRunCheck
