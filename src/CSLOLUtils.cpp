@@ -131,6 +131,7 @@ QString CSLOLUtils::isPlatformUnsuported() {
     }
 
     QString result{""};
+    return "";
 
     HANDLE token = {};
     if (OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &token)) {
