@@ -211,9 +211,13 @@ ApplicationWindow {
         onModEdit: function(fileName) {
             cslolTools.startEditMod(fileName)
         }
-        onImportFile: function(file) {
+        onImportFiles: function(urls) {
             if (checkGamePath()) {
-                cslolTools.installFantomeZip(file)
+                let urlStrings = []
+                for (var i = 0; i < urls.length; ++i) {
+                    urlStrings.push(urls[i].toString())
+                }
+                cslolTools.handleDroppedUrls(urlStrings)
             }
         }
         onInstallFantomeZip: function() {
@@ -239,7 +243,12 @@ ApplicationWindow {
     CSLOLDialogOpenZipFantome {
         id: cslolDialogOpenZipFantome
         onAccepted: function() {
-            cslolTools.installFantomeZip(CSLOLUtils.fromFile(file))
+            // The 'files' property now contains a list of URLs
+            let paths = []
+            for (var i = 0; i < files.length; ++i) {
+                paths.push(CSLOLUtils.fromFile(files[i]))
+            }
+            cslolTools.installFantomeZips(paths)
         }
     }
 
@@ -314,6 +323,13 @@ ApplicationWindow {
         id: cslolDialogUserError
     }
 
+    CSLOLDialogConflict {
+        id: cslolDialogConflict
+        onResolve: function(overwrite) {
+            cslolTools.resolveConflict(overwrite)
+        }
+    }
+
     CSLOLDialogUpdate {
         id: cslolDialogUpdate
         enableUpdates: settings.enableUpdates
@@ -336,6 +352,11 @@ ApplicationWindow {
             if(checkGamePath() && settings.enableAutoRun) {
                 cslolToolBar.saveProfileAndRun(true)
             }
+        }
+        onConflictDetected: function(modName, newPath) {
+            cslolDialogConflict.modName = modName
+            cslolDialogConflict.newPath = newPath
+            cslolDialogConflict.open()
         }
         onModDeleted: {}
         onInstalledMod: function(fileName, infoData) {
