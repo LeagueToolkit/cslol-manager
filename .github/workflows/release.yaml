@@ -37,6 +37,7 @@ jobs:
         path: cslol-manager-windows.exe
         retention-days: 15
   build_mac:
+    if: false
     runs-on: macos-12
     steps:
     - name: "Clone source"
