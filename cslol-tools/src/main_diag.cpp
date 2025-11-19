@@ -230,7 +230,8 @@ static void check_one_drive() {
 
 static void run_diag(bool interactive) {
     check_basic_info();
-    check_patcher_signature(interactive);
+    // FIXME: we move the dll every time so this check will fail now always
+    // check_patcher_signature(interactive);
     check_bootleg();
     check_compat_mode(interactive);
     // FIXME: check_one_drive();
