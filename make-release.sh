@@ -12,6 +12,11 @@ copy2folder() {
     cp "$1/cslol-tools/"*.exe "$2/cslol-tools"
     cp "$1/cslol-tools/"*.dll "$2/cslol-tools"
     cp "$1/cslol-manager.exe" "$2"
+
+    mkdir -p "$2/cslol-tools/proxy-0"
+    cp "./dist/workaround/proxy-0/"*.dll "$2/cslol-tools/proxy-0"
+    cp -f "./dist/workaround/"*.dll "$2/cslol-tools"
+
     echo "windeployqt is only necessary for non-static builds"
     windeployqt --qmldir "src/qml" "$2/cslol-manager.exe"
     curl -N -R -L -o "$2/cslol-tools/hashes.game.txt" "https://raw.communitydragon.org/data/hashes/lol/hashes.game.txt"
