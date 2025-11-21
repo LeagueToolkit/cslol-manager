@@ -20,6 +20,7 @@
         <file>qtquickcontrols2.conf</file>
         <file>fontawesome-webfont.ttf</file>
         <file>CSLOLDialogSettings.qml</file>
+        <file>CSLOLSystemTrayIcon.qml</file>
         <file>CSLOLModInfoEdit.qml</file>
         <file>CSLOLDialogGame.qml</file>
         <file>CSLOLToolTip.qml</file>
