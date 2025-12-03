@@ -82,6 +82,8 @@ target_sources(cslol-manager PRIVATE
     src/CSLOLUtils.h
     src/CSLOLUtils.cpp
     src/CSLOLVersion.h
+    src/CSLOLSystemTrayManager.h
+    src/CSLOLSystemTrayManager.cpp
     src/qml/qml.qrc
 )
 
