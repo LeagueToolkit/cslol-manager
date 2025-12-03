@@ -101,8 +101,8 @@ endif()
 if (WIN32)
     FetchContent_Declare(
         cslol-patcher
-        URL      https://github.com/LeagueToolkit/cslol-patcher/releases/download/6/cslol-patcher.zip
-        URL_HASH SHA256=17de8ca79d37675a7e8ab967bde1323a45d617088369d2098d898cd383186907
+        URL      https://github.com/LeagueToolkit/cslol-patcher/releases/download/7/cslol-patcher.zip
+        URL_HASH SHA256=78885ca87cdd247b531ccefe95db6f12e41cc55a8035a38cf722c96c993d95c9
         CONFIGURE_COMMAND ""
         BUILD_COMMAND ""
         DOWNLOAD_EXTRACT_TIMESTAMP True
