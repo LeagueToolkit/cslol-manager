@@ -9,8 +9,10 @@
 #include <QSettings>
 
 #include "CSLOLTools.h"
+#include "CSLOLToolsImpl.h"
 #include "CSLOLUtils.h"
 #include "CSLOLVersion.h"
+#include "CSLOLSystemTrayManager.h"
 
 int main(int argc, char *argv[]) {
     CSLOLUtils::relaunchAdmin(argc, argv);
@@ -39,6 +41,22 @@ int main(int argc, char *argv[]) {
     engine.rootContext()->setContextProperty("CSLOL_VERSION", CSLOL::VERSION);
     engine.rootContext()->setContextProperty("CSLOL_COMMIT", CSLOL::COMMIT);
     engine.rootContext()->setContextProperty("CSLOL_DATE", CSLOL::DATE);
+    
+    CSLOLSystemTrayManager systemTrayManager;
+    systemTrayManager.initialize(&engine);
+
+    // Create an instance of CSLOLTools
+    CSLOLTools cslolTools;
+
+    // Connect the stateChanged signal of CSLOLTools to SystemTrayManager
+    QObject::connect(&cslolTools, &CSLOLTools::stateChanged, &systemTrayManager, 
+        [&systemTrayManager](CSLOLToolsImpl::CSLOLState state) {
+            systemTrayManager.setPatcherRunning(state == CSLOLToolsImpl::StateRunning);
+        });
+
+    // Expose CSLOLTools to QML
+    engine.rootContext()->setContextProperty("cslolTools", &cslolTools);
+
     const QUrl url(QStringLiteral("qrc:/main.qml"));
     QFile fontfile(":/fontawesome-webfont.ttf");
     fontfile.open(QFile::OpenModeFlag::ReadOnly);
