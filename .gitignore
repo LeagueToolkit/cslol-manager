@@ -705,3 +705,10 @@ healthchecksdb
 MigrationBackup/
 
 # End of https://www.gitignore.io/api/c,qt,vim,qml,c++,linux,macos,cmake,clion,windows,kdevelop4,qtcreator,visualstudio,visualstudiocode
+
+# Allow vendor files
+!cslol-tools/vendor/**
+
+# Validated local build
+/cslol-tools/build/
+/build/
