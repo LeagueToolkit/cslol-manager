@@ -8,8 +8,6 @@ FetchContent_Declare(
     xxhash
     GIT_REPOSITORY https://github.com/Cyan4973/xxHash.git
     GIT_TAG        35b0373c697b5f160d3db26b1cbb45a0d5ba788c # v0.8.1
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND ""
 )
 FetchContent_GetProperties(xxhash)
 if(NOT xxhash_POPULATED)
@@ -25,8 +23,6 @@ FetchContent_Declare(
     zstd
     GIT_REPOSITORY https://github.com/facebook/zstd.git
     GIT_TAG        63779c798237346c2b245c546c40b72a5a5913fe # v1.5.5
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND ""
 )
 FetchContent_GetProperties(zstd)
 if(NOT zstd_POPULATED)
@@ -51,8 +47,6 @@ FetchContent_Declare(
     libdeflate
     GIT_REPOSITORY https://github.com/ebiggers/libdeflate.git
     GIT_TAG        495fee110ebb48a5eb63b75fd67e42b2955871e2 # v1.18
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND ""
 )
 FetchContent_GetProperties(libdeflate)
 if(NOT libdeflate_POPULATED)
@@ -85,8 +79,6 @@ FetchContent_Declare(
     fmt
     GIT_REPOSITORY https://github.com/fmtlib/fmt.git
     GIT_TAG        a33701196adfad74917046096bf5a2aa0ab0bb50 # 9.1.0
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND ""
 )
 FetchContent_GetProperties(fmt)
 if(NOT fmt_POPULATED)
@@ -101,8 +93,6 @@ FetchContent_Declare(
     fmtlog
     GIT_REPOSITORY https://github.com/MengRao/fmtlog.git
     GIT_TAG        5aea0764c820358ec1a842cd34cb6d494f65cfa1 # 2.2.1
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND ""
 )
 FetchContent_GetProperties(fmtlog)
 if(NOT fmtlog_POPULATED)
