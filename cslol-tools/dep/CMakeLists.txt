@@ -76,7 +76,14 @@ FetchContent_Declare(
 FetchContent_GetProperties(miniz)
 if(NOT miniz_POPULATED)
     FetchContent_Populate(miniz)
-    add_subdirectory(${miniz_SOURCE_DIR} ${miniz_BINARY_DIR})
+    # add_subdirectory(${miniz_SOURCE_DIR} ${miniz_BINARY_DIR})
+    add_library(miniz STATIC
+        ${miniz_SOURCE_DIR}/miniz.c
+        ${miniz_SOURCE_DIR}/miniz_zip.c
+        ${miniz_SOURCE_DIR}/miniz_tinfl.c
+        ${miniz_SOURCE_DIR}/miniz_tdef.c
+    )
+    target_include_directories(miniz PUBLIC ${miniz_SOURCE_DIR})
     target_compile_definitions(miniz PRIVATE -DMINIZ_DISABLE_ZIP_READER_CRC32_CHECKS=1)
 endif()
 
