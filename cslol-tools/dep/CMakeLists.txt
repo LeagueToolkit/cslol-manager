@@ -71,7 +71,7 @@ endif()
 FetchContent_Declare(
     miniz
     GIT_REPOSITORY https://github.com/richgel999/miniz.git
-    GIT_TAG        d9d197c92606da7be59cee2be2fbc6830b73c480 # 3.0.2
+    GIT_TAG        174573d60290f447c13a2b1b3405de2b96e27d6c # 3.1.0
 )
 FetchContent_GetProperties(miniz)
 if(NOT miniz_POPULATED)
