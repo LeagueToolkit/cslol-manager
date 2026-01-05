@@ -711,3 +711,4 @@ MigrationBackup/
 
 # Validated local build
 /cslol-tools/build/
+/build/
