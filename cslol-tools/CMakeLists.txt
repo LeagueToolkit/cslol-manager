@@ -84,6 +84,11 @@ add_executable(wad-extract
 )
 target_link_libraries(wad-extract PRIVATE cslol-lib)
 
+add_executable(wad-extract-all
+    src/main_wad_extract_all.cpp
+)
+target_link_libraries(wad-extract-all PRIVATE cslol-lib)
+
 add_executable(wad-make
     src/main_wad_make.cpp
 )
