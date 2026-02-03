@@ -52,6 +52,8 @@ signals:
     void updatedMods(QJsonArray mods);
     void reportError(QString name, QString message, QString stack_trace);
 
+    void conflictDetected(QString modName, QString newPath);
+
 public slots:
     void changeLeaguePath(QString newLeaguePath);
     void changeBlacklist(bool blacklist);
@@ -72,6 +74,10 @@ public slots:
     void changeModInfo(QString fileName, QJsonObject infoData, QString image);
     void removeModWads(QString modFileName, QJsonArray wadNames);
     void addModWad(QString modFileName, QString wad, bool removeUnknownNames);
+
+    void installFantomeZips(QStringList paths);
+    void handleDroppedUrls(QStringList urls);
+    void resolveConflict(bool overwrite);
 
     CSLOLToolsImpl::CSLOLState getState();
     QString getLeaguePath();
@@ -108,6 +114,11 @@ private:
     void runPatcher(QStringList args);
     void runTool(QStringList args, std::function<void(int code, QProcess*)> handle);
     void runDiagInternal(bool internal_once);
+
+    QStringList fantomeInstallQueue_;
+    QString fantomeInstallConflictName_;
+    QString fantomeInstallConflictPath_;
+    void processFantomeInstallQueue();
 };
 
 #endif  // QMODMANAGERWORKER_H
