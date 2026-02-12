@@ -1,0 +1,31 @@
+name: BuildItMacARM64
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: macos-15-intel
+    steps:
+    - name: "Clone source"
+      uses: actions/checkout@v4
+      with:
+        submodules: 'true'
+    - name: "Download Qt5"
+      run: |
+        curl --output qt5.tar.xz -L "https://github.com/LeagueToolkit/cslol-manager/releases/download/release23/qt5.15.18-x86_64-macos-static.tar.xz"
+        shasum -a 256 qt5.tar.xz
+        tar xf qt5.tar.xz --strip-components 2 -C $HOME
+    - name: "Build"
+      run: |
+        cmake -DCMAKE_PREFIX_PATH=$HOME/qt5.15.18-x86_64-macos-static -DCMAKE_BUILD_TYPE=Release -B build -S .
+        cmake --build build
+    - name: "Package"
+      shell: bash
+      run: |
+        ./make-release-mac.sh "build" "cslol-manager-macos"
+        tar caf cslol-manager-macos.tar.xz cslol-manager-macos/
+    - name: 'Upload Artifact'
+      uses: actions/upload-artifact@v4
+      with:
+        name: cslol-manager-macos
+        path: cslol-manager-macos.tar.xz
+        retention-days: 15
