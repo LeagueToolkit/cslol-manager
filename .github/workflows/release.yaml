@@ -16,14 +16,14 @@ jobs:
     - name: "Download Qt5"
       shell: bash
       run: |
-        curl --output C:/qt5.7z -L "https://github.com/LoL-Fantome/lolcustomskin-tools/releases/download/release23/qt5.15.13-x86_64-msvc-static.7z"
+        curl --output C:/qt5.7z -L "https://github.com/LoL-Fantome/lolcustomskin-tools/releases/download/release23/qt5.15.18-x86_64-msvc-static.7z"
         sha256sum C:/qt5.7z
         7z x -oC:/ C:/qt5.7z
     - name: "Build"
       run: |
         mkdir build
         cd build
-        cmake -G "NMake Makefiles" "-DCMAKE_PREFIX_PATH:PATH=C:/qt5.15.13-x86_64-msvc-static" "-DCMAKE_MSVC_RUNTIME_LIBRARY:STRING=MultiThreaded" "-DCMAKE_BUILD_TYPE:STRING=Release" ..
+        cmake -G "NMake Makefiles" "-DCMAKE_PREFIX_PATH:PATH=C:/qt5.15.18-x86_64-msvc-static" "-DCMAKE_MSVC_RUNTIME_LIBRARY:STRING=MultiThreaded" "-DCMAKE_BUILD_TYPE:STRING=Release" ..
         cmake --build .
     - name: "Package"
       shell: bash
@@ -57,12 +57,12 @@ jobs:
       shell: bash
       run: |
         ./make-release-mac.sh "build" "cslol-manager-macos"
-        tar caf cslol-manager-macos.tar.xz cslol-manager-macos/
+        tar caf cslol-manager-macos-intel.tar.xz cslol-manager-macos/
     - name: 'Upload Artifact'
       uses: actions/upload-artifact@v4
       with:
-        name: cslol-manager-macos
-        path: cslol-manager-macos.tar.xz
+        name: cslol-manager-macos-intel
+        path: cslol-manager-macos-intel.tar.xz
         retention-days: 15
   build_mac_arm64:
     if: false

@@ -1,4 +1,4 @@
-name: BuildItMacARM64
+name: BuildItMacAMD64
 on:
   workflow_dispatch:
 jobs:
