@@ -37,7 +37,8 @@ add_library(cslol-lib STATIC
 
     lib/lol/patcher/patcher.hpp
     lib/lol/patcher/patcher_dummy.cpp
-    lib/lol/patcher/patcher_macos.cpp
+    lib/lol/patcher/patcher_macos_amd64.cpp
+    lib/lol/patcher/patcher_macos_arm64.cpp
     lib/lol/patcher/patcher_win32.cpp
     lib/lol/patcher/utility/delay.hpp
     lib/lol/patcher/utility/macho.hpp

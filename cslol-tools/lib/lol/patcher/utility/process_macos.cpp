@@ -177,7 +177,7 @@ auto Process::MarkMemoryWritable(void* address, std::size_t size) const -> void 
                                          (mach_vm_address_t)address,
                                          (mach_vm_size_t)size,
                                          FALSE,
-                                         VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE | VM_PROT_COPY)) {
+                                         VM_PROT_READ | VM_PROT_WRITE | VM_PROT_COPY)) {
         lol_throw_msg("mach_vm_protect: {:#x}", (std::uint32_t)err);
     }
 }
@@ -190,6 +190,14 @@ auto Process::MarkMemoryExecutable(void* address, std::size_t size) const -> voi
                                          VM_PROT_READ | VM_PROT_EXECUTE)) {
         lol_throw_msg("mach_vm_protect: {:#x}", (std::uint32_t)err);
     }
+}
+
+auto Process::AllocateMemory(size_t size) const -> void* {
+    mach_vm_address_t address = {};
+    if (auto const err = mach_vm_allocate((vm_map_t)(uintptr_t)handle_, &address, size, VM_FLAGS_ANYWHERE)) {
+        lol_throw_msg("mach_vm_allocate: {:#x}", (std::uint32_t)err);
+    }
+    return (void*)address;
 }
 
 #endif

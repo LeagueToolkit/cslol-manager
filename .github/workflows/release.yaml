@@ -57,7 +57,8 @@ jobs:
       shell: bash
       run: |
         ./make-release-mac.sh "build" "cslol-manager-macos"
-        tar caf cslol-manager-macos-intel.tar.xz cslol-manager-macos/
+        mv cslol-manager-macos cslol-manager-macos-intel
+        tar caf cslol-manager-macos-intel.tar.xz cslol-manager-macos-intel/
     - name: 'Upload Artifact'
       uses: actions/upload-artifact@v4
       with:

@@ -10,6 +10,8 @@ copy2folder() {
     mkdir -p  "$2/cslol-manager.app/Contents/MacOS/cslol-tools"
     cp "$1/cslol-tools/mod-tools" "$2/cslol-manager.app/Contents/MacOS/cslol-tools"
     cp "$1/cslol-tools/wad-"* "$2"
+    codesign --force --deep --sign - "$2/cslol-manager.app"
+    codesign --verify --verbose "$2/cslol-manager.app"
 }
 
 VERSION=$(git log --date=short --format="%ad-%h" -1)
