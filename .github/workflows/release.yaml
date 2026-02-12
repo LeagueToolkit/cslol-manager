@@ -36,9 +36,9 @@ jobs:
         name: cslol-manager-windows
         path: cslol-manager-windows.exe
         retention-days: 15
-  build_mac:
+  build_mac_amd64:
     if: false
-    runs-on: macos-12
+    runs-on: macos-15-intel
     steps:
     - name: "Clone source"
       uses: actions/checkout@v4
@@ -46,12 +46,40 @@ jobs:
         submodules: 'true'
     - name: "Download Qt5"
       run: |
-        curl --output qt5.tar.xz -L "https://github.com/LeagueToolkit/cslol-manager/releases/download/release23/qt5.15.13-x86_64-macos-static.tar.xz"
+        curl --output qt5.tar.xz -L "https://github.com/LeagueToolkit/cslol-manager/releases/download/release23/qt5.15.18-x86_64-macos-static.tar.xz"
         shasum -a 256 qt5.tar.xz
         tar xf qt5.tar.xz --strip-components 2 -C $HOME
     - name: "Build"
       run: |
-        cmake -DCMAKE_PREFIX_PATH=$HOME/qt5.15.13-x86_64-macos-static -DCMAKE_BUILD_TYPE=Release -B build -S .
+        cmake -DCMAKE_PREFIX_PATH=$HOME/qt5.15.18-x86_64-macos-static -DCMAKE_BUILD_TYPE=Release -B build -S .
+        cmake --build build
+    - name: "Package"
+      shell: bash
+      run: |
+        ./make-release-mac.sh "build" "cslol-manager-macos"
+        tar caf cslol-manager-macos.tar.xz cslol-manager-macos/
+    - name: 'Upload Artifact'
+      uses: actions/upload-artifact@v4
+      with:
+        name: cslol-manager-macos
+        path: cslol-manager-macos.tar.xz
+        retention-days: 15
+  build_mac_arm64:
+    if: false
+    runs-on: macos-15
+    steps:
+    - name: "Clone source"
+      uses: actions/checkout@v4
+      with:
+        submodules: 'true'
+    - name: "Download Qt5"
+      run: |
+        curl --output qt5.tar.xz -L "https://github.com/LeagueToolkit/cslol-manager/releases/download/release23/qt5.15.18-arm64-macos-static.tar.xz"
+        shasum -a 256 qt5.tar.xz
+        tar xf qt5.tar.xz --strip-components 2 -C $HOME
+    - name: "Build"
+      run: |
+        cmake -DCMAKE_PREFIX_PATH=$HOME/qt5.15.18-arm64-macos-static -DCMAKE_BUILD_TYPE=Release -B build -S .
         cmake --build build
     - name: "Package"
       shell: bash
