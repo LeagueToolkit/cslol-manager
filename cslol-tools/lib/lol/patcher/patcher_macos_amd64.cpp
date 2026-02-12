@@ -84,7 +84,7 @@ Lcheck_suffix:
     lea     (%r12, %r14, 1), %rdi   # ptr = filename + filename_len - 7
     sub     $7, %rdi
     mov     (%rdi), %rax            # load 8 bytes
-    movabs  $0x0074006E65696C632E, %rcx   # ".client\0" in little-endian
+    movabs  $0x00746E65696C632E, %rcx   # ".client\0" in little-endian
     cmp     %rcx, %rax
     jne     Lcall_with_filename
 
