@@ -296,7 +296,14 @@ void CSLOLToolsImpl::init() {
         lockfile_ = new QLockFile(prog_ + "/lockfile");
         if (!lockfile_->tryLock()) {
             auto lockerror = QString::number((int)lockfile_->error());
-            doReportError("Acquire lock", "Can not run multiple instances", lockerror);
+            // Permission error (2) on macOS is likely due to App Translocation
+            if (lockfile_->error() == QLockFile::PermissionError && CSLOLUtils::isTranslocated()) {
+                doReportError("App Translocation Detected",
+                              "macOS has placed the app in a read-only quarantine location.",
+                              "Please close the app and relaunch it. This only happens on first launch.");
+            } else {
+                doReportError("Acquire lock", "Can not run multiple instances", lockerror);
+            }
             setState(CSLOLState::StateCriticalError);
             return;
         }

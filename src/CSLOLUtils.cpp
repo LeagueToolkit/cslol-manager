@@ -148,6 +148,8 @@ QString CSLOLUtils::isPlatformUnsuported() {
 }
 
 void CSLOLUtils::relaunchAdmin(int argc, char *argv[]) {}
+
+bool CSLOLUtils::isTranslocated() { return false; }
 #elif defined(__APPLE__)
 #    include <libproc.h>
 #    include <stdlib.h>
@@ -337,10 +339,39 @@ void CSLOLUtils::relaunchAdmin(int argc, char *argv[]) {
 
     exit(0);
 }
+
+bool CSLOLUtils::isTranslocated() {
+    void* SecurityLibHandle = dlopen("/System/Library/Frameworks/Security.framework/Security", RTLD_LAZY);
+    if (!SecurityLibHandle) {
+        return false;
+    }
+
+    CFBundleRef mainBundle = CFBundleGetMainBundle();
+    if (!mainBundle) {
+        dlclose(SecurityLibHandle);
+        return false;
+    }
+    CFURLRef bundleUrl = CFBundleCopyBundleURL(mainBundle);
+
+    bool isTranslocated = false;
+    t_SecTranslocateIsTranslocatedURL SecTranslocateIsTranslocatedURL =
+        (t_SecTranslocateIsTranslocatedURL)dlsym(SecurityLibHandle, "SecTranslocateIsTranslocatedURL");
+
+    if (SecTranslocateIsTranslocatedURL) {
+        SecTranslocateIsTranslocatedURL(bundleUrl, &isTranslocated, NULL);
+    }
+
+    CFRelease(bundleUrl);
+    dlclose(SecurityLibHandle);
+
+    return isTranslocated;
+}
 #else
 QString CSLOLUtils::detectGamePath() { return ""; }
 
 QString CSLOLUtils::isPlatformUnsuported() { return QString{""}; }
 
 void CSLOLUtils::relaunchAdmin(int argc, char *argv[]) {}
+
+bool CSLOLUtils::isTranslocated() { return false; }
 #endif

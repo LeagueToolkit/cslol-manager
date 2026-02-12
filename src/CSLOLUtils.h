@@ -18,6 +18,7 @@ public:
 
     static QString isPlatformUnsuported();
     static void relaunchAdmin(int argc, char *argv[]);
+    static bool isTranslocated();
 private:
 };
 

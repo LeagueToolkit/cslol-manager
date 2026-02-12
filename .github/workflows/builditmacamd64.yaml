@@ -22,10 +22,11 @@ jobs:
       shell: bash
       run: |
         ./make-release-mac.sh "build" "cslol-manager-macos"
-        tar caf cslol-manager-macos.tar.xz cslol-manager-macos/
+        mv cslol-manager-macos cslol-manager-macos-intel
+        tar caf cslol-manager-macos-intel.tar.xz cslol-manager-macos-intel/
     - name: 'Upload Artifact'
       uses: actions/upload-artifact@v4
       with:
-        name: cslol-manager-macos
-        path: cslol-manager-macos.tar.xz
+        name: cslol-manager-macos-intel
+        path: cslol-manager-macos-intel.tar.xz
         retention-days: 15

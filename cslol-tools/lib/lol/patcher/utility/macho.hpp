@@ -6,12 +6,15 @@
 #include <fstream>
 #include <optional>
 #include <string>
+#include <string_view>
+#include <tuple>
 #include <unordered_map>
 #include <vector>
 
 namespace lol {
     struct MachO {
         using data_t = unsigned char const*;
+
         struct Header {
             std::uint32_t magic;
             std::uint32_t cputype;
@@ -53,6 +56,10 @@ namespace lol {
             std::uint32_t reserved1;
             std::uint32_t reserved2;
             std::uint32_t reserved3;
+        };
+
+        struct SegSec : Segment {
+            std::vector<Section> sections;
         };
 
         struct DyldInfo {
@@ -105,19 +112,29 @@ namespace lol {
             std::uint64_t address = 0;
         };
 
-        void parse_data(data_t data, size_t size);
-        void parse_file(std::filesystem::path const& filename);
+        void parse_data_amd64(data_t data, size_t size) { parse_data(data, size, 0x1000007); }
+        void parse_data_arm64(data_t data, size_t size) { parse_data(data, size, 0x100000C); }
+        void parse_data(data_t data, size_t size, std::uint32_t cputype);
+
+        void parse_file_amd64(std::filesystem::path const& filename) { parse_file(filename, 0x1000007); }
+        void parse_file_arm64(std::filesystem::path const& filename) { parse_file(filename, 0x100000C); }
+        void parse_file(std::filesystem::path const& filename, std::uint32_t cputype);
         std::uint64_t find_export(char const* func_name) const;
         std::uint64_t find_import_ptr(char const* func_name) const;
         std::uint64_t find_stub_refs(std::uint64_t address) const;
+        std::tuple<std::uint64_t, MachO::data_t, size_t> find_section(std::string_view name) const;
 
     private:
         struct Stream;
+        void read_impl(data_t data, size_t size);
         void read_stubs(Stream const& org_stream, std::uint64_t address);
         void read_exports(Stream const& org_stream);
         void read_binding_lazy(Stream const& org_stream);
 
-        std::vector<Segment> segments;
+        data_t data_ = {};
+        size_t size_ = {};
+        std::uint32_t cputype_ = {};
+        std::vector<SegSec> segments;
         std::unordered_map<std::string, Export> exports;
         std::unordered_map<std::string, BindingLazy> binding_lazy;
         std::unordered_map<std::uint64_t, std::uint64_t> stub_refs;
@@ -147,6 +164,12 @@ namespace lol {
             data_ = data_ + sizeof(T);
             size_ -= sizeof(T);
             return result;
+        }
+
+        inline uint32_t read_uint32_endian(bool big) {
+            auto const raw = read_raw<std::uint32_t>();
+            if (!big) return raw;
+            return raw >> 24 | ((raw & 0x00FF0000) >> 8) | ((raw & 0x0000FF00) << 8) | (raw << 24);
         }
 
         inline std::uint64_t read_uleb64() {
@@ -212,11 +235,45 @@ namespace lol {
         }
     };
 
-    inline void MachO::parse_data(data_t data, size_t data_size) {
+    inline void MachO::parse_data(data_t data, size_t size, std::uint32_t cputype) {
+        data_ = data;
+        size_ = size;
+        cputype_ = cputype;
         segments.clear();
         exports.clear();
         binding_lazy.clear();
         stub_refs.clear();
+
+        auto stream = Stream{data, size};
+        auto const magic = stream.read_raw<std::uint32_t>();
+        if (magic != 0xBEBAFECA && magic != 0xCAFEBABE) {
+            return read_impl(data, size);
+        }
+
+        auto const flip_endians = (magic != 0xCAFEBABE);
+        auto nfat_arch = stream.read_uint32_endian(flip_endians);
+        for (auto i = 0u; i != nfat_arch; ++i) {
+            auto const arch_cputype = stream.read_uint32_endian(flip_endians);
+            auto const arch_cpusubtype = stream.read_uint32_endian(flip_endians);
+            auto const arch_offset = stream.read_uint32_endian(flip_endians);
+            auto const arch_size = stream.read_uint32_endian(flip_endians);
+            auto const arch_align = stream.read_uint32_endian(flip_endians);
+
+            (void)arch_cpusubtype;  // ignore for now
+            (void)arch_align;       // ignore for now
+            if (arch_cputype == cputype) {
+                if (arch_offset + arch_size > size) {
+                    throw std::runtime_error("Invalid Mach-O slice: out of range!");
+                }
+                return read_impl(data + arch_offset, arch_size);
+            }
+        }
+        throw std::runtime_error("Failed to find Mach-O slice for the specified architecture!");
+    }
+
+    inline void MachO::read_impl(data_t data, size_t data_size) {
+        this->data_ = data;
+        this->size_ = data_size;
         auto const file_stream = Stream{data, data_size};
         auto stream = file_stream.copy();
         auto const header = stream.read_raw<Header>();
@@ -225,12 +282,13 @@ namespace lol {
             auto const command = cmd_stream.read_raw<Command>();
             if (command.cmd == 0x19) {
                 auto const segment = cmd_stream.read_raw<Segment>();
-                this->segments.push_back(segment);
+                auto& segsec = this->segments.emplace_back(segment);
                 for (auto count = segment.nsects; count; --count) {
                     auto const section = cmd_stream.read_raw<Section>();
                     if (std::string_view{section.sectname} == "__stubs") {
                         read_stubs(file_stream.copy(segment.fileoff + section.offset, section.size), section.addr);
                     }
+                    segsec.sections.push_back(section);
                 }
             }
             if ((command.cmd & ~0x80000000u) == 0x22) {
@@ -242,7 +300,7 @@ namespace lol {
         }
     }
 
-    inline void MachO::parse_file(std::filesystem::path const& filename) {
+    inline void MachO::parse_file(std::filesystem::path const& filename, std::uint32_t cputype) {
         auto result = std::vector<unsigned char>{};
         if (auto file = std::ifstream(filename, std::ios::binary)) {
             auto beg = file.tellg();
@@ -252,19 +310,45 @@ namespace lol {
             result.resize((std::size_t)(end - beg));
             file.read((char*)result.data(), end - beg);
         }
-        parse_data(result.data(), result.size());
+        parse_data(result.data(), result.size(), cputype);
     }
 
     inline void MachO::read_stubs(const Stream& org_stream, std::uint64_t address) {
         auto stream = org_stream.copy();
         while (!stream.empty()) {
-            auto const opcode = stream.read_raw<std::uint16_t>();
-            if (opcode != 0x25FF) {
-                // throw error here
+            if (cputype_ == 0x1000007) {
+                auto const opcode = stream.read_raw<std::uint16_t>();
+                if (opcode != 0x25FF) {
+                    // throw error here
+                }
+                auto const relative = stream.read_raw<std::int32_t>();
+                stub_refs[(address + 6) + relative] = address;
+                address += 6;
+            } else if (cputype_ == 0x100000C) {
+                auto const adrp = stream.read_raw<std::uint32_t>();
+                auto const ldr = stream.read_raw<std::uint32_t>();
+                auto const br = stream.read_raw<std::uint32_t>();
+                if ((adrp & 0x9F000000) != 0x90000000 || (ldr & 0xFF0003FF) != 0xF940021F ||
+                    (br & 0xFFFFFC1F) != 0xD61F0000) {
+                    // throw error here
+                }
+
+                // ADRP: Extract 21-bit signed page offset
+                auto const immlo = (adrp & 0x60000000) >> 29;                    // Bits 30:29
+                auto const immhi = (adrp & 0x00FFFFE0) >> 5;                     // Bits 23:5
+                auto const imm = (immhi << 2) | immlo;                           // Combine into 21-bit value
+                auto const sign = (imm & 0x100000) ? 0xFFFFFFFFFFE00000ULL : 0;  // Sign extend from bit 20
+                auto const relative = (sign | imm) << 12;                        // Convert page offset to byte offset
+                auto const page = (address + relative) & ~0xFFF;
+
+                // LDR: Extract scaled immediate offset
+                auto const page_offset = ((ldr >> 10) & 0xFFF) << 3;  // Bits 21:10, scaled by 8
+                auto const final_address = page + page_offset;
+                stub_refs[final_address] = address;
+                address += 12;
+            } else {
+                throw std::runtime_error("Unsupported CPU type for stubs!");
             }
-            auto const relative = stream.read_raw<std::int32_t>();
-            stub_refs[(address + 6) + relative] = address + 2;
-            address += 6;
         }
     }
 
@@ -381,6 +465,20 @@ namespace lol {
     inline std::uint64_t MachO::find_stub_refs(std::uint64_t address) const {
         if (auto i = stub_refs.find(address); i != stub_refs.end()) {
             return i->second;
+        }
+        return {};
+    }
+
+    inline std::tuple<std::uint64_t, MachO::data_t, size_t> MachO::find_section(std::string_view name) const {
+        auto stream = Stream{data_, size_};
+        for (const auto& segment : this->segments) {
+            for (const auto& section : segment.sections) {
+                if (std::string_view{section.sectname} != name) {
+                    continue;
+                }
+                const auto [data, size] = stream.copy(segment.fileoff + section.offset, section.size);
+                return {section.addr, data, size};
+            }
         }
         return {};
     }
