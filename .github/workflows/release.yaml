@@ -37,7 +37,6 @@ jobs:
         path: cslol-manager-windows.exe
         retention-days: 15
   build_mac_amd64:
-    if: false
     runs-on: macos-15-intel
     steps:
     - name: "Clone source"
@@ -66,7 +65,6 @@ jobs:
         path: cslol-manager-macos-intel.tar.xz
         retention-days: 15
   build_mac_arm64:
-    if: false
     runs-on: macos-15
     steps:
     - name: "Clone source"
@@ -94,7 +92,7 @@ jobs:
         path: cslol-manager-macos.tar.xz
         retention-days: 15
   release:
-    needs: [build_win]
+    needs: [build_win, build_mac_amd64, build_mac_arm64]
     runs-on: ubuntu-22.04
     steps:
     - name: Download artifacts
