@@ -6,7 +6,7 @@ import Qt.labs.platform 1.0
 FileDialog {
     id: cslolDialogOpenZipFantome
     visible: false
-    title: qsTr("Select Mod File")
-    fileMode: FileDialog.OpenFile
-    nameFilters: "Fantome Mod files (*.fantome *.zip)"
+    title: qsTr("Select Mod File(s)")
+    fileMode: FileDialog.OpenFiles
+    nameFilters: "Mod files (*.fantome *.zip *.wad *.wad.client)"
 }

@@ -30,6 +30,7 @@ CSLOLTools::CSLOLTools(QObject *parent) : QObject(parent) {
     connect(worker_, &CSLOLToolsImpl::modWadsAdded, this, &CSLOLTools::modWadsAdded);
     connect(worker_, &CSLOLToolsImpl::modWadsRemoved, this, &CSLOLTools::modWadsRemoved);
     connect(worker_, &CSLOLToolsImpl::updatedMods, this, &CSLOLTools::updatedMods);
+    connect(worker_, &CSLOLToolsImpl::conflictDetected, this, &CSLOLTools::conflictDetected);
 
     connect(this, &CSLOLTools::changeLeaguePath, worker_, &CSLOLToolsImpl::changeLeaguePath);
     connect(this, &CSLOLTools::changeBlacklist, worker_, &CSLOLToolsImpl::changeBlacklist);
@@ -38,6 +39,9 @@ CSLOLTools::CSLOLTools(QObject *parent) : QObject(parent) {
     connect(this, &CSLOLTools::deleteMod, worker_, &CSLOLToolsImpl::deleteMod);
     connect(this, &CSLOLTools::exportMod, worker_, &CSLOLToolsImpl::exportMod);
     connect(this, &CSLOLTools::installFantomeZip, worker_, &CSLOLToolsImpl::installFantomeZip);
+    connect(this, &CSLOLTools::installFantomeZips, worker_, &CSLOLToolsImpl::installFantomeZips);
+    connect(this, &CSLOLTools::handleDroppedUrls, worker_, &CSLOLToolsImpl::handleDroppedUrls);
+    connect(this, &CSLOLTools::resolveConflict, worker_, &CSLOLToolsImpl::resolveConflict);
     connect(this, &CSLOLTools::saveProfile, worker_, &CSLOLToolsImpl::saveProfile);
     connect(this, &CSLOLTools::loadProfile, worker_, &CSLOLToolsImpl::loadProfile);
     connect(this, &CSLOLTools::deleteProfile, worker_, &CSLOLToolsImpl::deleteProfile);

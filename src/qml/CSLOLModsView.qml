@@ -25,7 +25,7 @@ ColumnLayout {
 
     signal modEdit(string fileName)
 
-    signal importFile(string file)
+    signal importFiles(var paths)
 
     signal installFantomeZip()
 
@@ -278,7 +278,7 @@ ColumnLayout {
                 enabled: !isBussy
                 onDropped: function(drop) {
                     if (drop.hasUrls && drop.urls.length > 0) {
-                        cslolModsView.importFile(CSLOLUtils.fromFile(drop.urls[0]))
+                        cslolModsView.importFiles(drop.urls)
                     }
                 }
             }
