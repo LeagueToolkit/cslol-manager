@@ -2,7 +2,7 @@
 
 > [!WARNING]  
 > **Maintenance Mode:** `cslol-manager` is currently in maintenance/deprecation mode. Significant new features and development have shifted to the new **LTK Manager**.  
-> 👉 **Check out the future of League modding here: [LeagueToolkit/league-mod](https://github.com/LeagueToolkit/league-mod)**
+> 👉 **Check out the future of League modding here: [LeagueToolkit/ltk-manager](https://github.com/LeagueToolkit/ltk-manager)**
 
 [![Releases](https://img.shields.io/github/v/release/LeagueToolkit/cslol-manager?style=for-the-badge)](https://github.com/LeagueToolkit/cslol-manager/releases)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?style=for-the-badge)](https://www.gnu.org/licenses/gpl-3.0)
