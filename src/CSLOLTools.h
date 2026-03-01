@@ -47,6 +47,8 @@ signals:
     void updatedMods(QJsonArray mods);
     void reportError(QString name, QString message, QString stack_trace);
 
+    void conflictDetected(QString modName, QString newPath);
+
     void changeLeaguePath(QString newLeaguePath);
     void changeBlacklist(bool blacklist);
     void changeIgnorebad(bool ignorebad);
@@ -65,6 +67,10 @@ signals:
     void removeModWads(QString modFileName, QJsonArray wads);
     void refreshMods();
     void runDiag();
+
+    void installFantomeZips(QStringList paths);
+    void handleDroppedUrls(QStringList urls);
+    void resolveConflict(bool overwrite);
 
 public slots:
     CSLOLToolsImpl::CSLOLState getState();
