@@ -55,7 +55,7 @@ Dialog {
                 let release = releases[index]
                 switch (enableUpdates) {
                 case Qt.Unchecked:
-                    // recieve only mandatory updates
+                    // receive only mandatory updates
                     if (release["prerelease"] || !release["body"].includes("mandatory")) {
                         continue;
                     }
